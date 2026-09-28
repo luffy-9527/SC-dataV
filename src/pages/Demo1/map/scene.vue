@@ -11,6 +11,7 @@ import { canDrillRegion, loadDrillMap } from './drill'
 
 interface DrillStackItem {
   title: string
+  adcode?: string
   data: CityGeoJSON
   outlineData: CityGeoJSON
 }
@@ -21,7 +22,13 @@ const store = useDemo1Store()
 
 const currentMapData = shallowRef<CityGeoJSON>(rootMapData)
 const currentOutlineData = shallowRef<CityGeoJSON>(rootOutlineData)
+const currentAdcode = shallowRef<string>('')
 const drillStack = shallowRef<DrillStackItem[]>([])
+
+const parentStackItem = computed(() => drillStack.value[drillStack.value.length - 1])
+const parentData = computed(() => parentStackItem.value?.data)
+const parentAdcode = computed(() => parentStackItem.value?.adcode)
+const parentTitle = computed(() => parentStackItem.value?.title)
 
 /**
  * 地图初始方向。
@@ -38,29 +45,35 @@ function getYawFromUrl() {
 const initialMapYaw = computed(() => (getYawFromUrl() * Math.PI) / 180)
 
 async function handleRegionClick(name: string) {
-  // 第二十八阶段：只在省级地图时下钻。进入成都市区县图后，点击区县默认不再继续下钻。
-  if (store.drillLevel > 0 || !canDrillRegion(name) || store.drillLoading) return
+  // 支持三级下钻：0级(省) -> 1级(市) -> 2级(区县)。进入区县后不再继续下钻。
+  if (store.drillLevel >= 2 || !canDrillRegion(name, store.drillLevel, currentMapData.value) || store.drillLoading) return
 
   try {
     store.setDrillLoading(true)
-    const result = await loadDrillMap(name)
+    const currentLevel = store.drillLevel
+    const prevTitle = store.drillTitle
+    const result = await loadDrillMap(name, currentLevel, currentMapData.value, prevTitle)
     if (!result) return
 
     drillStack.value = [
       ...drillStack.value,
       {
         title: store.drillTitle,
+        adcode: currentAdcode.value,
         data: currentMapData.value,
         outlineData: currentOutlineData.value,
       },
     ]
 
     currentMapData.value = result.data
-    // 下钻地图本身已包含区县边界，轮廓流光直接使用当前数据。
+    // 下钻地图本身已包含边界，轮廓流光使用当前数据
     currentOutlineData.value = result.data
+    currentAdcode.value = result.adcode
+
+    const nextTitle = currentLevel === 0 ? result.title : `${prevTitle} / ${result.title}`
     store.setDrillInfo({
       level: drillStack.value.length,
-      title: result.title,
+      title: nextTitle,
       canBack: true,
       error: '',
     })
@@ -74,6 +87,10 @@ async function handleRegionClick(name: string) {
   }
 }
 
+if (typeof window !== 'undefined') {
+  ;(window as any).__TRIGGER_DRILL__ = handleRegionClick
+}
+
 function backToPreviousMap() {
   const prev = drillStack.value[drillStack.value.length - 1]
   if (!prev) return
@@ -81,6 +98,7 @@ function backToPreviousMap() {
   drillStack.value = drillStack.value.slice(0, -1)
   currentMapData.value = prev.data
   currentOutlineData.value = prev.outlineData
+  currentAdcode.value = prev.adcode || ''
   store.setDrillInfo({
     level: drillStack.value.length,
     title: prev.title,
@@ -89,10 +107,32 @@ function backToPreviousMap() {
   })
 }
 
+function backToRootMap() {
+  if (!drillStack.value.length) return
+  const root = drillStack.value[0]
+  drillStack.value = []
+  currentMapData.value = root.data
+  currentOutlineData.value = root.outlineData
+  currentAdcode.value = ''
+  store.setDrillInfo({
+    level: 0,
+    title: '四川省',
+    canBack: false,
+    error: '',
+  })
+}
+
 watch(
   () => store.drillBackSeq,
   () => {
     backToPreviousMap()
+  },
+)
+
+watch(
+  () => store.drillResetSeq,
+  () => {
+    backToRootMap()
   },
 )
 </script>
@@ -104,7 +144,14 @@ watch(
       <!-- 在地图自身平面内调整初始方向。 -->
       <TresGroup :rotation="[0, 0, initialMapYaw]">
         <Cloud />
-        <Base :data="currentMapData" :outline-data="currentOutlineData" @region-click="handleRegionClick" />
+        <Base
+          :data="currentMapData"
+          :outline-data="currentOutlineData"
+          :parent-data="parentData"
+          :parent-adcode="parentAdcode"
+          :parent-title="parentTitle"
+          @region-click="handleRegionClick"
+        />
         <Bottom />
       </TresGroup>
     </TresGroup>

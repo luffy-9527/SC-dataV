@@ -41,6 +41,12 @@ export const useDemo1Store = defineStore('demo1', () => {
   const drillCanBack = ref(false)
   const drillError = ref('')
   const drillBackSeq = ref(0)
+  const drillResetSeq = ref(0)
+  const tooltipDismissSeq = ref(0)
+
+  function dismissTooltips() {
+    tooltipDismissSeq.value += 1
+  }
 
   function toggle(key: 'cloud' | 'bar' | 'rotation' | 'heat' | 'mode') {
     const map = { cloud, bar, rotation, heat, mode }
@@ -84,6 +90,10 @@ export const useDemo1Store = defineStore('demo1', () => {
     drillBackSeq.value += 1
   }
 
+  function requestDrillReset() {
+    drillResetSeq.value += 1
+  }
+
   function resetDrill() {
     drillLevel.value = 0
     drillTitle.value = '四川省'
@@ -119,6 +129,9 @@ export const useDemo1Store = defineStore('demo1', () => {
     drillCanBack,
     drillError,
     drillBackSeq,
+    drillResetSeq,
+    tooltipDismissSeq,
+    dismissTooltips,
     toggle,
     setWeatherMode,
     cycleWeather,
@@ -126,6 +139,7 @@ export const useDemo1Store = defineStore('demo1', () => {
     setDrillLoading,
     setDrillInfo,
     requestDrillBack,
+    requestDrillReset,
     resetDrill,
     reset,
   }

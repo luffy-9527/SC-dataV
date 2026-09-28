@@ -19,6 +19,9 @@ const props = withDefaults(
     depth?: number
     data: CityGeoJSON
     outlineData?: CityGeoJSON
+    parentData?: CityGeoJSON
+    parentAdcode?: string
+    parentTitle?: string
   }>(),
   {
     depth: 8,
@@ -43,8 +46,7 @@ function getMapFitTarget() {
     return getUrlNumberParam('mapTarget') || 255
   }
 
-  // 第三十一阶段：按反馈将下钻默认目标尺寸固定为 180。
-  // 临时调试：#/demo1?drillTarget=180 / 200 / 220
+  // 二级市级与三级区县级下钻默认目标尺寸
   return getUrlNumberParam('drillTarget') || 180
 }
 
@@ -67,11 +69,22 @@ const drillExtraScale = computed(() => {
 
 
 watch(
-  () => [store.drillLevel, store.drillTitle] as const,
-  ([level, title]) => {
+  () => [store.drillLevel, store.drillTitle, props.data] as const,
+  ([level, title, data]) => {
     if (level <= 0) return
     drillTerrainTexture.value?.dispose()
-    drillTerrainTexture.value = createDrillTerrainTexture(title)
+    const isDistrict = level >= 2
+    drillTerrainTexture.value = createDrillTerrainTexture(
+      title,
+      data,
+      mapTexture.value?.image as HTMLImageElement | undefined,
+      {
+        parentTitle: props.parentTitle,
+        parentAdcode: props.parentAdcode,
+        parentData: props.parentData,
+      },
+      isDistrict,
+    )
   },
 )
 
@@ -121,7 +134,16 @@ onMounted(async () => {
 
   mapTexture.value = texture1
   normalTexture.value = texture2
-  drillTerrainTexture.value = createDrillTerrainTexture(store.drillTitle)
+  drillTerrainTexture.value = createDrillTerrainTexture(
+    store.drillTitle,
+    props.data,
+    texture1.image as HTMLImageElement | undefined,
+    {
+      parentTitle: props.parentTitle,
+      parentAdcode: props.parentAdcode,
+      parentData: props.parentData,
+    },
+  )
 
   await nextTick()
   if (groupRef.value?.scale) {

@@ -45,8 +45,17 @@ export function getRegionAdCode(name: string) {
   return AD_CODE_MAP[normalized] || AD_CODE_MAP[normalized.replace(/市$/, '')]
 }
 
-export function canDrillRegion(name: string) {
-  return Boolean(getRegionAdCode(name))
+export function canDrillRegion(name: string, level = 0, currentMapData?: CityGeoJSON) {
+  if (level >= 2) return false
+  if (level === 0) {
+    return Boolean(getRegionAdCode(name))
+  }
+  if (level === 1) {
+    if (!currentMapData || !Array.isArray(currentMapData.features)) return false
+    const target = normalizeName(name)
+    return currentMapData.features.some(f => normalizeName(f.properties?.name || '') === target)
+  }
+  return false
 }
 
 function isSupportedFeature(feature: unknown): feature is CityGeoFeature {
@@ -75,24 +84,87 @@ function normalizeGeoJSON(value: unknown): CityGeoJSON | null {
   }
 }
 
-export async function loadDrillMap(name: string) {
-  const adcode = getRegionAdCode(name)
-  if (!adcode) return null
+export interface DrillLoadResult {
+  title: string
+  adcode: string
+  parentAdcode?: string
+  parentTitle?: string
+  data: CityGeoJSON
+}
 
-  const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`地图下钻数据加载失败：${name} ${response.status}`)
+export async function loadDrillMap(
+  name: string,
+  level = 0,
+  currentMapData?: CityGeoJSON,
+  parentTitle?: string,
+): Promise<DrillLoadResult | null> {
+  // 一级 -> 二级（地市州下钻）
+  if (level === 0) {
+    const adcode = getRegionAdCode(name)
+    if (!adcode) return null
+
+    const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`地市级地图下钻数据加载失败：${name} ${response.status}`)
+    }
+
+    const data = normalizeGeoJSON(await response.json())
+    if (!data) {
+      throw new Error(`地市级地图下钻数据格式异常：${name}`)
+    }
+
+    return {
+      title: name,
+      adcode,
+      data,
+    }
   }
 
-  const data = normalizeGeoJSON(await response.json())
-  if (!data) {
-    throw new Error(`地图下钻数据格式异常：${name}`)
+  // 二级 -> 三级（区县级下钻）
+  if (level === 1) {
+    if (!currentMapData || !Array.isArray(currentMapData.features)) return null
+    const target = normalizeName(name)
+    const feature = currentMapData.features.find(f => normalizeName(f.properties?.name || '') === target)
+    if (!feature) return null
+
+    const districtAdcode = feature.properties?.adcode ? String(feature.properties.adcode) : ''
+    const rawParentAdcode = (feature.properties as any)?.parent?.adcode
+    const parentAdcode = rawParentAdcode
+      ? String(rawParentAdcode)
+      : districtAdcode
+        ? `${districtAdcode.slice(0, 4)}00`
+        : ''
+
+    // 默认直接提取上一级市级已有的该区县几何数据（0ms 即开，断网/弱网 100% 稳妥）
+    let districtData: CityGeoJSON = {
+      type: 'FeatureCollection',
+      features: [feature],
+    }
+
+    // 尝试拉取单边界超高精细 GeoJSON 轮廓
+    if (districtAdcode) {
+      try {
+        const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${districtAdcode}.json`)
+        if (response.ok) {
+          const detailed = normalizeGeoJSON(await response.json())
+          if (detailed && detailed.features.length) {
+            districtData = detailed
+          }
+        }
+      } catch {
+        // 请求失败降级使用市级已有几何
+      }
+    }
+
+    return {
+      title: name,
+      adcode: districtAdcode,
+      parentAdcode,
+      parentTitle,
+      data: districtData,
+    }
   }
 
-  return {
-    title: name,
-    adcode,
-    data,
-  }
+  return null
 }

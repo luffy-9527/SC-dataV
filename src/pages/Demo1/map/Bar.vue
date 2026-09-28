@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { AdditiveBlending, DoubleSide } from 'three'
 import { useLoop } from '@tresjs/core'
 import { useDemo1Store } from '../stores'
@@ -26,6 +26,7 @@ const props = withDefaults(
 )
 
 const store = useDemo1Store()
+const barGroupRef = ref()
 const ringRef = ref()
 const ringOuterRef = ref()
 const capRef = ref()
@@ -69,10 +70,32 @@ onBeforeRender(({ delta }) => {
     coreRef.value.scale.y = 1 + Math.sin(time.value * 6.4) * 0.12
   }
 })
+
+function disableRaycast(obj: any) {
+  if (obj) obj.raycast = () => undefined
+}
+
+watch(
+  () => [barGroupRef.value, ringOuterRef.value, ringRef.value, beamRef.value, coreRef.value, capRef.value],
+  ([group, m1, m2, m3, m4, m5]) => {
+    if (group) {
+      group.raycast = () => undefined
+      group.traverse?.((child: any) => {
+        child.raycast = () => undefined
+      })
+    }
+    disableRaycast(m1)
+    disableRaycast(m2)
+    disableRaycast(m3)
+    disableRaycast(m4)
+    disableRaycast(m5)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <TresGroup v-if="store.bar" :position="props.position">
+  <TresGroup v-if="store.bar" ref="barGroupRef" :position="props.position">
     <!-- 底部能量环保持在地图表面，跟随城市点位呼吸扩散。 -->
     <TresMesh ref="ringOuterRef" :position="[0, 0, 0.28]" :render-order="118">
       <TresRingGeometry :args="[1.25, 2.85, 120]" />

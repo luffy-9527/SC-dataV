@@ -26,10 +26,37 @@ const mouseButtons = {
   MIDDLE: MOUSE.DOLLY,
   RIGHT: MOUSE.ROTATE,
 }
+
+const parentCityName = computed(() => {
+  const parts = store.drillTitle.split('/')
+  return parts[0]?.trim() || ''
+})
+
+const currentDistrictName = computed(() => {
+  const parts = store.drillTitle.split('/')
+  return parts[parts.length - 1]?.trim() || store.drillTitle
+})
+
+const drillBackText = computed(() => {
+  if (store.drillLevel === 2) {
+    return parentCityName.value ? `返回${parentCityName.value}` : '返回上级'
+  }
+  return '返回四川省'
+})
+
+const minDistance = computed(() => {
+  if (store.drillLevel >= 2) return 26 // 区县级：允许近距离推近放大，看清街道与地貌细节
+  if (store.drillLevel === 1) return 55
+  return 96
+})
+
+function handleCanvasPointerDown() {
+  store.dismissTooltips()
+}
 </script>
 
 <template>
-  <div class="map-canvas">
+  <div class="map-canvas" @pointerdown="handleCanvasPointerDown">
     <TresCanvas clear-color="#fff0d8" :dpr="[1, 2]">
       <!-- 第三十一阶段：初始相机正上方俯视，避免打开页面时就是斜视角。 -->
       <TresPerspectiveCamera
@@ -61,7 +88,7 @@ const mouseButtons = {
         :rotate-speed="0.46"
         :pan-speed="1.18"
         :key-pan-speed="18"
-        :min-distance="96"
+        :min-distance="minDistance"
         :max-distance="520"
         :min-polar-angle="0.01"
         :max-polar-angle="1.5"
@@ -79,12 +106,27 @@ const mouseButtons = {
     <div class="drill-toolbar">
       <div class="drill-title">
         <span class="drill-dot"></span>
-        <span>{{ store.drillTitle }}</span>
-        <em v-if="store.drillLevel > 0">区县级地图</em>
-        <em v-else>点击地市下钻</em>
+        <template v-if="store.drillLevel === 0">
+          <span>四川省</span>
+          <em>点击地市下钻</em>
+        </template>
+        <template v-else-if="store.drillLevel === 1">
+          <span class="crumb clickable" title="点击返回全省" @click="store.requestDrillReset()">四川省</span>
+          <span class="crumb-sep">/</span>
+          <span>{{ store.drillTitle }}</span>
+          <em>点击区县下钻</em>
+        </template>
+        <template v-else>
+          <span class="crumb clickable" title="点击返回全省" @click="store.requestDrillReset()">四川省</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb clickable" :title="`点击返回${parentCityName}`" @click="store.requestDrillBack()">{{ parentCityName }}</span>
+          <span class="crumb-sep">/</span>
+          <span>{{ currentDistrictName }}</span>
+          <em>区县级展示</em>
+        </template>
       </div>
       <button v-if="store.drillCanBack" class="drill-back" type="button" @click="store.requestDrillBack()">
-        返回四川省
+        {{ drillBackText }}
       </button>
       <span v-if="store.drillLoading" class="drill-loading">地图加载中...</span>
       <span v-if="store.drillError" class="drill-error">{{ store.drillError }}</span>
@@ -106,7 +148,7 @@ const mouseButtons = {
 .weather-badge {
   position: absolute;
   left: 50%;
-  top: 106px;
+  top: 115px;
   z-index: 9;
   display: inline-flex;
   align-items: center;
@@ -173,6 +215,24 @@ const mouseButtons = {
   font-style: normal;
   font-weight: 500;
   font-size: 12px;
+}
+
+.crumb.clickable {
+  cursor: pointer;
+  color: #ea580c;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.18s ease;
+}
+
+.crumb.clickable:hover {
+  color: #c2410c;
+}
+
+.crumb-sep {
+  color: rgba(234, 88, 12, 0.4);
+  font-weight: normal;
+  margin: 0 1px;
 }
 
 .drill-dot {

@@ -10,7 +10,9 @@ import {
   LineBasicMaterial,
   LineSegments,
   LinearFilter,
+  LinearMipmapLinearFilter,
   NormalBlending,
+  SRGBColorSpace,
   Sprite,
   SpriteMaterial,
   Texture,
@@ -18,11 +20,27 @@ import {
   type Object3D,
 } from 'three'
 import { useLoop } from '@tresjs/core'
+import cloudImage from '@/assets/cloud.png'
+import loadTexture from '../helpers/loadTexture'
 import { useDemo1Store, type WeatherMode } from '../stores'
+
+interface CloudFormation {
+  group: Group
+  shadow?: Sprite
+  currentX: number
+  currentY: number
+  baseY: number
+  baseZ: number
+  speed: number
+  phase: number
+  baseOpacity: number
+  puffs: { sprite: Sprite; relX: number; relY: number; baseScaleX: number; baseScaleY: number; phase: number }[]
+}
 
 const store = useDemo1Store()
 const weatherGroup = shallowRef<Group>()
 const time = { value: 0 }
+const formations: CloudFormation[] = []
 const objects: Object3D[] = []
 const textures: Texture[] = []
 
@@ -30,7 +48,11 @@ function disableRaycast(object: Object3D) {
   object.raycast = () => undefined
 }
 
-function makeTexture(width: number, height: number, draw: (ctx: CanvasRenderingContext2D, width: number, height: number) => void) {
+function makeTexture(
+  width: number,
+  height: number,
+  draw: (ctx: CanvasRenderingContext2D, width: number, height: number) => void,
+) {
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -46,98 +68,39 @@ function makeTexture(width: number, height: number, draw: (ctx: CanvasRenderingC
   return texture
 }
 
-function createPuffyCloudTexture(seed = 0) {
-  return makeTexture(1024, 512, (ctx, width, height) => {
+function createSoftShadowTexture() {
+  return makeTexture(256, 256, (ctx, width, height) => {
     ctx.clearRect(0, 0, width, height)
-
-    const random = (i: number) => {
-      const x = Math.sin(i * 91.37 + seed * 17.13) * 10000
-      return x - Math.floor(x)
-    }
-
-    // 灰色云影：先做底层阴影，保证浅色背景上能看见云团体积。
     ctx.save()
-    ctx.filter = 'blur(18px)'
-    for (let i = 0; i < 12; i += 1) {
-      const x = 135 + random(i + 1) * 760
-      const y = 220 + random(i + 8) * 120
-      const rx = 110 + random(i + 3) * 150
-      const ry = 44 + random(i + 5) * 55
-      const r = Math.max(rx, ry)
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-      g.addColorStop(0, `rgba(112,118,112,${0.18 + random(i + 12) * 0.1})`)
-      g.addColorStop(0.58, 'rgba(156,158,148,0.08)')
-      g.addColorStop(1, 'rgba(255,255,255,0)')
-      ctx.save()
-      ctx.translate(x, y)
-      ctx.scale(rx / r, ry / r)
-      ctx.fillStyle = g
-      ctx.beginPath()
-      ctx.arc(0, 0, r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.restore()
-    }
+    ctx.filter = 'blur(12px)'
+    const cx = width / 2
+    const cy = height / 2
+    const r = cx * 0.75
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.scale(1, 0.6)
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r)
+    g.addColorStop(0, 'rgba(15, 25, 38, 0.40)')
+    g.addColorStop(0.55, 'rgba(25, 35, 50, 0.18)')
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(0, 0, r, 0, Math.PI * 2)
+    ctx.fill()
     ctx.restore()
-
-    // 多个云泡组成一团真实云，不再是矩形雾片。
-    ctx.save()
-    ctx.filter = 'blur(8px)'
-    const puffs = [
-      [110, 280, 88, 64, 0.76],
-      [185, 242, 130, 88, 0.9],
-      [300, 218, 160, 106, 0.96],
-      [435, 212, 186, 116, 0.94],
-      [575, 226, 170, 102, 0.86],
-      [705, 248, 142, 86, 0.78],
-      [820, 286, 112, 68, 0.66],
-      [330, 316, 220, 82, 0.78],
-      [520, 328, 254, 88, 0.72],
-      [675, 330, 210, 74, 0.58],
-    ]
-    for (const [x, y, rx, ry, alpha] of puffs) {
-      const jitterX = x + (random(x + seed) - 0.5) * 28
-      const jitterY = y + (random(y + seed) - 0.5) * 22
-      const r = Math.max(rx, ry)
-      const g = ctx.createRadialGradient(jitterX, jitterY, 0, jitterX, jitterY, r)
-      g.addColorStop(0, `rgba(255,255,255,${alpha})`)
-      g.addColorStop(0.38, `rgba(255,253,245,${alpha * 0.82})`)
-      g.addColorStop(0.68, `rgba(224,226,218,${alpha * 0.28})`)
-      g.addColorStop(1, 'rgba(255,255,255,0)')
-      ctx.save()
-      ctx.translate(jitterX, jitterY)
-      ctx.scale(rx / r, ry / r)
-      ctx.fillStyle = g
-      ctx.beginPath()
-      ctx.arc(0, 0, r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.restore()
-    }
-    ctx.restore()
-
-    // 少量暗灰纹理，增强云团层次，避免纯白看不见。
-    ctx.save()
-    ctx.globalCompositeOperation = 'multiply'
-    ctx.globalAlpha = 0.18
-    for (let i = 0; i < 1400; i += 1) {
-      const x = 80 + random(i + 21) * (width - 160)
-      const y = 150 + random(i + 39) * 230
-      const a = random(i + 55) * 0.1
-      ctx.fillStyle = `rgba(88,92,88,${a})`
-      ctx.fillRect(x, y, 1.2, 1.2)
-    }
     ctx.restore()
   })
 }
 
 function createMistTexture() {
-  return makeTexture(768, 768, (ctx, width, height) => {
+  return makeTexture(512, 512, (ctx, width, height) => {
     const cx = width / 2
     const cy = height / 2
-    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.5)
-    gradient.addColorStop(0, 'rgba(255,255,255,0.7)')
-    gradient.addColorStop(0.36, 'rgba(255,249,225,0.36)')
-    gradient.addColorStop(0.72, 'rgba(218,218,205,0.12)')
-    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.45)
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.65)')
+    gradient.addColorStop(0.42, 'rgba(255, 252, 242, 0.32)')
+    gradient.addColorStop(0.75, 'rgba(235, 238, 235, 0.10)')
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, width, height)
   })
@@ -147,9 +110,9 @@ function createLightningTexture() {
   return makeTexture(512, 512, (ctx, width, height) => {
     ctx.clearRect(0, 0, width, height)
     ctx.save()
-    ctx.shadowColor = 'rgba(255,255,255,0.95)'
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.95)'
     ctx.shadowBlur = 18
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)'
     ctx.lineWidth = 6
     ctx.lineCap = 'round'
     ctx.beginPath()
@@ -171,20 +134,25 @@ function createLightningTexture() {
   })
 }
 
-function createSprite(texture: Texture, opts: {
-  name: string
-  position: [number, number, number]
-  scale: [number, number, number]
-  opacity: number
-  color?: string
-  blending?: typeof AdditiveBlending | typeof NormalBlending
-  renderOrder?: number
-}) {
+function createSprite(
+  texture: Texture,
+  opts: {
+    name: string
+    position: [number, number, number]
+    scale: [number, number, number]
+    opacity: number
+    rotation?: number
+    color?: string
+    blending?: typeof AdditiveBlending | typeof NormalBlending
+    renderOrder?: number
+  },
+) {
   const material = new SpriteMaterial({
     map: texture,
     color: new Color(opts.color ?? '#ffffff'),
     transparent: true,
     opacity: opts.opacity,
+    rotation: opts.rotation ?? 0,
     depthTest: false,
     depthWrite: false,
     blending: opts.blending ?? NormalBlending,
@@ -202,80 +170,237 @@ function createSprite(texture: Texture, opts: {
   return sprite
 }
 
-function createWeatherLayer() {
+async function createWeatherLayer() {
   const group = new Group()
   group.name = 'Demo1WeatherSystem'
   disableRaycast(group)
 
-  const cloudTextures = [0, 1, 2, 3, 4, 5, 6].map(seed => createPuffyCloudTexture(seed))
+  // 1. 加载摄影级真实 3D 积云纹理资产 cloud.png
+  const cloudTexture = await loadTexture(cloudImage, tex => {
+    tex.colorSpace = SRGBColorSpace
+    tex.minFilter = LinearMipmapLinearFilter
+    tex.magFilter = LinearFilter
+    tex.generateMipmaps = true
+    tex.needsUpdate = true
+  })
+  textures.push(cloudTexture)
+
+  const shadowTexture = createSoftShadowTexture()
   const mistTexture = createMistTexture()
   const lightningTexture = createLightningTexture()
 
-  // 第四十七阶段：使用 Sprite 云团，不再用 Plane + lookAt。
-  // Sprite 会天然朝向相机，低角度、俯视、旋转地图时都能看见，不会被压成一条线。
-  const orbitCloudConfigs = [
-    { angle: -0.28, rx: 138, ry: 92, z: 46, sx: 94, sy: 36, o: 0.88, speed: 0.16, bob: 8, phase: 0.2, tex: 0 },
-    { angle: 0.48, rx: 158, ry: 104, z: 52, sx: 122, sy: 46, o: 0.84, speed: 0.13, bob: 9, phase: 1.2, tex: 1 },
-    { angle: 1.2, rx: 150, ry: 94, z: 50, sx: 104, sy: 40, o: 0.88, speed: 0.15, bob: 7, phase: 2.1, tex: 2 },
-    { angle: 2.04, rx: 164, ry: 110, z: 56, sx: 132, sy: 52, o: 0.76, speed: 0.11, bob: 10, phase: 3.3, tex: 3 },
-    { angle: 2.92, rx: 142, ry: 96, z: 48, sx: 98, sy: 38, o: 0.82, speed: 0.17, bob: 8, phase: 4.5, tex: 4 },
-    { angle: 3.82, rx: 172, ry: 116, z: 58, sx: 136, sy: 54, o: 0.74, speed: 0.12, bob: 10, phase: 5.8, tex: 5 },
-    { angle: 4.82, rx: 152, ry: 102, z: 50, sx: 112, sy: 44, o: 0.84, speed: 0.14, bob: 9, phase: 6.7, tex: 6 },
-    { angle: 5.6, rx: 168, ry: 112, z: 54, sx: 128, sy: 50, o: 0.78, speed: 0.12, bob: 8, phase: 7.6, tex: 1 },
+  formations.length = 0
+
+  /**
+   * 采用多重真实云团簇（Cloud Clusters）结构：
+   * 每个主要云系由 2~3 个以不同旋转角度、微偏位移、不同尺度交叠的摄影级云片融合而成。
+   * 彻底告别单一扁平贴纸形态，形成边缘细腻飞絮、内部翻涌饱满的真实气象流云。
+   */
+  const clusterConfigs = [
+    // 1. 川西阿坝高原群
+    {
+      x: -125, y: 68, z: 32, speed: 15.5,
+      puffs: [
+        { dx: 0, dy: 0, sx: 64, sy: 56, rot: 0.1, o: 0.94 },
+        { dx: 22, dy: -6, sx: 48, sy: 42, rot: -0.8, o: 0.86 },
+        { dx: -18, dy: 6, sx: 42, sy: 36, rot: 1.6, o: 0.82 },
+      ],
+      shadowScale: [95, 60],
+    },
+    // 2. 川东北（广元、巴中）
+    {
+      x: 35, y: 66, z: 29, speed: 14.0,
+      puffs: [
+        { dx: 0, dy: 0, sx: 70, sy: 60, rot: -0.4, o: 0.95 },
+        { dx: -24, dy: -5, sx: 50, sy: 44, rot: 1.1, o: 0.88 },
+        { dx: 20, dy: 7, sx: 44, sy: 38, rot: 2.3, o: 0.82 },
+      ],
+      shadowScale: [100, 65],
+    },
+    // 3. 绵阳、德阳交界上空
+    {
+      x: -35, y: 52, z: 30, speed: 16.5,
+      puffs: [
+        { dx: 0, dy: 0, sx: 56, sy: 48, rot: 0.7, o: 0.93 },
+        { dx: 18, dy: -4, sx: 40, sy: 35, rot: -1.2, o: 0.85 },
+      ],
+      shadowScale: [75, 50],
+    },
+    // 4. 成都平原腹地（核心主云团）
+    {
+      x: -8, y: 22, z: 33, speed: 15.0,
+      puffs: [
+        { dx: 0, dy: 0, sx: 75, sy: 64, rot: 0.3, o: 0.96 },
+        { dx: 26, dy: -7, sx: 58, sy: 50, rot: -0.6, o: 0.90 },
+        { dx: -22, dy: 8, sx: 50, sy: 44, rot: 1.8, o: 0.86 },
+      ],
+      shadowScale: [115, 75],
+    },
+    // 5. 川西甘孜高原上空
+    {
+      x: -110, y: 15, z: 34, speed: 14.2,
+      puffs: [
+        { dx: 0, dy: 0, sx: 72, sy: 62, rot: -0.9, o: 0.95 },
+        { dx: -20, dy: 9, sx: 52, sy: 45, rot: 0.5, o: 0.88 },
+        { dx: 24, dy: -6, sx: 46, sy: 40, rot: 2.7, o: 0.84 },
+      ],
+      shadowScale: [105, 70],
+    },
+    // 6. 川东（遂宁、南充、达州）
+    {
+      x: 65, y: 16, z: 28, speed: 17.0,
+      puffs: [
+        { dx: 0, dy: 0, sx: 58, sy: 50, rot: 1.4, o: 0.94 },
+        { dx: -18, dy: -5, sx: 42, sy: 36, rot: -0.3, o: 0.85 },
+      ],
+      shadowScale: [80, 52],
+    },
+    // 7. 川中南（雅安、乐山、眉山）
+    {
+      x: -52, y: -16, z: 30, speed: 14.8,
+      puffs: [
+        { dx: 0, dy: 0, sx: 68, sy: 58, rot: -0.2, o: 0.95 },
+        { dx: 22, dy: 7, sx: 50, sy: 43, rot: 1.9, o: 0.89 },
+        { dx: -19, dy: -6, sx: 44, sy: 38, rot: -1.4, o: 0.84 },
+      ],
+      shadowScale: [100, 68],
+    },
+    // 8. 资阳、内江、自贡
+    {
+      x: 28, y: -22, z: 31, speed: 16.0,
+      puffs: [
+        { dx: 0, dy: 0, sx: 62, sy: 52, rot: 0.5, o: 0.93 },
+        { dx: -18, dy: 6, sx: 45, sy: 38, rot: -0.7, o: 0.85 },
+      ],
+      shadowScale: [85, 55],
+    },
+    // 9. 宜宾、泸州
+    {
+      x: 48, y: -54, z: 29, speed: 14.5,
+      puffs: [
+        { dx: 0, dy: 0, sx: 66, sy: 56, rot: 1.2, o: 0.94 },
+        { dx: -20, dy: -5, sx: 48, sy: 42, rot: -0.5, o: 0.88 },
+        { dx: 20, dy: 8, sx: 42, sy: 36, rot: 2.1, o: 0.82 },
+      ],
+      shadowScale: [95, 62],
+    },
+    // 10. 凉山、攀枝花
+    {
+      x: -58, y: -66, z: 32, speed: 15.2,
+      puffs: [
+        { dx: 0, dy: 0, sx: 70, sy: 60, rot: -0.7, o: 0.95 },
+        { dx: 22, dy: -6, sx: 52, sy: 44, rot: 0.8, o: 0.88 },
+        { dx: -21, dy: 7, sx: 44, sy: 38, rot: -2.0, o: 0.83 },
+      ],
+      shadowScale: [102, 68],
+    },
+    // 11. 川西南部边境高原
+    {
+      x: -128, y: -42, z: 35, speed: 13.8,
+      puffs: [
+        { dx: 0, dy: 0, sx: 58, sy: 50, rot: 0.9, o: 0.92 },
+        { dx: -16, dy: 6, sx: 42, sy: 36, rot: -1.1, o: 0.85 },
+      ],
+      shadowScale: [80, 52],
+    },
   ]
 
-  for (const config of orbitCloudConfigs) {
-    const sprite = createSprite(cloudTextures[config.tex], {
-      name: 'orbitCloud',
-      position: [Math.cos(config.angle) * config.rx, Math.sin(config.angle) * config.ry, config.z],
-      scale: [config.sx, config.sy, 1],
-      opacity: config.o,
-      color: '#fffdf5',
+  for (let i = 0; i < clusterConfigs.length; i += 1) {
+    const config = clusterConfigs[i]
+
+    const clusterGroup = new Group()
+    clusterGroup.name = `CloudCluster_${i}`
+    clusterGroup.position.set(config.x, config.y, config.z)
+    disableRaycast(clusterGroup)
+
+    // 1. 地面柔和阴影（紧贴地形 8.6 高度，跟随云团漂浮移动）
+    const shadowSprite = createSprite(shadowTexture, {
+      name: 'cloudShadow',
+      position: [config.x + 5, config.y - 5, 8.6],
+      scale: [config.shadowScale[0], config.shadowScale[1], 1],
+      opacity: 0.20,
       blending: NormalBlending,
-      renderOrder: 995,
+      renderOrder: 975,
     })
-    sprite.userData.angle = config.angle
-    sprite.userData.rx = config.rx
-    sprite.userData.ry = config.ry
-    sprite.userData.baseZ = config.z
-    sprite.userData.baseScaleX = config.sx
-    sprite.userData.baseScaleY = config.sy
-    sprite.userData.speed = config.speed
-    sprite.userData.bob = config.bob
-    sprite.userData.phase = config.phase
-    group.add(sprite)
+    shadowSprite.userData.baseScaleX = config.shadowScale[0]
+    shadowSprite.userData.baseScaleY = config.shadowScale[1]
+    group.add(shadowSprite)
+
+    // 2. 簇内交叠微片
+    const puffItems: CloudFormation['puffs'] = []
+    for (let p = 0; p < config.puffs.length; p += 1) {
+      const puff = config.puffs[p]
+      const sprite = createSprite(cloudTexture, {
+        name: 'orbitCloud',
+        position: [puff.dx, puff.dy, p * 0.4],
+        scale: [puff.sx, puff.sy, 1],
+        opacity: puff.o,
+        rotation: puff.rot,
+        color: '#ffffff',
+        blending: NormalBlending,
+        renderOrder: 990 + p * 2,
+      })
+      clusterGroup.add(sprite)
+      puffItems.push({
+        sprite,
+        relX: puff.dx,
+        relY: puff.dy,
+        baseScaleX: puff.sx,
+        baseScaleY: puff.sy,
+        phase: i * 0.6 + p * 1.2,
+      })
+    }
+
+    group.add(clusterGroup)
+
+    formations.push({
+      group: clusterGroup,
+      shadow: shadowSprite,
+      currentX: config.x,
+      currentY: config.y,
+      baseY: config.y,
+      baseZ: config.z,
+      speed: config.speed,
+      phase: i * 0.75,
+      baseOpacity: 0.95,
+      puffs: puffItems,
+    })
   }
 
-  // 低空雾气：小范围、柔和，不再铺成矩形块。
-  for (let i = 0; i < 10; i += 1) {
-    const angle = (Math.PI * 2 * i) / 10
-    const radius = 42 + (i % 4) * 18
+  // 低空柔和轻雾
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (Math.PI * 2 * i) / 6
+    const radius = 35 + (i % 3) * 14
+    const posX = Math.cos(angle) * radius
+    const posY = Math.sin(angle) * radius
     const sprite = createSprite(mistTexture, {
       name: 'fog',
-      position: [Math.cos(angle) * radius, Math.sin(angle) * radius, 10 + (i % 3) * 1.5],
-      scale: [76 + (i % 4) * 20, 38 + (i % 5) * 10, 1],
-      opacity: 0.18 + (i % 3) * 0.035,
-      color: '#fff5dd',
+      position: [posX, posY, 11 + (i % 3) * 1.5],
+      scale: [56 + (i % 3) * 16, 32 + (i % 3) * 8, 1],
+      opacity: 0.28 + (i % 3) * 0.04,
+      color: '#fffbf0',
       blending: NormalBlending,
-      renderOrder: 910,
+      renderOrder: 920,
     })
     sprite.userData.angle = angle
     sprite.userData.radius = radius
-    sprite.userData.baseZ = 10 + (i % 3) * 1.5
+    sprite.userData.baseX = posX
+    sprite.userData.baseY = posY
+    sprite.userData.baseZ = 11 + (i % 3) * 1.5
     sprite.userData.baseScaleX = sprite.scale.x
     sprite.userData.baseScaleY = sprite.scale.y
-    sprite.userData.speed = 0.08 + i * 0.006
+    sprite.userData.speed = 0.06 + i * 0.005
     sprite.userData.phase = i * 0.8
     group.add(sprite)
   }
 
-  // 雨丝层：用线段模拟雨幕，降雨/雷暴模式显示。
+  // 雨丝层：降雨/雷暴模式显示
   const rainGroup = new Group()
   rainGroup.name = 'rain'
   rainGroup.userData.kind = 'rain'
   disableRaycast(rainGroup)
   for (let layer = 0; layer < 3; layer += 1) {
-    const count = 150
+    const count = 160
     const positions = new Float32Array(count * 2 * 3)
     for (let i = 0; i < count; i += 1) {
       const x = -140 + Math.random() * 280
@@ -312,7 +437,7 @@ function createWeatherLayer() {
   group.add(rainGroup)
   objects.push(rainGroup)
 
-  // 雷暴闪电层。
+  // 雷暴闪电层
   for (let i = 0; i < 4; i += 1) {
     const angle = (Math.PI * 2 * i) / 4 + 0.4
     const sprite = createSprite(lightningTexture, {
@@ -356,17 +481,17 @@ function factorFor(kind: string, mode: WeatherMode) {
   if (!store.cloud || mode === 'clear') return 0
   const map: Record<WeatherMode, Record<string, number>> = {
     clear: {},
-    cloudy: { orbitCloud: 1, fog: 0.12, rain: 0, lightning: 0 },
-    fog: { orbitCloud: 0.35, fog: 1.3, rain: 0, lightning: 0 },
-    rain: { orbitCloud: 0.56, fog: 0.55, rain: 1, lightning: 0 },
-    storm: { orbitCloud: 0.7, fog: 0.72, rain: 1.18, lightning: 1 },
+    cloudy: { orbitCloud: 1, cloudShadow: 1, fog: 0.25, rain: 0, lightning: 0 },
+    fog: { orbitCloud: 0.4, cloudShadow: 0.2, fog: 1.3, rain: 0, lightning: 0 },
+    rain: { orbitCloud: 0.75, cloudShadow: 0.5, fog: 0.6, rain: 1, lightning: 0 },
+    storm: { orbitCloud: 0.9, cloudShadow: 0.7, fog: 0.75, rain: 1.18, lightning: 1 },
   }
   return map[mode][kind] ?? 0
 }
 
 function applyWeatherMode() {
   const mode = store.weatherMode
-  const drillFactor = store.drillLevel > 0 ? 0.82 : 1
+  const drillFactor = store.drillLevel > 0 ? 0.85 : 1
   for (const object of objects) {
     const kind = object.userData.kind ?? object.name
     const factor = factorFor(kind, mode) * drillFactor
@@ -391,33 +516,81 @@ onBeforeRender(({ delta }) => {
   const speed = Math.max(store.config.lightSpeed, 0.2)
   time.value += delta * speed
 
-  weatherGroup.value.position.x = Math.sin(time.value * 0.08) * 1.4
-  weatherGroup.value.position.y = Math.cos(time.value * 0.07) * 1.1
+  // 天气层微幅整体漂浮动势
+  weatherGroup.value.position.x = Math.sin(time.value * 0.08) * 1.5
+  weatherGroup.value.position.y = Math.cos(time.value * 0.07) * 1.2
 
+  const mode = store.weatherMode
+  const isDrill = store.drillLevel > 0
+  const cloudScaleMul = isDrill ? 0.46 : 1.0
+  const cloudOpacityMul = isDrill ? 0.68 : 1.0
+  const shadowOpacityMul = isDrill ? 0.45 : 1.0
+
+  const cloudFactor = factorFor('orbitCloud', mode)
+  const shadowFactor = factorFor('cloudShadow', mode)
+
+  // 1. 云团动态流动与循环
+  const minDriftX = -185
+  const maxDriftX = 125
+  const driftSpan = maxDriftX - minDriftX // 310
+
+  for (const item of formations) {
+    // 持续向东偏东南方向平滑飘移（速度 14~17 单位/秒，流动效果清晰可感）
+    item.currentX += delta * item.speed * speed
+    item.currentY -= delta * item.speed * 0.07 * speed
+
+    // 超出地图右边界后无缝循环回左侧
+    if (item.currentX > maxDriftX) {
+      item.currentX -= driftSpan
+      item.currentY = item.baseY + Math.sin(item.phase * 2) * 8
+    }
+
+    // 边缘平滑淡入淡出
+    let edgeAlpha = 1
+    if (item.currentX < -145) {
+      edgeAlpha = Math.max(0, (item.currentX - minDriftX) / 40)
+    } else if (item.currentX > 85) {
+      edgeAlpha = Math.max(0, (maxDriftX - item.currentX) / 40)
+    }
+
+    // 悬浮高度微调
+    const hoverZ = item.baseZ + Math.sin(time.value * 0.72 + item.phase) * 1.8
+    item.group.position.x = item.currentX
+    item.group.position.y = item.currentY
+    item.group.position.z = hoverZ
+
+    // 簇内微片随气流轻微呼吸胀缩与微移
+    for (const puff of item.puffs) {
+      const breathe = 1 + Math.sin(time.value * 0.45 + puff.phase) * 0.04
+      puff.sprite.scale.x = puff.baseScaleX * breathe * cloudScaleMul
+      puff.sprite.scale.y = puff.baseScaleY * breathe * cloudScaleMul
+      setOpacity(puff.sprite, (puff.sprite.userData.baseOpacity ?? 0.9) * edgeAlpha * cloudFactor * cloudOpacityMul)
+    }
+
+    // 投影阴影跟随云体在地面移动
+    if (item.shadow) {
+      item.shadow.position.x = item.currentX + 4 * cloudScaleMul
+      item.shadow.position.y = item.currentY - 4 * cloudScaleMul
+      item.shadow.position.z = 8.6
+      const shadowBreathe = 1 + Math.sin(time.value * 0.45 + item.phase) * 0.03
+      item.shadow.scale.x = (item.shadow.userData.baseScaleX ?? 90) * shadowBreathe * cloudScaleMul
+      item.shadow.scale.y = (item.shadow.userData.baseScaleY ?? 60) * shadowBreathe * cloudScaleMul
+      setOpacity(item.shadow, 0.20 * edgeAlpha * shadowFactor * shadowOpacityMul)
+    }
+  }
+
+  // 2. 其它天气要素动效（雾气、降雨、闪电）
   for (const object of objects) {
     const kind = object.userData.kind ?? object.name
     if (!object.visible) continue
 
-    if (kind === 'orbitCloud') {
-      const angle = (object.userData.angle ?? 0) + time.value * (object.userData.speed ?? 0.14) * speed
-      const rx = object.userData.rx ?? 150
-      const ry = object.userData.ry ?? 100
-      const phase = object.userData.phase ?? 0
-      object.position.x = Math.cos(angle) * rx
-      object.position.y = Math.sin(angle) * ry
-      object.position.z = (object.userData.baseZ ?? 48) + Math.sin(time.value * 0.82 + phase) * (object.userData.bob ?? 7)
-      const pulse = 1 + Math.sin(time.value * 0.6 + phase) * 0.06
-      object.scale.x = (object.userData.baseScaleX ?? object.scale.x) * pulse
-      object.scale.y = (object.userData.baseScaleY ?? object.scale.y) * (1 + Math.cos(time.value * 0.5 + phase) * 0.04)
-    }
-
     if (kind === 'fog') {
-      const angle = (object.userData.angle ?? 0) - time.value * (object.userData.speed ?? 0.07) * speed
-      const radius = object.userData.radius ?? 60
+      const angle = (object.userData.angle ?? 0) - time.value * (object.userData.speed ?? 0.06) * speed
+      const radius = object.userData.radius ?? 35
       const phase = object.userData.phase ?? 0
       object.position.x = Math.cos(angle) * radius
       object.position.y = Math.sin(angle) * radius
-      object.position.z = (object.userData.baseZ ?? 10) + Math.sin(time.value * 0.38 + phase) * 1.8
+      object.position.z = (object.userData.baseZ ?? 11) + Math.sin(time.value * 0.38 + phase) * 1.5
     }
 
     if (kind === 'rain') {
@@ -448,6 +621,7 @@ onBeforeUnmount(() => {
     ;(object as any).geometry?.dispose?.()
   }
   textures.forEach(texture => texture.dispose())
+  formations.length = 0
   objects.length = 0
   textures.length = 0
 })

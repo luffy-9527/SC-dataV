@@ -92,7 +92,7 @@ export function buildMapRegions(data: CityGeoJSON, depth: number, targetMaxSize 
   const draft = buildWithProjection(data, depth, draftProjection)
   const size = draft.bbox.getSize(new Vector2())
   const maxSize = Math.max(size.x, size.y, 1)
-  const fitScale = Math.min(22000, Math.max(350, (1000 * safeTarget) / maxSize))
+  const fitScale = Math.min(200000, Math.max(350, (1000 * safeTarget) / maxSize))
 
   const projection = geoMercator().center(center).scale(fitScale).translate([0, 0])
   return buildWithProjection(data, depth, projection)
