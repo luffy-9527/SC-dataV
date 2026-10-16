@@ -264,7 +264,14 @@ onBeforeUnmount(() => {
 
     <Bar :position="props.data.cityId" :value="cityInfo.population" :active="hovered">
       <template #default="{ barHeight }">
-        <Label :position="[0, 0, barHeight + 1.2]" :active="hovered">{{ props.data.city }}</Label>
+        <Label
+          v-if="store.drillLevel < 2"
+          :position="[0, 0, barHeight + 1.2]"
+          :active="hovered"
+          :visible="!hovered"
+        >
+          {{ props.data.city }}
+        </Label>
         <Tooltip
           v-if="store.drillLevel < 2 && store.config.showTooltip"
           ref="tooltipRef"

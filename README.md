@@ -20,8 +20,8 @@ http://localhost:5173/sc-datav/#/demo1
 /        首页
 /demo0   Demo0 页面
 /demo1   四川省智慧城市数据大屏
-/demo2   Demo2 页面
-/demo3   Demo3 页面
+/demo2   Demo2 智慧油田智能开采数字孪生平台
+/demo3   Demo3 3D 自动驾驶数字孪生主场景（宝马 M4 数字孪生 + 智能座舱仿真）
 ```
 
 ---

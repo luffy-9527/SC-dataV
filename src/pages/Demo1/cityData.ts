@@ -1,4 +1,14 @@
-export default {
+import { reactive } from 'vue'
+
+export interface CityItem {
+  population: number
+  gdp: string
+  area: string
+}
+
+export type CityDataMap = Record<string, CityItem>
+
+const defaultData: CityDataMap = {
   成都市: { population: 2000, gdp: '1.8万亿', area: '14335平方公里' },
   绵阳市: { population: 500, gdp: '3500亿', area: '11234平方公里' },
   德阳市: { population: 400, gdp: '2800亿', area: '5951平方公里' },
@@ -20,4 +30,30 @@ export default {
   甘孜藏族自治州: { population: 120, gdp: '450亿', area: '153000平方公里' },
   凉山彝族自治州: { population: 500, gdp: '1700亿', area: '60400平方公里' },
   阿坝藏族羌族自治州: { population: 90, gdp: '400亿', area: '84200平方公里' },
-} satisfies Record<string, { population: number; gdp: string; area: string }>
+}
+
+const cityData = reactive<CityDataMap>({ ...defaultData })
+
+/**
+ * 异步从后端 /api/cityData 动态拉取最新数据并无缝响应式合并
+ */
+export async function refreshCityData() {
+  try {
+    const res = await fetch('/api/cityData')
+    if (res.ok) {
+      const data = await res.json()
+      Object.assign(cityData, data)
+      console.log('✅ 大屏城市指标已成功同步最新数据库数据:', data)
+    }
+  } catch (err) {
+    console.warn('⚠️ 动态获取城市指标失败，已自动降级为本地静态数据', err)
+  }
+}
+
+// 自动发起初始化刷新与定时静默同步
+if (typeof window !== 'undefined') {
+  refreshCityData()
+  setInterval(refreshCityData, 10000)
+}
+
+export default cityData

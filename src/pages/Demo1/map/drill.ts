@@ -104,7 +104,7 @@ export async function loadDrillMap(
     if (!adcode) return null
 
     const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`
-    const response = await fetch(url)
+    const response = await fetch(url, { referrerPolicy: 'no-referrer' })
     if (!response.ok) {
       throw new Error(`地市级地图下钻数据加载失败：${name} ${response.status}`)
     }
@@ -145,7 +145,9 @@ export async function loadDrillMap(
     // 尝试拉取单边界超高精细 GeoJSON 轮廓
     if (districtAdcode) {
       try {
-        const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${districtAdcode}.json`)
+        const response = await fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${districtAdcode}.json`, {
+          referrerPolicy: 'no-referrer',
+        })
         if (response.ok) {
           const detailed = normalizeGeoJSON(await response.json())
           if (detailed && detailed.features.length) {

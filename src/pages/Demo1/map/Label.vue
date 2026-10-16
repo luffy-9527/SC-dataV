@@ -8,11 +8,13 @@ withDefaults(
     distanceFactor?: number
     zIndexRange?: [number, number]
     active?: boolean
+    visible?: boolean
   }>(),
   {
     position: () => [0, 0, 0],
     center: true,
     active: false,
+    visible: true,
   },
 )
 
@@ -31,7 +33,7 @@ const emit = defineEmits<{
     :z-index-range="zIndexRange"
     pointer-events="none"
   >
-    <div class="city-label" :class="{ active }">
+    <div v-show="visible" class="city-label" :class="{ active }">
       <span class="city-dot" />
       <span class="city-text"><slot /></span>
     </div>

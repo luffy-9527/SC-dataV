@@ -12,11 +12,24 @@
       <span>SICHUAN SMART BRAIN</span>
     </div>
 
-    <a class="headder__github" href="https://github.com/luffy-9527/SC-dataV" target="_blank" rel="noreferrer" title="GitHub">
-      <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
-        <path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.61-3.37-1.18-3.37-1.18-.45-1.16-1.1-1.47-1.1-1.47-.9-.61.07-.6.07-.6 1 .07 1.53 1.04 1.53 1.04.89 1.52 2.33 1.08 2.9.83.09-.64.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03A9.55 9.55 0 0 1 12 6.99c.85 0 1.71.11 2.51.34 1.9-1.3 2.74-1.03 2.74-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.86V21c0 .26.18.57.69.48A10 10 0 0 0 12 2Z" />
-      </svg>
-    </a>
+    <div class="headder__actions">
+      <div class="headder__switcher">
+        <router-link to="/demo1" class="headder__switch-btn active" title="当前：智慧城市">
+          <span>Demo1 城市</span>
+        </router-link>
+        <router-link to="/demo2" class="headder__switch-btn" title="切换到工业级石油开采大屏">
+          <span>Demo2 油田</span>
+        </router-link>
+        <router-link to="/demo3" class="headder__switch-btn" title="切换到自动驾驶数字孪生大屏">
+          <span>Demo3 智驾</span>
+        </router-link>
+      </div>
+      <a class="headder__github" href="https://github.com/luffy-9527/SC-dataV" target="_blank" rel="noreferrer" title="GitHub">
+        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+          <path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.61-3.37-1.18-3.37-1.18-.45-1.16-1.1-1.47-1.1-1.47-.9-.61.07-.6.07-.6 1 .07 1.53 1.04 1.53 1.04.89 1.52 2.33 1.08 2.9.83.09-.64.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03A9.55 9.55 0 0 1 12 6.99c.85 0 1.71.11 2.51.34 1.9-1.3 2.74-1.03 2.74-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.86V21c0 .26.18.57.69.48A10 10 0 0 0 12 2Z" />
+        </svg>
+      </a>
+    </div>
   </header>
 </template>
 
@@ -64,11 +77,60 @@
   -webkit-text-fill-color: rgba(255, 145, 0, 0.68);
 }
 
-.headder__github {
+.headder__actions {
   position: absolute;
-  top: 12px;
+  top: 14px;
   right: 32px;
-  color: #ea580c;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   pointer-events: auto;
+}
+
+.headder__switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 245, 232, 0.4);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+}
+
+.headder__switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ea580c;
+  background: transparent;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.headder__switch-btn:hover {
+  background: rgba(234, 88, 12, 0.15);
+  transform: translateY(-1px);
+}
+
+.headder__switch-btn.active {
+  background: rgba(234, 88, 12, 0.9);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.4);
+}
+
+.headder__github {
+  color: #ea580c;
+  display: flex;
+  align-items: center;
+  transition: transform 0.25s ease;
+}
+
+.headder__github:hover {
+  transform: scale(1.1);
 }
 </style>

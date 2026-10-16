@@ -5,11 +5,13 @@ import Chart from '@/components/Chart.vue'
 import cityData from '../cityData'
 
 const colors = ['#fbdf88', '#ea580c']
-const citys = Object.keys(cityData)
-const source = Array.from({ length: 5 }, (_, index) => ({
-  name: citys[index],
-  value: cityData[citys[index] as keyof typeof cityData].population,
-}))
+const source = computed(() => {
+  const citys = Object.keys(cityData)
+  return Array.from({ length: 5 }, (_, index) => ({
+    name: citys[index],
+    value: cityData[citys[index] as keyof typeof cityData]?.population ?? 0,
+  }))
+})
 
 const option = computed<EChartsOption>(() => ({
   grid: { top: 0, bottom: 0, left: '8%', right: '12%', containLabel: true },
@@ -34,12 +36,12 @@ const option = computed<EChartsOption>(() => ({
       formatter: (value: string, index: number) => `{a|NO.${index + 1}} ${value}`,
       rich: { a: { color: 'rgba(0,0,0,.6)' } },
     },
-    data: source.map(item => item.name),
+    data: source.value.map(item => item.name),
   },
   series: [
     {
       type: 'bar',
-      data: source.map(item => item.value),
+      data: source.value.map(item => item.value),
       realtimeSort: true,
       barWidth: 8,
       showBackground: true,
@@ -71,7 +73,7 @@ const option = computed<EChartsOption>(() => ({
       symbolSize: 16,
       z: 12,
       itemStyle: { color: colors[0], shadowColor: colors[0], shadowBlur: 10 },
-      data: source.map(item => ({ value: item.value, symbolPosition: 'end' })),
+      data: source.value.map(item => ({ value: item.value, symbolPosition: 'end' })),
     },
   ],
   animationDuration: 0,

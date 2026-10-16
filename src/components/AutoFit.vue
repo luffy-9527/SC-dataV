@@ -6,11 +6,13 @@ const props = withDefaults(
     designWidth?: number
     designHeight?: number
     fitMode?: 'stretch' | 'contain' | 'cover'
+    background?: string
   }>(),
   {
     designWidth: 1920,
     designHeight: 1080,
     fitMode: 'stretch',
+    background: undefined,
   },
 )
 
@@ -68,7 +70,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="autofit-viewport">
+  <div class="autofit-viewport" :style="background ? { background } : undefined">
     <div class="autofit-stage" :style="stageStyle">
       <slot />
     </div>
