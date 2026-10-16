@@ -493,60 +493,69 @@ function createDesertSandRippleTexture() {
 function createDeepEarthPlaqueTexture(): THREE.Texture {
   const canvas = document.createElement('canvas')
   canvas.width = 1024
-  canvas.height = 256
+  canvas.height = 360
   const ctx = canvas.getContext('2d')
   if (ctx) {
     // 洁白烤漆金属板底
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, 1024, 256)
+    ctx.fillRect(0, 0, 1024, 360)
 
-    // 红色外边框与内嵌金线
+    // 红色外边框与内嵌双层金线
     ctx.strokeStyle = '#dc2626'
-    ctx.lineWidth = 14
-    ctx.strokeRect(7, 7, 1010, 242)
+    ctx.lineWidth = 18
+    ctx.strokeRect(9, 9, 1006, 342)
 
     ctx.strokeStyle = '#f59e0b'
-    ctx.lineWidth = 4
-    ctx.strokeRect(18, 18, 988, 220)
+    ctx.lineWidth = 5
+    ctx.strokeRect(22, 22, 980, 316)
 
     // 左侧中石油宝石花标志 (CNPC Emblem)
-    const cx = 95
-    const cy = 128
+    const cx = 118
+    const cy = 180
     // 金黄色外花瓣
     ctx.fillStyle = '#eab308'
     ctx.beginPath()
-    ctx.arc(cx, cy, 48, 0, Math.PI * 2)
+    ctx.arc(cx, cy, 64, 0, Math.PI * 2)
     ctx.fill()
     // 红色内花瓣花朵
     ctx.fillStyle = '#dc2626'
     for (let p = 0; p < 8; p++) {
       const ang = (p * Math.PI) / 4
       ctx.beginPath()
-      ctx.arc(cx + Math.cos(ang) * 26, cy + Math.sin(ang) * 26, 18, 0, Math.PI * 2)
+      ctx.arc(cx + Math.cos(ang) * 36, cy + Math.sin(ang) * 36, 25, 0, Math.PI * 2)
       ctx.fill()
     }
     // 中心黄色五角星
     ctx.fillStyle = '#fde047'
     ctx.beginPath()
-    ctx.arc(cx, cy, 14, 0, Math.PI * 2)
+    ctx.arc(cx, cy, 20, 0, Math.PI * 2)
     ctx.fill()
 
-    // 主标题：“深 地 工 程” (大国重器醒目红字)
+    // 顶部红旗标识与单位小标
     ctx.fillStyle = '#dc2626'
-    ctx.font = 'bold 88px "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('深 地 工 程', 550, 96)
+    ctx.fillText('中国石油 TARIM OILFIELD · 深地科学探索工程', 580, 58)
+
+    // 主标题：“深 地 工 程” (大国重器醒目超大红字)
+    ctx.shadowColor = 'rgba(220, 38, 38, 0.25)'
+    ctx.shadowBlur = 12
+    ctx.shadowOffsetY = 4
+    ctx.fillStyle = '#dc2626'
+    ctx.font = '900 128px "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif'
+    ctx.fillText('深 地 工 程', 580, 165)
+    ctx.shadowColor = 'transparent'
 
     // 英文与工程编号副标
-    ctx.fillStyle = '#0369a1'
-    ctx.font = 'bold 24px "PingFang SC", "Microsoft YaHei", sans-serif'
-    ctx.fillText('万米特深井自动化钻机  DEEP EARTH DRILLING 12,000m', 550, 164)
+    ctx.fillStyle = '#0284c7'
+    ctx.font = 'bold 30px "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.fillText('万米特深井自动化钻机  DEEP EARTH DRILLING 12,000m', 580, 260)
 
     // 技术规格标注行
-    ctx.fillStyle = '#64748b'
-    ctx.font = '600 16px "SF Mono", monospace, sans-serif'
-    ctx.fillText('DESIGN DRILLING DEPTH: 12,000m | MAX HOOK LOAD: 1,000t | TORQUE: 100,000 N·m', 550, 204)
+    ctx.fillStyle = '#475569'
+    ctx.font = 'bold 20px "SF Mono", monospace, sans-serif'
+    ctx.fillText('DESIGN DRILLING DEPTH: 12,000m | MAX HOOK LOAD: 1,000t | TORQUE: 100,000 N·m', 580, 310)
   }
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
@@ -1449,68 +1458,90 @@ function buildDesertGroundAndInfrastructure() {
   markerGroup.add(domeAntenna)
   group.add(markerGroup)
 
-  // 5. 斜坡猫道 (Catwalk & V-door Ramp)
+  // 5. 现代重型液压动力猫道机 (Hydraulic Power Catwalk Machine with V-Trough & Pipe Skate)
+  // 彻底告别粗糙实心块：真实展现 API 自动化钻井液压送管机、V型喂料导槽与推管小车
   const catwalkGroup = new THREE.Group()
   catwalkGroup.position.set(-15, 0.2, 28)
 
-  const rampLen = 22
-  const rampGeo = new THREE.BoxGeometry(4.5, 0.6, rampLen)
-  const steelMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.25 })
-  const ramp = new THREE.Mesh(rampGeo, steelMat)
-  ramp.position.set(0, 5.2, -3)
-  ramp.rotation.x = -Math.PI / 7.5
-  catwalkGroup.add(ramp)
+  const catSteel = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.88, roughness: 0.28 })
+  const catBlue = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.78, roughness: 0.32 })
+  const catYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 })
+  const chromeCyl = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.96, roughness: 0.1 })
 
-  // 猫道黄色护栏
-  const railGeo = new THREE.BoxGeometry(0.2, 1.4, rampLen)
-  const yellowRail = new THREE.MeshStandardMaterial({ color: 0xf59e0b })
-  const rLeft = new THREE.Mesh(railGeo, yellowRail)
-  rLeft.position.set(-2.2, 5.9, -3)
-  rLeft.rotation.x = -Math.PI / 7.5
-  catwalkGroup.add(rLeft)
+  // A. 猫道重型底盘滑道工字主梁 (Base Skid Beam: 28m长)
+  for (const sx of [-1.5, 1.5]) {
+    const mainBeam = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 28), catSteel)
+    mainBeam.position.set(sx, 0.45, 11)
+    catwalkGroup.add(mainBeam)
+  }
 
-  const rRight = new THREE.Mesh(railGeo, yellowRail)
-  rRight.position.set(2.2, 5.9, -3)
-  rRight.rotation.x = -Math.PI / 7.5
-  catwalkGroup.add(rRight)
+  // B. 中心通长 V 型耐磨喂料导槽 (V-Trough Channel)
+  for (const va of [-1, 1]) {
+    const vPlate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.15, 26), catSteel)
+    vPlate.position.set(va * 0.55, 1.0, 12)
+    vPlate.rotation.z = va * (Math.PI / 5.5)
+    catwalkGroup.add(vPlate)
+  }
 
-  // 水平猫道
-  const flatCatwalk = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.2, 24), steelMat)
-  flatCatwalk.position.set(0, 0.6, 15)
-  catwalkGroup.add(flatCatwalk)
+  // C. 钻台端液压铰接举升坡道 (Elevating V-Door Ramp: 延伸至钻台 Y = 8.5)
+  const rampLen = 16
+  const rampArm = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.45, rampLen), catBlue)
+  rampArm.position.set(0, 4.4, -4.5)
+  rampArm.rotation.x = -Math.PI / 6.2
+  catwalkGroup.add(rampArm)
 
-  // 液压送管推管小车 (Hydraulic Pipe Shuttle Trolley)
-  const shuttleTrolley = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.65, 4.5), yellowRail)
-  shuttleTrolley.position.set(0, 1.35, 12)
-  catwalkGroup.add(shuttleTrolley)
+  // 坡道两侧黄色安全护手导轨
+  for (const rx of [-1.7, 1.7]) {
+    const rampRail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, rampLen), catYellow)
+    rampRail.position.set(rx, 5.1, -4.5)
+    rampRail.rotation.x = -Math.PI / 6.2
+    catwalkGroup.add(rampRail)
+  }
 
-  // 排管架与备用套管/钻杆柱 (Pipe Racks)
-  for (let side = -1; side <= 1; side += 2) {
-    const rackBase = new THREE.Mesh(new THREE.BoxGeometry(8, 1.4, 22), steelMat)
-    rackBase.position.set(side * 7, 0.7, 15)
-    catwalkGroup.add(rackBase)
+  // 双液压变幅举升大油缸 (Twin Heavy Hydraulic Lift Cylinders)
+  for (const cx of [-1.2, 1.2]) {
+    const cylBody = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.38, 5.5, 16), catSteel)
+    cylBody.position.set(cx, 2.4, -2.5)
+    cylBody.rotation.x = Math.PI / 5
+    catwalkGroup.add(cylBody)
 
-    // 管架防滚落安全挡销 (Safety Stop Pins)
-    for (let pz = 6; pz <= 24; pz += 9) {
-      const pin = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.2, 0.35), yellowRail)
-      pin.position.set(side * 10.8, 1.8, pz)
-      catwalkGroup.add(pin)
-    }
+    const cylRod = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 5.0, 16), chromeCyl)
+    cylRod.position.set(cx, 4.2, -4.5)
+    cylRod.rotation.x = Math.PI / 5
+    catwalkGroup.add(cylRod)
+  }
 
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 4; c++) {
-        const pipeCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 20, 8), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.95 }))
-        pipeCyl.rotation.x = Math.PI / 2
-        pipeCyl.position.set(side * (5 + c * 0.9), 1.8 + r * 0.7, 15)
-        catwalkGroup.add(pipeCyl)
+  // D. 液压送管推拔小车 (Pipe Skate Trolley)
+  const skateTrolley = new THREE.Group()
+  skateTrolley.position.set(0, 1.35, 6)
+  const skateBody = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 2.8), catYellow)
+  skateTrolley.add(skateBody)
+  // 顶推钩爪与托管槽
+  const skateHead = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.8, 0.6), catSteel)
+  skateHead.position.set(0, 0.5, -1.2)
+  skateTrolley.add(skateHead)
+  catwalkGroup.add(skateTrolley)
 
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.2, 8), new THREE.MeshBasicMaterial({ color: c % 2 === 0 ? 0x0284c7 : 0xf59e0b }))
-        cap.rotation.x = Math.PI / 2
-        cap.position.set(side * (5 + c * 0.9), 1.8 + r * 0.7, 24)
-        catwalkGroup.add(cap)
-      }
+  // E. 两侧液压翻管臂/翻料踢杆组 (Hydraulic Pipe Kickers & Indexers: 拨管入槽)
+  for (let kz = 2; kz <= 22; kz += 5) {
+    for (const kx of [-1.8, 1.8]) {
+      const kickerArm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.25, 0.35), catYellow)
+      kickerArm.position.set(kx > 0 ? kx + 0.35 : kx - 0.35, 1.15, kz)
+      kickerArm.rotation.z = kx > 0 ? -0.35 : 0.35
+      catwalkGroup.add(kickerArm)
     }
   }
+
+  // F. 猫道尾端独立的液压集成动力泵站 (HPU Power Pack Skid)
+  const hpuBox = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.2, 3.2), catBlue)
+  hpuBox.position.set(0, 1.1, 26)
+  catwalkGroup.add(hpuBox)
+
+  const hpuMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.6, 14), catSteel)
+  hpuMotor.rotation.x = Math.PI / 2
+  hpuMotor.position.set(0, 2.4, 26)
+  catwalkGroup.add(hpuMotor)
+
   group.add(catwalkGroup)
 
   scene.add(group)
@@ -2522,12 +2553,29 @@ function buildDerrickAssembly() {
   rotaryCenter.position.set(0, floorH + 0.15, 0)
   rigGroup.add(rotaryCenter)
 
-  // 钻台四周安全防护围栏 (Safety Handrails)
-  for (const side of [-1, 1]) {
-    const railX = new THREE.Mesh(new THREE.BoxGeometry(floorW, 1.6, 0.15), yellowSafety)
-    railX.position.set(0, floorH + 0.8, side * (floorW / 2 - 0.2))
-    rigGroup.add(railX)
+  // 钻台四周安全防护围栏 (Safety Handrails - 正面开辟 4.8m 宽标准 V-Door 提管大门开口)
+  const vDoorGap = 4.8
+  const halfWingW = (floorW - vDoorGap) / 2
 
+  // 背面完整护栏 (side = -1)
+  const backRail = new THREE.Mesh(new THREE.BoxGeometry(floorW, 1.6, 0.15), yellowSafety)
+  backRail.position.set(0, floorH + 0.8, -(floorW / 2 - 0.2))
+  rigGroup.add(backRail)
+
+  // 正面左右双翼护栏 (side = 1)，中间空出 4.8m V-Door 大门
+  for (const wingSide of [-1, 1]) {
+    const frontWing = new THREE.Mesh(new THREE.BoxGeometry(halfWingW, 1.6, 0.15), yellowSafety)
+    frontWing.position.set(wingSide * (vDoorGap / 2 + halfWingW / 2), floorH + 0.8, floorW / 2 - 0.2)
+    rigGroup.add(frontWing)
+
+    // V-Door 开口端部立柱防撞警示挡铁
+    const postStop = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 1.8, 8), darkMetal)
+    postStop.position.set(wingSide * (vDoorGap / 2), floorH + 0.9, floorW / 2 - 0.2)
+    rigGroup.add(postStop)
+  }
+
+  // 左右两侧护栏
+  for (const side of [-1, 1]) {
     const railZ = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.6, floorW), yellowSafety)
     railZ.position.set(side * (floorW / 2 - 0.2), floorH + 0.8, 0)
     rigGroup.add(railZ)
@@ -2854,7 +2902,7 @@ function buildDerrickAssembly() {
 
     // 水平承重拉梁 (Horizontal Girts)
     for (const face of [1, 2, 3]) {
-      const hBar = new THREE.Mesh(new THREE.BoxGeometry(wMid, 0.65, 0.65), tMat)
+      const hBar = new THREE.Mesh(new THREE.BoxGeometry(wMid, 0.85, 0.85), tMat)
       if (face === 1) hBar.position.set(0, yMid, -wMid / 2)
       if (face === 2) {
         hBar.rotation.y = Math.PI / 2
@@ -2866,7 +2914,7 @@ function buildDerrickAssembly() {
       }
       tower.add(hBar)
 
-      // K 型斜撑杆件
+      // K 型斜撑杆件 (采用 0.45m 大口径承压钢管)
       let pTopL = new THREE.Vector3(), pTopR = new THREE.Vector3()
       let pBtmL = new THREE.Vector3(), pBtmR = new THREE.Vector3()
       let pCenter = new THREE.Vector3()
@@ -2891,31 +2939,40 @@ function buildDerrickAssembly() {
         pCenter.set(-wMid / 2, yMid, 0)
       }
 
-      createStrut(tower, pBtmL, pCenter, tMat)
-      createStrut(tower, pBtmR, pCenter, tMat)
-      createStrut(tower, pTopL, pCenter, tMat)
-      createStrut(tower, pTopR, pCenter, tMat)
+      createStrut(tower, pBtmL, pCenter, tMat, 0.45)
+      createStrut(tower, pBtmR, pCenter, tMat, 0.45)
+      createStrut(tower, pTopL, pCenter, tMat, 0.45)
+      createStrut(tower, pTopR, pCenter, tMat, 0.45)
     }
 
-    // 正面开口侧仅在顶部层加一根高空横梁加强整体抗扭刚度
+    // 正面开口侧：Tier 0 设置重型 V 门人字形大门框构架 (V-Door A-Frame Portal)
+    if (t === 0) {
+      createStrut(tower, new THREE.Vector3(-w0 / 2, 0, w0 / 2), new THREE.Vector3(-w1 * 0.35, y1, w1 / 2), tMat, 0.55)
+      createStrut(tower, new THREE.Vector3(w0 / 2, 0, w0 / 2), new THREE.Vector3(w1 * 0.35, y1, w1 / 2), tMat, 0.55)
+      const archTop = new THREE.Mesh(new THREE.BoxGeometry(w1 * 0.72, 0.85, 0.85), tMat)
+      archTop.position.set(0, y1, w1 / 2)
+      tower.add(archTop)
+    }
+
+    // 正面开口侧顶部层加设高空横梁加强整体抗扭刚度
     if (t >= tiers - 2) {
-      const frontBar = new THREE.Mesh(new THREE.BoxGeometry(w1, 0.65, 0.65), tMat)
+      const frontBar = new THREE.Mesh(new THREE.BoxGeometry(w1, 0.85, 0.85), tMat)
       frontBar.position.set(0, y1, w1 / 2)
       tower.add(frontBar)
     }
 
-    // 在 Tier 2 正面悬挂醒目的“深地工程”大国重器铭牌！(复刻图三)
+    // 在 Tier 2 正面悬挂醒目的超大“深地工程”大国重器铭牌！(复刻图三：高 5.4m，气势恢宏)
     if (t === 2) {
-      const plaqueW = wMid * 0.94
-      const plaqueH = 3.6
+      const plaqueW = wMid * 0.96
+      const plaqueH = 5.4
       const plaqueTex = createDeepEarthPlaqueTexture()
       const plaqueMat = new THREE.MeshBasicMaterial({ map: plaqueTex, side: THREE.DoubleSide })
       const plaque = new THREE.Mesh(new THREE.PlaneGeometry(plaqueW, plaqueH), plaqueMat)
-      plaque.position.set(0, yMid, wMid / 2 + 0.15)
+      plaque.position.set(0, yMid, wMid / 2 + 0.18)
       tower.add(plaque)
 
-      const plaqueBacking = new THREE.Mesh(new THREE.BoxGeometry(plaqueW + 0.2, plaqueH + 0.2, 0.16), darkMetal)
-      plaqueBacking.position.set(0, yMid, wMid / 2 + 0.05)
+      const plaqueBacking = new THREE.Mesh(new THREE.BoxGeometry(plaqueW + 0.25, plaqueH + 0.25, 0.2), darkMetal)
+      plaqueBacking.position.set(0, yMid, wMid / 2 + 0.06)
       tower.add(plaqueBacking)
     }
   }
@@ -3264,9 +3321,9 @@ function buildDerrickAssembly() {
   scene.add(rigGroup)
 }
 
-function createStrut(parent: THREE.Group, p1: THREE.Vector3, p2: THREE.Vector3, mat: THREE.Material) {
+function createStrut(parent: THREE.Group, p1: THREE.Vector3, p2: THREE.Vector3, mat: THREE.Material, radius = 0.35) {
   const dist = p1.distanceTo(p2)
-  const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, dist, 6), mat)
+  const strut = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, dist, 8), mat)
   const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
   strut.position.copy(mid)
   strut.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize())
@@ -3275,7 +3332,7 @@ function createStrut(parent: THREE.Group, p1: THREE.Vector3, p2: THREE.Vector3, 
 
 function createCornerLeg(parent: THREE.Group, p1: THREE.Vector3, p2: THREE.Vector3, mat: THREE.Material) {
   const dist = p1.distanceTo(p2)
-  const leg = new THREE.Mesh(new THREE.BoxGeometry(1.1, dist, 1.1), mat)
+  const leg = new THREE.Mesh(new THREE.BoxGeometry(1.35, dist, 1.35), mat)
   const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
   leg.position.copy(mid)
   leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize())
@@ -3288,8 +3345,8 @@ function createCornerLeg(parent: THREE.Group, p1: THREE.Vector3, p2: THREE.Vecto
 function buildVerticalAccumulatorTanks() {
   if (!scene) return
   const tanksGroup = new THREE.Group()
-  // 位于基台表面 (Y = 2.75)，排布在井架正前方 (Z = 16.5)
-  tanksGroup.position.set(0, 2.75, 16.5)
+  // 位于基台表面 (Y = 2.75)，排布在井架西翼底座前沿 (X = -27.5, Z = 14.5)，完美契合泥浆流线、不挡猫道中轴
+  tanksGroup.position.set(-27.5, 2.75, 14.5)
 
   const tankMat = new THREE.MeshStandardMaterial({
     color: 0x94a3b8, // 工业浅灰涂装
@@ -3324,9 +3381,9 @@ function buildVerticalAccumulatorTanks() {
   })
 
   const tankCount = 5
-  const spacing = 4.2
-  const startX = -15 - ((tankCount - 1) * spacing) / 2 // 以井架中心 X = -15 对齐
-  const tankRadius = 1.45
+  const spacing = 3.2
+  const startX = -((tankCount - 1) * spacing) / 2 // 相对 tanksGroup 中心居中排布
+  const tankRadius = 1.35
   const tankH = 8.5
 
   // 1. 5 座立式储罐单体
@@ -3397,24 +3454,24 @@ function buildVerticalAccumulatorTanks() {
   // 2. 贯穿 5 座立罐顶部的联动巡检走道桥与安全护栏 (Gangway Walkway)
   const walkwayW = tankCount * spacing + 1.2
   const walkwayFloor = new THREE.Mesh(new THREE.BoxGeometry(walkwayW, 0.18, 1.4), baseMat)
-  walkwayFloor.position.set(-15, 0.7 + tankH + 0.1, 0)
+  walkwayFloor.position.set(0, 0.7 + tankH + 0.1, 0)
   tanksGroup.add(walkwayFloor)
 
   for (const rz of [-0.7, 0.7]) {
     const wRail = new THREE.Mesh(new THREE.BoxGeometry(walkwayW, 1.2, 0.08), yellowSafety)
-    wRail.position.set(-15, 0.7 + tankH + 0.7, rz)
+    wRail.position.set(0, 0.7 + tankH + 0.7, rz)
     tanksGroup.add(wRail)
   }
 
   // 3. 罐间相互联通的高压泥浆汇流大管与气平衡管
   const mudPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, walkwayW, 16), chromeMat)
   mudPipe.rotation.z = Math.PI / 2
-  mudPipe.position.set(-15, 2.2, 0)
+  mudPipe.position.set(0, 2.2, 0)
   tanksGroup.add(mudPipe)
 
   const gasPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, walkwayW, 16), chromeMat)
   gasPipe.rotation.z = Math.PI / 2
-  gasPipe.position.set(-15, 0.7 + tankH - 0.5, 0)
+  gasPipe.position.set(0, 0.7 + tankH - 0.5, 0)
   tanksGroup.add(gasPipe)
 
   scene.add(tanksGroup)
@@ -3717,12 +3774,12 @@ function buildIconicSloganBillboards() {
     return bb
   }
 
-  // 左牌楼：面向主干道入场方向
-  const b1 = createBillboardRig(mat1, 0.08, new THREE.Vector3(-28, 0.2, 58))
+  // 左牌楼：面向主干道入场大门通道西侧 (Z = 82，开阔大气、不遮挡钻井核心)
+  const b1 = createBillboardRig(mat1, 0.05, new THREE.Vector3(-38, 0.2, 82))
   sloganGroup.add(b1)
 
-  // 右牌楼：对称矗立于大道右侧
-  const b2 = createBillboardRig(mat2, -0.12, new THREE.Vector3(16, 0.2, 64))
+  // 右牌楼：对称矗立于大道东侧 (Z = 86，与左牌楼形成宏伟迎宾通道)
+  const b2 = createBillboardRig(mat2, -0.05, new THREE.Vector3(14, 0.2, 86))
   sloganGroup.add(b2)
 
   scene.add(sloganGroup)
@@ -3836,18 +3893,18 @@ function buildHeavyPipeStorageYards() {
     return rack
   }
 
-  // 1. 西排管堆场 (West Pipe Yard: 猫道西侧)
-  const yard1 = createPipeRack(new THREE.Vector3(-31, 0.2, 36), -0.05)
+  // 1. 西排管堆场 (West Pipe Yard: 猫道西侧，完美平行对齐)
+  const yard1 = createPipeRack(new THREE.Vector3(-27, 0.2, 34), 0)
   yardGroup.add(yard1)
 
-  const yard2 = createPipeRack(new THREE.Vector3(-31, 0.2, 51), -0.05)
+  const yard2 = createPipeRack(new THREE.Vector3(-27, 0.2, 49), 0)
   yardGroup.add(yard2)
 
-  // 2. 东排管堆场 (East Pipe Yard: 猫道东侧近大道)
-  const yard3 = createPipeRack(new THREE.Vector3(0, 0.2, 38), 0.06)
+  // 2. 东排管堆场 (East Pipe Yard: 猫道东侧，对称呼应)
+  const yard3 = createPipeRack(new THREE.Vector3(-3, 0.2, 34), 0)
   yardGroup.add(yard3)
 
-  const yard4 = createPipeRack(new THREE.Vector3(0, 0.2, 53), 0.06)
+  const yard4 = createPipeRack(new THREE.Vector3(-3, 0.2, 49), 0)
   yardGroup.add(yard4)
 
   scene.add(yardGroup)
@@ -4314,8 +4371,8 @@ function buildSpecialFleet() {
 
   // 1. 重型越野起重机吊车 (Heavy Mobile Crane with 3-Stage Telescopic Boom & Double Sheave Block)
   const craneGroup = new THREE.Group()
-  craneGroup.position.set(-36, 0.2, 44)
-  craneGroup.rotation.y = Math.PI / 5.5
+  craneGroup.position.set(-44, 0.2, 38) // 位于西排管堆场外侧设备通道，起吊姿态开阔无遮挡
+  craneGroup.rotation.y = Math.PI / 4.2
 
   // 车架重型箱形工字大梁底盘与保险杠
   const craneChassis = new THREE.Mesh(new THREE.BoxGeometry(8.4, 2.2, 19), truckYellow)
@@ -5753,23 +5810,81 @@ function buildPumpingUnit() {
 
   pumpGroup.add(pcpSkid)
 
-  // 15. 抽油机旋转曲柄安全防护围栏与警示牌 (Crank Guard Security Fence)
+  // 15. 抽油机旋转曲柄安全防护围栏与钢网护罩 (API RP 11G Tubular Steel Wire Mesh Crank Guards)
+  // 彻底淘汰生硬实心长方体板：真实还原框架方管立柱、密排防绞钢丝网格与警示标牌
   const fenceGroup = new THREE.Group()
-  for (const fz of [-5.8, 5.8]) {
-    const fPanel = new THREE.Mesh(new THREE.BoxGeometry(14, 2.6, 0.1), hazardYellow)
-    fPanel.position.set(-9.5, 2.6, fz)
-    fenceGroup.add(fPanel)
+  const guardYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 })
+  const guardMeshMat = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true, transparent: true, opacity: 0.85 })
+  const toeBoardMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
 
-    for (const fx of [-16.5, -9.5, -2.5]) {
-      const fPost = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.8, 8), heavySteel)
-      fPost.position.set(fx, 1.9, fz)
-      fenceGroup.add(fPost)
+  for (const fz of [-5.8, 5.8]) {
+    const singleGuard = new THREE.Group()
+
+    // A. 顶部与底部重型方钢主导轨 (Top & Bottom Frame Rails)
+    for (const ry of [1.0, 4.4]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(14.8, 0.22, 0.22), guardYellow)
+      rail.position.set(-9.5, ry, fz)
+      singleGuard.add(rail)
     }
 
-    const sign = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 0.15), new THREE.MeshBasicMaterial({ color: 0xfacc15 }))
-    sign.position.set(-9.5, 2.8, fz + (fz > 0 ? 0.08 : -0.08))
-    fenceGroup.add(sign)
+    // B. 5 根加重矩形方管承载立柱 (Vertical Tubular Posts)
+    for (let px = -16.5; px <= -2.5; px += 3.5) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.2, 0.25), guardYellow)
+      post.position.set(px, 2.3, fz)
+      singleGuard.add(post)
+
+      // 立柱底座接地法兰盘
+      const postFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.15, 8), heavySteel)
+      postFlange.position.set(px, 0.25, fz)
+      singleGuard.add(postFlange)
+    }
+
+    // C. 底部安全防踢挡板 (Industrial Toe Board)
+    const toeBoard = new THREE.Mesh(new THREE.BoxGeometry(14.6, 0.6, 0.08), toeBoardMat)
+    toeBoard.position.set(-9.5, 0.6, fz)
+    singleGuard.add(toeBoard)
+
+    // D. 中间防机械绞伤微孔钢丝网面 (Steel Wire Safety Mesh - 告别实心板，呈现通透安全网)
+    const meshPlane = new THREE.Mesh(new THREE.PlaneGeometry(14.4, 3.2, 18, 6), guardMeshMat)
+    meshPlane.position.set(-9.5, 2.7, fz)
+    singleGuard.add(meshPlane)
+
+    // E. 对角线抗剪防扭斜撑拉条 (Diagonal Reinforcement Braces)
+    for (let bx = -16.5; bx < -2.5; bx += 3.5) {
+      const braceGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(bx, 1.0, fz),
+        new THREE.Vector3(bx + 3.5, 4.4, fz),
+      ])
+      const braceLine = new THREE.Line(braceGeo, new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 2 }))
+      singleGuard.add(braceLine)
+    }
+
+    // F. 标准黄黑危险警示标志牌 (Danger Hazard Warning Sign: "当心机械伤人")
+    const signBoard = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.2, 0.14), guardYellow)
+    signBoard.position.set(-9.5, 3.0, fz + (fz > 0 ? 0.12 : -0.12))
+    singleGuard.add(signBoard)
+
+    const signInner = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.95, 0.16), castIron)
+    signInner.position.set(-9.5, 3.0, fz + (fz > 0 ? 0.13 : -0.13))
+    singleGuard.add(signInner)
+
+    const signDecal = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.7), new THREE.MeshBasicMaterial({ color: 0xfacc15 }))
+    signDecal.position.set(-9.5, 3.0, fz + (fz > 0 ? 0.22 : -0.22))
+    if (fz < 0) signDecal.rotation.y = Math.PI
+    singleGuard.add(signDecal)
+
+    fenceGroup.add(singleGuard)
   }
+
+  // G. 尾部防卷入半圆围挡隔栅 (Rear Safety Barrier linking both sides at X = -16.5)
+  const rearArc = new THREE.Mesh(
+    new THREE.CylinderGeometry(5.8, 5.8, 3.4, 16, 1, true, -Math.PI / 2, Math.PI),
+    new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true, transparent: true, opacity: 0.65 })
+  )
+  rearArc.position.set(-16.5, 2.7, 0)
+  rearArc.rotation.z = Math.PI / 2
+  fenceGroup.add(rearArc)
+
   pumpGroup.add(fenceGroup)
 
   // 16. 抽油机智能变频驱动控制柜 (Pumping Unit VFD Cabinet)
@@ -6528,47 +6643,70 @@ function buildTelemetryBadges() {
   if (!scene) return
 
   const badges = [
-    { text: '泥浆循环固控中心', value: '流量: 48.5L/s · 泵压24MPa', pos: [-52, 14, 8], target: [-52, 2, 8], color: '#38bdf8' },
-    { text: '固井混浆泵车总成', value: '水泥密度: 1.92g/cm³ · 正常', pos: [-42, 12, -28], target: [-42, 2, -28], color: '#f59e0b' },
-    { text: '测井绞车电测站', value: '深度: 3,852m · 电测联调', pos: [18, 12, -32], target: [18, 2, -32], color: '#10b981' },
-    { text: '3# 游梁式抽油机', value: '示功图正常 · 稳产中', pos: [42, 34, 18], target: [34, 22, 10], color: '#38bdf8' },
-    { text: 'MWD随钻测井探针', value: '井斜: 0.82° · 方位124°', pos: [-46, -38, 14], target: [-15, -42, 2], color: '#00f0ff' },
+    { text: '泥浆循环固控中心', value: '流量: 48.5L/s · 泵压24MPa', pos: [-56, 18, 10], target: [-44, 4.0, 10], color: '#38bdf8' },
+    { text: '固井混浆泵车总成', value: '水泥密度: 1.92g/cm³ · 正常', pos: [-46, 17, -32], target: [-38, 3.8, -26], color: '#f59e0b' },
+    { text: '测井绞车电测站', value: '深度: 3,852m · 电测联调', pos: [24, 18, -34], target: [18, 3.8, -28], color: '#10b981' },
+    { text: '3# 游梁式抽油机', value: '示功图正常 · 稳产中', pos: [48, 30, 14], target: [34, 21.0, 10], color: '#38bdf8' },
+    { text: 'MWD随钻测井探针', value: '井斜: 0.82° · 方位124°', pos: [-48, -36, 12], target: [-15, -42, 2], color: '#00f0ff' },
   ]
 
   badges.forEach(b => {
     const canvas = document.createElement('canvas')
-    canvas.width = 380
-    canvas.height = 110
+    canvas.width = 340
+    canvas.height = 92
     const ctx = canvas.getContext('2d')
     if (ctx) {
-      ctx.fillStyle = 'rgba(10, 28, 48, 0.94)'
-      ctx.fillRect(0, 0, 380, 110)
+      // 科技感半透明深蓝玻璃背景
+      ctx.fillStyle = 'rgba(8, 24, 42, 0.92)'
+      ctx.fillRect(0, 0, 340, 92)
+
+      // 边框发光倒角
       ctx.strokeStyle = b.color
-      ctx.lineWidth = 4
-      ctx.strokeRect(4, 4, 372, 102)
+      ctx.lineWidth = 3
+      ctx.strokeRect(3, 3, 334, 86)
+
+      // 左侧高亮色标条
       ctx.fillStyle = b.color
-      ctx.fillRect(8, 8, 8, 94)
+      ctx.fillRect(6, 6, 6, 80)
+
+      // 标题文本
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 26px sans-serif'
-      ctx.fillText(b.text, 28, 44)
+      ctx.font = 'bold 24px sans-serif'
+      ctx.fillText(b.text, 24, 38)
+
+      // 遥测数据文本
       ctx.fillStyle = b.color
-      ctx.font = '18px monospace'
-      ctx.fillText(b.value, 28, 84)
+      ctx.font = '16px monospace'
+      ctx.fillText(b.value, 24, 72)
     }
 
     const tex = new THREE.CanvasTexture(canvas)
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }))
     sprite.position.set(b.pos[0], b.pos[1], b.pos[2])
-    sprite.scale.set(18, 5.5, 1)
+    sprite.scale.set(12.8, 3.5, 1) // 适度缩紧尺寸，杜绝拥挤遮挡
     scene?.add(sprite)
 
-    const endPos = b.target || [b.pos[0], b.pos[1] - 12, b.pos[2]]
+    // 精致折线引线与落地点光环
+    const endPos = b.target
+    const midY = b.pos[1] - 3.5
     const lineGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(b.pos[0], b.pos[1] - 2.5, b.pos[2]),
-      new THREE.Vector3(endPos[0], endPos[1], endPos[2])
+      new THREE.Vector3(b.pos[0], b.pos[1] - 1.8, b.pos[2]),
+      new THREE.Vector3(b.pos[0], midY, b.pos[2]),
+      new THREE.Vector3(endPos[0], endPos[1], endPos[2]),
     ])
-    const guideLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(b.color), transparent: true, opacity: 0.7 }))
+    const guideLine = new THREE.Line(
+      lineGeo,
+      new THREE.LineBasicMaterial({ color: new THREE.Color(b.color), transparent: true, opacity: 0.65 })
+    )
     scene?.add(guideLine)
+
+    // 落地点精密小光圈
+    const ringGeo = new THREE.RingGeometry(0.5, 0.8, 16)
+    const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(b.color), side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat)
+    ringMesh.rotation.x = -Math.PI / 2
+    ringMesh.position.set(endPos[0], endPos[1] + 0.05, endPos[2])
+    scene?.add(ringMesh)
   })
 }
 
