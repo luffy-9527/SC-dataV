@@ -5,7 +5,7 @@ import { OrbitControls } from '@tresjs/cientos'
 import { MOUSE, Vector3 } from 'three'
 import { useDemo1Store } from '../stores'
 import Lights from './lights.vue'
-import Scene from './Scene.vue'
+import Scene from './scene.vue'
 import DebugPanel from './DebugPanel.vue'
 
 const store = useDemo1Store()
