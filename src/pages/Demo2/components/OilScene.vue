@@ -350,61 +350,103 @@ function setupDesertLighting() {
 // -------------------------------------------------------------
 function createSkyDomeTexture() {
   const canvas = document.createElement('canvas')
-  canvas.width = 1024
-  canvas.height = 512
+  canvas.width = 2048
+  canvas.height = 1024
   const ctx = canvas.getContext('2d')
   if (ctx) {
-    // 1. 真实大漠白昼与暮霭天空色阶梯度 (高空清朗淡蓝灰 -> 暖霞金光 -> 地平线沙尘雾霭)
-    const grad = ctx.createLinearGradient(0, 0, 0, 512)
-    grad.addColorStop(0.0, '#3a5775') // 天顶清朗灰蓝
-    grad.addColorStop(0.25, '#517493') // 中天淡蓝
-    grad.addColorStop(0.50, '#829eb6') // 晨光与暮气过渡天幕
-    grad.addColorStop(0.70, '#b89d81') // 大漠扬沙漫射暖金
-    grad.addColorStop(0.85, '#d6ba94') // 暖赭地平线低空
-    grad.addColorStop(0.95, '#e5d0b2') // 贴近地平线沙尘高亮晕带
-    grad.addColorStop(1.0, '#c7a77f') // 无缝交融地表金黄沙丘海
+    // 1. 真实大漠塔克拉玛干黄昏大片色阶梯度 (深邃蓝紫天顶 -> 金紫晚霞 -> 炽盛金红落日 -> 暖赭沙海交融)
+    const grad = ctx.createLinearGradient(0, 0, 0, 1024)
+    grad.addColorStop(0.0, '#152232') // 天顶深邃静谧蓝紫
+    grad.addColorStop(0.20, '#263b50') // 高空冷暖交界过渡
+    grad.addColorStop(0.42, '#5d4157') // 中天紫霞云带
+    grad.addColorStop(0.60, '#9e5233') // 绚烂赤金晚霞层
+    grad.addColorStop(0.75, '#cb702a') // 炽盛金橙辐射带
+    grad.addColorStop(0.86, '#e09848') // 低空落日余晖金黄
+    grad.addColorStop(0.93, '#eed29d') // 贴近地平线沙尘漫射亮金弧
+    grad.addColorStop(1.0, '#ba8a59') // 无缝融入大漠地表金黄沙垄
     ctx.fillStyle = grad
-    ctx.fillRect(0, 0, 1024, 512)
+    ctx.fillRect(0, 0, 2048, 1024)
 
-    // 2. 远方耀阳漫射光晕 (Desert Sun Glow) - 位于大漠西北方向 (X: 380, Y: 320)
-    const sunGlow = ctx.createRadialGradient(380, 320, 10, 380, 320, 320)
-    sunGlow.addColorStop(0.0, 'rgba(255, 252, 240, 0.95)') // 炽盛白金色沙漠耀阳
-    sunGlow.addColorStop(0.18, 'rgba(254, 240, 199, 0.75)') // 暖白辐射环
-    sunGlow.addColorStop(0.45, 'rgba(245, 208, 142, 0.35)') // 金黄沙尘漫射圈
-    sunGlow.addColorStop(0.8, 'rgba(217, 180, 130, 0.12)') // 柔光过渡
+    // 2. 西北方向落日核心与壮观暮光辐射光芒 (Crepuscular Twilight Sun Rays)
+    const sunX = 760
+    const sunY = 640
+
+    // 放射状云隙光束 (God Rays)
+    for (let r = 0; r < 24; r++) {
+      const rayAngle = (r * Math.PI) / 12 + 0.1
+      ctx.save()
+      ctx.translate(sunX, sunY)
+      ctx.rotate(rayAngle)
+      const rayGrad = ctx.createLinearGradient(0, 0, 900, 0)
+      const rayOpacity = 0.08 + Math.sin(r * 2.3) * 0.05
+      rayGrad.addColorStop(0, `rgba(255, 240, 200, ${rayOpacity * 2.0})`)
+      rayGrad.addColorStop(0.4, `rgba(251, 191, 36, ${rayOpacity})`)
+      rayGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+      ctx.fillStyle = rayGrad
+      ctx.beginPath()
+      ctx.moveTo(0, -18)
+      ctx.lineTo(850, -45)
+      ctx.lineTo(850, 45)
+      ctx.lineTo(0, 18)
+      ctx.closePath()
+      ctx.fill()
+      ctx.restore()
+    }
+
+    // 炽盛日光辐射晕
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 15, sunX, sunY, 600)
+    sunGlow.addColorStop(0.0, 'rgba(255, 255, 245, 0.98)')
+    sunGlow.addColorStop(0.12, 'rgba(254, 243, 199, 0.85)')
+    sunGlow.addColorStop(0.35, 'rgba(245, 158, 11, 0.42)')
+    sunGlow.addColorStop(0.70, 'rgba(217, 119, 6, 0.15)')
     sunGlow.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)')
     ctx.fillStyle = sunGlow
-    ctx.fillRect(0, 0, 1024, 512)
+    ctx.fillRect(0, 0, 2048, 1024)
 
-    // 3. 高空大漠飘逸薄卷云 (Cirrus Clouds)
-    for (let i = 0; i < 7; i++) {
-      const cy = 180 + i * 26 + Math.sin(i * 1.7) * 8
-      const cGrad = ctx.createLinearGradient(0, cy - 10, 0, cy + 10)
-      const cloudAlpha = 0.12 + (i % 3) * 0.06
-      cGrad.addColorStop(0, `rgba(255, 255, 255, 0)`)
-      cGrad.addColorStop(0.5, `rgba(254, 243, 199, ${cloudAlpha})`)
-      cGrad.addColorStop(1, `rgba(255, 255, 255, 0)`)
+    // 3. 高空层次丰富的金紫大漠透视卷积云霞 (Layered Cirrocumulus Clouds)
+    for (let i = 0; i < 12; i++) {
+      const cy = 340 + i * 42 + Math.sin(i * 1.5) * 16
+      const cGrad = ctx.createLinearGradient(0, cy - 20, 0, cy + 20)
+      const alpha = 0.16 + (i % 4) * 0.07
+      const isGolden = i > 5
+      const cloudColor = isGolden ? `251, 191, 36` : `244, 114, 182`
+      cGrad.addColorStop(0, `rgba(${cloudColor}, 0)`)
+      cGrad.addColorStop(0.5, `rgba(${cloudColor}, ${alpha})`)
+      cGrad.addColorStop(1, `rgba(${cloudColor}, 0)`)
       ctx.fillStyle = cGrad
 
       ctx.beginPath()
       ctx.moveTo(0, cy)
-      for (let x = 0; x <= 1024; x += 32) {
-        const wave = Math.sin(x * 0.008 + i * 1.2) * 8 + Math.cos(x * 0.02 + i) * 4
+      for (let x = 0; x <= 2048; x += 48) {
+        const wave = Math.sin(x * 0.005 + i * 1.1) * 14 + Math.cos(x * 0.015 + i) * 8
         ctx.lineTo(x, cy + wave)
       }
-      ctx.lineTo(1024, cy + 16)
-      ctx.lineTo(0, cy + 16)
+      ctx.lineTo(2048, cy + 30)
+      ctx.lineTo(0, cy + 30)
       ctx.closePath()
       ctx.fill()
     }
 
-    // 4. 地平线沙尘低空漫射光弧 (Horizon Sand Dust Haze Ring)
-    const hazeGrad = ctx.createLinearGradient(0, 460, 0, 512)
-    hazeGrad.addColorStop(0, 'rgba(232, 210, 178, 0.15)')
-    hazeGrad.addColorStop(0.5, 'rgba(216, 186, 148, 0.45)')
-    hazeGrad.addColorStop(1, 'rgba(199, 167, 127, 0.25)')
+    // 4. 地平线远山剪影与雅丹风蚀山脊脉络 (Distant Mountain Silhouettes)
+    ctx.fillStyle = 'rgba(74, 38, 26, 0.75)'
+    ctx.beginPath()
+    ctx.moveTo(0, 890)
+    for (let x = 0; x <= 2048; x += 32) {
+      const mH = Math.sin(x * 0.003) * 45 + Math.cos(x * 0.008) * 22 + Math.sin(x * 0.018) * 12
+      ctx.lineTo(x, 880 - mH)
+    }
+    ctx.lineTo(2048, 1024)
+    ctx.lineTo(0, 1024)
+    ctx.closePath()
+    ctx.fill()
+
+    // 5. 贴地近层金色沙尘晚霞漫射带 (Horizon Dust Haze Ring)
+    const hazeGrad = ctx.createLinearGradient(0, 920, 0, 1024)
+    hazeGrad.addColorStop(0, 'rgba(238, 210, 157, 0.25)')
+    hazeGrad.addColorStop(0.6, 'rgba(224, 152, 72, 0.65)')
+    hazeGrad.addColorStop(1.0, 'rgba(186, 138, 89, 0.45)')
     ctx.fillStyle = hazeGrad
-    ctx.fillRect(0, 460, 1024, 52)
+    ctx.fillRect(0, 920, 2048, 104)
   }
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -2232,11 +2274,13 @@ function buildDesertStratumAndWellbore() {
   reservoirGeo.computeVertexNormals()
 
   const oilFluidMat = new THREE.MeshStandardMaterial({
-    color: 0x1f0f04, // 深邃黑金重质原油
-    roughness: 0.16, // 强烈的湿润反射高光
-    metalness: 0.92,
+    color: 0x1a0c03, // 深邃黑金重质原油基底
+    emissive: 0x451a03, // 内部深沉原油地温温润微光
+    emissiveIntensity: 0.5,
+    roughness: 0.12, // 极致湿润镜面反射高光
+    metalness: 0.94,
     transparent: true,
-    opacity: 0.68,
+    opacity: 0.76,
     depthWrite: false,
   })
   oilReservoirFluidMesh = new THREE.Mesh(reservoirGeo, oilFluidMat)
@@ -2247,11 +2291,13 @@ function buildDesertStratumAndWellbore() {
   // 内部高饱和富油琥珀流光核心 (High-Saturation Amber Oil Core)
   const coreGeo = new THREE.CylinderGeometry(25, 29, 9, 36)
   const coreMat = new THREE.MeshStandardMaterial({
-    color: 0x9a3412, // 琥珀原油流金微相
-    roughness: 0.24,
-    metalness: 0.88,
+    color: 0xb45309, // 琥珀原油流金微相
+    emissive: 0x92400e, // 琥珀原油高亮自发光核心
+    emissiveIntensity: 0.75,
+    roughness: 0.18,
+    metalness: 0.85,
     transparent: true,
-    opacity: 0.38,
+    opacity: 0.52,
     depthWrite: false,
   })
   const oilCoreMesh = new THREE.Mesh(coreGeo, coreMat)
@@ -2488,6 +2534,56 @@ function buildDesertStratumAndWellbore() {
     droplet.position.set(strataWestX + 2.1, btmY - 0.25, tz)
     group.add(droplet)
   })
+
+  // 9. 数字孪生智能地下地质透明勘探剖切窗口与透视引导激光 (Digital Twin Seismic Slice Window)
+  // 解决地表实心地面遮挡地下油藏的问题：在基台北侧地表开辟半透明科技微晶透视窗与激光引导框
+  const windowGroup = new THREE.Group()
+  windowGroup.position.set(strataCenterX, 0.22, strataBackZ + cutawayD * 0.45)
+
+  // A. 半透明微晶科技勘探透视板 (Translucent Geological Glass Aperture)
+  const glassGeo = new THREE.PlaneGeometry(cutawayW * 0.95, cutawayD * 0.9)
+  const glassMat = new THREE.MeshBasicMaterial({
+    color: 0x0284c7,
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  })
+  const glassMesh = new THREE.Mesh(glassGeo, glassMat)
+  glassMesh.rotation.x = -Math.PI / 2
+  windowGroup.add(glassMesh)
+
+  // B. 勘探窗口四周霓虹科技发光护栏与边框 (Seismic Survey Boundary Ring)
+  const borderEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(cutawayW * 0.95, 0.4, cutawayD * 0.9)),
+    new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.85 })
+  )
+  windowGroup.add(borderEdges)
+
+  // C. 四角重型全息勘探垂直激光标定立柱 (Survey Laser Corner Pillars)
+  const halfWinW = (cutawayW * 0.95) / 2
+  const halfWinD = (cutawayD * 0.9) / 2
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 })
+  for (const cx of [-halfWinW, halfWinW]) {
+    for (const cz of [-halfWinD, halfWinD]) {
+      const pCol = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 3.2, 8), pillarMat)
+      pCol.position.set(cx, 1.6, cz)
+      windowGroup.add(pCol)
+
+      // 顶部垂直向下穿透地底的高能勘探激光束 (Penetrating Downward Seismic Laser Line)
+      const laserGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(cx, 3.2, cz),
+        new THREE.Vector3(cx, -68, cz),
+      ])
+      const laserLine = new THREE.Line(
+        laserGeo,
+        new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.65 })
+      )
+      windowGroup.add(laserLine)
+    }
+  }
+
+  group.add(windowGroup)
 
   scene.add(group)
 }
@@ -3680,7 +3776,7 @@ function buildModularContainerCamp() {
 }
 
 // -------------------------------------------------------------
-// 11. 井场大门经典红色标语牌网格刚架 (复刻图三“进军深地挺民族脊梁”等大字标语)
+// 11. 井场大门经典红色标语牌网格刚架 (彻底根治Z-fighting闪烁，一体化多材质实心箱体)
 // -------------------------------------------------------------
 function buildIconicSloganBillboards() {
   if (!scene) return
@@ -3688,28 +3784,37 @@ function buildIconicSloganBillboards() {
 
   const whiteSteel = new THREE.MeshStandardMaterial({
     color: 0xf8fafc,
-    metalness: 0.75,
-    roughness: 0.35,
-  })
-  const darkSteel = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
     metalness: 0.85,
     roughness: 0.25,
   })
+  const darkSteel = new THREE.MeshStandardMaterial({
+    color: 0x1e293b,
+    metalness: 0.88,
+    roughness: 0.22,
+  })
   const bollardYellow = new THREE.MeshStandardMaterial({
     color: 0xf59e0b,
-    metalness: 0.6,
+    metalness: 0.65,
+    roughness: 0.35,
   })
 
   // 标语1贴图：进军深地挺民族脊梁 挑战禁区铸大国重器
   const tex1 = createSloganTexture('进军深地挺民族脊梁  挑战禁区铸大国重器', '中国石油塔里木油田 · 万米特深科学探索井')
-  const mat1 = new THREE.MeshBasicMaterial({ map: tex1 })
+  const mat1 = new THREE.MeshStandardMaterial({
+    map: tex1,
+    roughness: 0.28,
+    metalness: 0.45,
+  })
 
   // 标语2贴图：当好深地科技种子队 争做能源保供顶梁柱
   const tex2 = createSloganTexture('当好深地科技种子队  争做能源保供顶梁柱', '中国石油塔里木油田 · 国家战略科技力量')
-  const mat2 = new THREE.MeshBasicMaterial({ map: tex2 })
+  const mat2 = new THREE.MeshStandardMaterial({
+    map: tex2,
+    roughness: 0.28,
+    metalness: 0.45,
+  })
 
-  function createBillboardRig(mat: THREE.Material, rotY: number, pos: THREE.Vector3): THREE.Group {
+  function createBillboardRig(sloganMat: THREE.Material, rotY: number, pos: THREE.Vector3): THREE.Group {
     const bb = new THREE.Group()
     bb.position.copy(pos)
     bb.rotation.y = rotY
@@ -3718,47 +3823,75 @@ function buildIconicSloganBillboards() {
     const colH = 9.8
     const boardW = 25.0
     const boardH = 3.6
+    const boardDepth = 0.45
 
-    // 左右两根白色钢管承重立柱
+    // 左右两根白色重型无缝钢管承重立柱
     for (const sx of [-colSpan / 2, colSpan / 2]) {
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.45, colH, 16), whiteSteel)
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.48, colH, 18), whiteSteel)
       col.position.set(sx, colH / 2, 0)
       bb.add(col)
 
-      // 立柱根部黄黑警示护墩
-      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.75, 1.2, 16), bollardYellow)
-      plinth.position.set(sx, 0.6, 0)
+      // 立柱根部重型混凝土黄黑警示护墩
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.82, 1.4, 16), bollardYellow)
+      plinth.position.set(sx, 0.7, 0)
       bb.add(plinth)
     }
 
-    // 后部白色空间双层刚架横桁梁 (Space Truss Support)
+    // 后部白色空间双层刚架横桁梁 (Space Truss Support: 前后两道横梁 + X型斜撑)
     for (const by of [colH - boardH / 2, colH + boardH / 2]) {
-      const beamFront = new THREE.Mesh(new THREE.BoxGeometry(boardW + 0.6, 0.35, 0.35), whiteSteel)
-      beamFront.position.set(0, by, -0.2)
+      const beamFront = new THREE.Mesh(new THREE.BoxGeometry(boardW + 0.8, 0.38, 0.38), whiteSteel)
+      beamFront.position.set(0, by, -0.3)
       bb.add(beamFront)
 
-      const beamBack = new THREE.Mesh(new THREE.BoxGeometry(boardW + 0.6, 0.35, 0.35), whiteSteel)
-      beamBack.position.set(0, by, -1.2)
+      const beamBack = new THREE.Mesh(new THREE.BoxGeometry(boardW + 0.8, 0.38, 0.38), whiteSteel)
+      beamBack.position.set(0, by, -1.35)
       bb.add(beamBack)
     }
 
-    // 刚架 X 型斜撑
+    // 刚架 X 型受力斜撑
     for (let x = -colSpan / 2; x < colSpan / 2; x += 3.5) {
-      createStrut(bb, new THREE.Vector3(x, colH - boardH / 2, -0.7), new THREE.Vector3(x + 3.5, colH + boardH / 2, -0.7), whiteSteel)
-      createStrut(bb, new THREE.Vector3(x + 3.5, colH - boardH / 2, -0.7), new THREE.Vector3(x, colH + boardH / 2, -0.7), whiteSteel)
+      createStrut(bb, new THREE.Vector3(x, colH - boardH / 2, -0.8), new THREE.Vector3(x + 3.5, colH + boardH / 2, -0.8), whiteSteel)
+      createStrut(bb, new THREE.Vector3(x + 3.5, colH - boardH / 2, -0.8), new THREE.Vector3(x, colH + boardH / 2, -0.8), whiteSteel)
     }
 
-    // 核心大红标语挂牌
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(boardW, boardH), mat)
-    plate.position.set(0, colH, 0.05)
-    bb.add(plate)
+    // 彻底根除闪烁的核心关键：采用一体化多材质 BoxGeometry！
+    // 0: 右侧, 1: 左侧, 2: 顶面, 3: 底面, 4: 正面 (贴标语贴图), 5: 背面
+    const boxMaterials = [
+      darkSteel, // +X
+      darkSteel, // -X
+      darkSteel, // +Y
+      darkSteel, // -Y
+      sloganMat, // +Z (正面大红标语，绝对无任何共面第二层，永不闪烁！)
+      darkSteel, // -Z
+    ]
+    const mainBoardGeo = new THREE.BoxGeometry(boardW, boardH, boardDepth)
+    const mainBoardMesh = new THREE.Mesh(mainBoardGeo, boxMaterials)
+    mainBoardMesh.position.set(0, colH, 0)
+    bb.add(mainBoardMesh)
 
-    // 背面防风加强背板
-    const plateBack = new THREE.Mesh(new THREE.BoxGeometry(boardW + 0.1, boardH + 0.1, 0.1), darkSteel)
-    plateBack.position.set(0, colH, 0.0)
-    bb.add(plateBack)
+    // 顶部防雨挑檐雨棚与下照式照明射灯支架 (Protective Canopy with Downward Floodlights)
+    const canopyRoof = new THREE.Mesh(new THREE.BoxGeometry(boardW + 0.8, 0.18, 1.2), darkSteel)
+    canopyRoof.position.set(0, colH + boardH / 2 + 0.1, 0.35)
+    bb.add(canopyRoof)
 
-    // 地面仰角强光投光射灯 (Ground Upward Floodlights)
+    // 4 组挑檐下照式 LED 射灯
+    for (let fx = -boardW * 0.38; fx <= boardW * 0.38; fx += boardW * 0.25) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.7), darkSteel)
+      arm.position.set(fx, colH + boardH / 2 + 0.2, 0.8)
+      bb.add(arm)
+
+      const lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.35, 0.4), darkSteel)
+      lampHead.position.set(fx, colH + boardH / 2 + 0.05, 1.1)
+      lampHead.rotation.x = 0.45 // 角度朝向标语牌正面照射
+      bb.add(lampHead)
+
+      const spotLens = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.25), new THREE.MeshBasicMaterial({ color: 0xfffaed }))
+      spotLens.position.set(fx, colH + boardH / 2, 1.12)
+      spotLens.rotation.x = 0.45
+      bb.add(spotLens)
+    }
+
+    // 地面仰角强光投光射灯 (Ground Upward Floodlights) - 修复原 lens.add 循环错误
     for (let fx = -boardW * 0.38; fx <= boardW * 0.38; fx += boardW * 0.25) {
       const lampHousing = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.6), darkSteel)
       lampHousing.position.set(fx, 0.35, 2.5)
@@ -3768,18 +3901,18 @@ function buildIconicSloganBillboards() {
       const lens = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.4), new THREE.MeshBasicMaterial({ color: 0xfffaed }))
       lens.position.set(fx, 0.45, 2.3)
       lens.rotation.x = -Math.PI / 5
-      lens.add(lens)
+      bb.add(lens) // 正确添加至 bb 容器
     }
 
     return bb
   }
 
-  // 左牌楼：面向主干道入场大门通道西侧 (Z = 82，开阔大气、不遮挡钻井核心)
-  const b1 = createBillboardRig(mat1, 0.05, new THREE.Vector3(-38, 0.2, 82))
+  // 左牌楼：面向主干道入场大道西侧 (微向内倾，开阔大气、不遮挡钻井与猫道)
+  const b1 = createBillboardRig(mat1, 0.12, new THREE.Vector3(-46, 0.2, 78))
   sloganGroup.add(b1)
 
-  // 右牌楼：对称矗立于大道东侧 (Z = 86，与左牌楼形成宏伟迎宾通道)
-  const b2 = createBillboardRig(mat2, -0.05, new THREE.Vector3(14, 0.2, 86))
+  // 右牌楼：对称矗立于大道东侧 (微向内倾，与左牌楼形成庄重迎宾大门)
+  const b2 = createBillboardRig(mat2, -0.12, new THREE.Vector3(20, 0.2, 80))
   sloganGroup.add(b2)
 
   scene.add(sloganGroup)
