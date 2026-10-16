@@ -163,6 +163,9 @@ let perforationJets: THREE.Mesh[] = []
 let gasCapPlane: THREE.Mesh | null = null
 let reservoirMicroStreamlines: THREE.LineSegments | null = null
 let oilReservoirFluidMesh: THREE.Mesh | null = null
+let windTurbineRotors: THREE.Group[] = []
+let perforationMistPoints: THREE.Points | null = null
+let oilWallTrickles: THREE.Mesh[] = []
 
 const clock = new THREE.Clock()
 
@@ -467,6 +470,190 @@ function createDesertSandRippleTexture() {
   return tex
 }
 
+// 荒漠重型 6x6 油罐半挂运输卡车模型 (Heavy-Haul Desert Oil Tanker Semi-Trailer)
+function createHeavyTankerTruck(): THREE.Group {
+  const truck = new THREE.Group()
+
+  const cabMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.75, roughness: 0.3 })
+  const chassisMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.92, roughness: 0.25 })
+  const chromeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.98, roughness: 0.08 })
+  const tankMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.18 })
+  const tireMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 })
+  const warningYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6 })
+
+  // 1. 牵引车车头 (Heavy 6x6 Desert Tractor)
+  const tractor = new THREE.Group()
+
+  // 车架纵梁
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.45, 8.8), chassisMat)
+  chassis.position.y = 1.1
+  tractor.add(chassis)
+
+  // 驾驶室本体
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.8, 3.2), cabMat)
+  cab.position.set(0, 2.7, 2.2)
+  tractor.add(cab)
+
+  // 驾驶室前挡风玻璃 (内倾防反光)
+  const windshield = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.3, 1.1),
+    new THREE.MeshStandardMaterial({ color: 0x082f49, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85 })
+  )
+  windshield.position.set(0, 3.0, 3.82)
+  tractor.add(windshield)
+
+  // 前保险杠与重型防撞格栅 (Bull Bar)
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.8, 0.6), chassisMat)
+  bumper.position.set(0, 0.9, 4.0)
+  tractor.add(bumper)
+
+  const bullBar = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.08, 6, 16, Math.PI), warningYellow)
+  bullBar.rotation.x = -Math.PI / 2
+  bullBar.position.set(0, 1.4, 4.35)
+  tractor.add(bullBar)
+
+  // 前大灯与雾灯 (Headlights)
+  for (const lx of [-0.95, 0.95]) {
+    const headlight = new THREE.Mesh(new THREE.CircleGeometry(0.24, 12), new THREE.MeshBasicMaterial({ color: 0xffedd5 }))
+    headlight.position.set(lx, 0.9, 4.32)
+    tractor.add(headlight)
+  }
+
+  // 驾驶室顶部高位遮阳罩与警示灯
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.15, 0.8), chassisMat)
+  visor.position.set(0, 4.0, 2.8)
+  visor.rotation.x = 0.2
+  tractor.add(visor)
+
+  for (const ax of [-0.8, 0, 0.8]) {
+    const amberLight = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), new THREE.MeshBasicMaterial({ color: 0xf59e0b }))
+    amberLight.position.set(ax, 4.15, 2.6)
+    tractor.add(amberLight)
+  }
+
+  // 驾驶室背部双垂直镀铬排气管 (Dual Chrome Stacks)
+  for (const ex of [-1.1, 1.1]) {
+    const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.8, 12), chromeMat)
+    stack.position.set(ex, 3.2, 0.4)
+    tractor.add(stack)
+
+    const stackCurve = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.1, 6, 8, Math.PI / 2), chromeMat)
+    stackCurve.position.set(ex, 5.1, 0.22)
+    tractor.add(stackCurve)
+  }
+
+  // 两侧大容量柴油油箱
+  for (const fx of [-1.35, 1.35]) {
+    const fuelTank = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 2.2, 16), chromeMat)
+    fuelTank.rotation.x = Math.PI / 2
+    fuelTank.position.set(fx, 1.1, -0.6)
+    tractor.add(fuelTank)
+  }
+
+  // 牵引车轮胎 (前轮单轴，后轮双轴)
+  const tractorWheelPositions = [
+    [-1.2, 0.7, 2.8], [1.2, 0.7, 2.8],
+    [-1.25, 0.7, -1.8], [1.25, 0.7, -1.8],
+    [-1.25, 0.7, -3.2], [1.25, 0.7, -3.2],
+  ]
+  tractorWheelPositions.forEach(([wx, wy, wz]) => {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.55, 16), tireMat)
+    wheel.rotation.z = Math.PI / 2
+    wheel.position.set(wx, wy, wz)
+    tractor.add(wheel)
+
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.58, 12), chromeMat)
+    hub.rotation.z = Math.PI / 2
+    hub.position.set(wx, wy, wz)
+    tractor.add(hub)
+  })
+
+  // 牵引鞍座 (Fifth Wheel)
+  const fifthWheel = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.25, 16), chassisMat)
+  fifthWheel.position.set(0, 1.45, -2.5)
+  tractor.add(fifthWheel)
+
+  truck.add(tractor)
+
+  // 2. 原油运输半挂罐车 (Semi-Trailer Tanker)
+  const trailer = new THREE.Group()
+  trailer.position.set(0, 0, -2.5)
+
+  // 挂车车架大梁
+  const tChassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 16.5), chassisMat)
+  tChassis.position.set(0, 1.4, -7.0)
+  trailer.add(tChassis)
+
+  // 42,000L 保温椭圆原油储罐主体 (Elliptical Insulated Tank Vessel)
+  const tankBody = new THREE.Mesh(new THREE.CylinderGeometry(1.85, 1.85, 14.8, 24), tankMat)
+  tankBody.rotation.x = Math.PI / 2
+  tankBody.scale.set(1.15, 1.0, 0.85) // 椭圆截面
+  tankBody.position.set(0, 2.9, -6.8)
+  trailer.add(tankBody)
+
+  // 储罐前后封头
+  for (const ts of [-14.2, 0.6]) {
+    const head = new THREE.Mesh(new THREE.SphereGeometry(1.85, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), tankMat)
+    head.scale.set(1.15, 0.85, 1.0)
+    head.rotation.x = ts > -7 ? -Math.PI / 2 : Math.PI / 2
+    head.position.set(0, 2.9, ts)
+    trailer.add(head)
+  }
+
+  // 罐顶安全走道与折叠护栏 (Top Walkway & Handrails)
+  const walkway = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 12.5), warningYellow)
+  walkway.position.set(0, 4.45, -6.8)
+  trailer.add(walkway)
+
+  const wRail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.8, 12.5), warningYellow)
+  wRail.position.set(0.42, 4.85, -6.8)
+  trailer.add(wRail)
+
+  // 罐顶3个人孔密封盖 (Inspection Manholes)
+  for (const mz of [-11, -6.8, -2.6]) {
+    const manhole = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 16), chassisMat)
+    manhole.position.set(0, 4.55, mz)
+    trailer.add(manhole)
+  }
+
+  // 挂车侧向管箱 (Hose Tubes)
+  for (const hx of [-1.55, 1.55]) {
+    const hTube = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 13.0, 10), chassisMat)
+    hTube.rotation.x = Math.PI / 2
+    hTube.position.set(hx, 2.1, -6.8)
+    trailer.add(hTube)
+  }
+
+  // 挂车后置阀组箱与易燃液体安全警示菱形标牌 (Class 3 Hazmat Diamond)
+  const valveCabinet = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.1, 0.8), chassisMat)
+  valveCabinet.position.set(0, 1.8, -14.8)
+  trailer.add(valveCabinet)
+
+  const hazmatSign = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.08), new THREE.MeshBasicMaterial({ color: 0xdc2626 }))
+  hazmatSign.rotation.z = Math.PI / 4
+  hazmatSign.position.set(0, 3.2, -14.95)
+  trailer.add(hazmatSign)
+
+  // 挂车后三轴重载轮胎组 (12条轮胎)
+  for (let ax = 0; ax < 3; ax++) {
+    const az = -10.5 - ax * 1.5
+    for (const side of [-1.25, 1.25]) {
+      const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.5, 16), tireMat)
+      w1.rotation.z = Math.PI / 2
+      w1.position.set(side, 0.7, az)
+      trailer.add(w1)
+
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.55, 12), chromeMat)
+      hub.rotation.z = Math.PI / 2
+      hub.position.set(side, 0.7, az)
+      trailer.add(hub)
+    }
+  }
+
+  truck.add(trailer)
+  return truck
+}
+
 function buildDesertDunesAndEnvironment() {
   if (!scene) return
   const envGroup = new THREE.Group()
@@ -548,10 +735,10 @@ function buildDesertDunesAndEnvironment() {
     mesa.rotation.y = angle + Math.PI / 3.5
     mountainMesaGroup.add(mesa)
 
-    // 山脚风化碎石倒石堆缓坡 (Talus Scree Slope)
-    const screeGeo = new THREE.ConeGeometry(w * 1.35, 12, 9)
+    // 山脚风化碎石倒石堆缓坡 (Talus Scree Slope - 梯形堆积坡面，杜绝生硬尖锥)
+    const screeGeo = new THREE.CylinderGeometry(w * 0.72, w * 1.35, 8, 12)
     const scree = new THREE.Mesh(screeGeo, desertMat)
-    scree.position.set(mesa.position.x, 3, mesa.position.z)
+    scree.position.set(mesa.position.x, 2, mesa.position.z)
     mountainMesaGroup.add(scree)
   }
 
@@ -586,7 +773,82 @@ function buildDesertDunesAndEnvironment() {
   }
   envGroup.add(mountainMesaGroup)
 
-  // 4. 地平线深处微缩抽油机群与远方集输站夜航火炬星光 (提升大油田广袤纵深感)
+  // 4. 大漠落日实体光盘与日冕 (Sunset Sun Disc & Corona - 营造震撼大漠落日大片感)
+  const sunGroup = new THREE.Group()
+  sunGroup.position.set(380, 210, -320)
+
+  // 核心暖白金落日发光圆球
+  const sunDisc = new THREE.Mesh(
+    new THREE.SphereGeometry(18, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0xffedd5 })
+  )
+  sunGroup.add(sunDisc)
+
+  // 外层金红晚霞日冕晕圈 (Corona Glow Sprite)
+  const coronaCanvas = document.createElement('canvas')
+  coronaCanvas.width = 128
+  coronaCanvas.height = 128
+  const cCtx = coronaCanvas.getContext('2d')
+  if (cCtx) {
+    const cGrad = cCtx.createRadialGradient(64, 64, 0, 64, 64, 64)
+    cGrad.addColorStop(0.0, 'rgba(255, 237, 213, 0.95)')
+    cGrad.addColorStop(0.3, 'rgba(245, 158, 11, 0.65)')
+    cGrad.addColorStop(0.7, 'rgba(180, 83, 9, 0.22)')
+    cGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)')
+    cCtx.fillStyle = cGrad
+    cCtx.fillRect(0, 0, 128, 128)
+  }
+  const coronaTex = new THREE.CanvasTexture(coronaCanvas)
+  coronaTex.colorSpace = THREE.SRGBColorSpace
+
+  const coronaMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(160, 160),
+    new THREE.MeshBasicMaterial({
+      map: coronaTex,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+  )
+  coronaMesh.rotation.y = -Math.PI / 4
+  sunGroup.add(coronaMesh)
+  envGroup.add(sunGroup)
+
+  // 5. 荒漠戈壁进场柏油公路与重型运输便道 (Desert Heavy-Haul Highway)
+  const roadCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(140, 0.25, -420),
+    new THREE.Vector3(110, 0.25, -280),
+    new THREE.Vector3(75, 0.25, -140),
+    new THREE.Vector3(50, 0.25, -20),
+    new THREE.Vector3(30, 0.25, 45),
+  ])
+  const roadGeo = new THREE.TubeGeometry(roadCurve, 40, 4.5, 4, false)
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0x1e293b,
+    roughness: 0.88,
+    metalness: 0.15,
+  })
+  const roadMesh = new THREE.Mesh(roadGeo, roadMat)
+  roadMesh.scale.set(1.0, 0.04, 1.0)
+  roadMesh.position.y = 0.08
+  envGroup.add(roadMesh)
+
+  // 沥青公路黄色中心双实线安全标线
+  const markingGeo = new THREE.TubeGeometry(roadCurve, 40, 0.12, 4, false)
+  const markingMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+  const markingMesh = new THREE.Mesh(markingGeo, markingMat)
+  markingMesh.scale.set(1.0, 0.05, 1.0)
+  markingMesh.position.y = 0.11
+  envGroup.add(markingMesh)
+
+  // 荒漠重型 6x6 油罐半挂运输卡车 (Desert Heavy-Haul Tanker Truck)
+  const truckGroup = createHeavyTankerTruck()
+  truckGroup.position.set(68, 0.28, -95)
+  truckGroup.rotation.y = 2.45 // 沿公路走向停靠
+  envGroup.add(truckGroup)
+
+  // 6. 地平线深处微缩抽油机群与远方集输站夜航火炬星光 (提升大油田广袤纵深感)
   const distantPumps = [
     [-185, 3.5, -210],
     [-130, 4.2, -260],
@@ -707,7 +969,97 @@ function buildDesertDunesAndEnvironment() {
     }
   }
 
-  // 4. 沙漠防风固沙草方格与挡沙栅栏网 (Desert Sand-Fixation Barriers)
+  // 4. 远景大漠零碳智能油田巨型风力发电机组 (Green Energy Wind Turbines)
+  windTurbineRotors = []
+  const turbinePositions = [
+    new THREE.Vector3(290, 18, -260),
+    new THREE.Vector3(370, 26, -190),
+    new THREE.Vector3(-240, 16, -290),
+  ]
+  const windTurbineMat = new THREE.MeshStandardMaterial({
+    color: 0xf1f5f9,
+    metalness: 0.35,
+    roughness: 0.45,
+  })
+  const bladeTipRed = new THREE.MeshBasicMaterial({ color: 0xef4444 })
+
+  turbinePositions.forEach((pos, idx) => {
+    const turbine = new THREE.Group()
+    turbine.position.copy(pos)
+
+    // 塔身高耸锥形钢管塔架 (Tapered Tubular Steel Tower - 68m)
+    const towerMast = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.2, 2.6, 68, 16),
+      windTurbineMat
+    )
+    towerMast.position.y = 34
+    turbine.add(towerMast)
+
+    // 机舱本体 (Aerodynamic Nacelle)
+    const nacelle = new THREE.Group()
+    nacelle.position.set(0, 68, 0)
+    nacelle.rotation.y = idx * 0.8 + 0.5 // 迎风偏航角
+
+    const nacelleBody = new THREE.Mesh(
+      new THREE.BoxGeometry(4.2, 3.2, 10.5),
+      windTurbineMat
+    )
+    nacelleBody.position.z = -2.5
+    nacelle.add(nacelleBody)
+
+    // 顶部航标闪烁红灯
+    const nacelleBeacon = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xef4444 })
+    )
+    nacelleBeacon.position.set(0, 2.0, -3.5)
+    nacelle.add(nacelleBeacon)
+
+    // 叶轮轮毂与整流罩 (Rotor Hub & Spinner)
+    const rotor = new THREE.Group()
+    rotor.position.set(0, 0, 3.2)
+
+    const spinner = new THREE.Mesh(
+      new THREE.SphereGeometry(1.6, 16, 12, 0, Math.PI * 2, 0, Math.PI / 1.8),
+      windTurbineMat
+    )
+    spinner.rotation.x = Math.PI / 2
+    rotor.add(spinner)
+
+    // 3 片高升力空气动力学风电叶片 (3 Aero-Twisted Blades)
+    for (let b = 0; b < 3; b++) {
+      const bAngle = (b * Math.PI * 2) / 3
+      const bladeGroup = new THREE.Group()
+      bladeGroup.rotation.z = bAngle
+
+      // 叶片主梁
+      const bladeMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 1.35, 34, 10),
+        windTurbineMat
+      )
+      bladeMesh.scale.set(0.4, 1.0, 1.0)
+      bladeMesh.position.y = 17
+      bladeGroup.add(bladeMesh)
+
+      // 叶尖红色防撞警示色带
+      const tipMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.36, 0.55, 6, 10),
+        bladeTipRed
+      )
+      tipMesh.scale.set(0.41, 1.0, 1.0)
+      tipMesh.position.y = 31
+      bladeGroup.add(tipMesh)
+
+      rotor.add(bladeGroup)
+    }
+
+    nacelle.add(rotor)
+    windTurbineRotors.push(rotor)
+    turbine.add(nacelle)
+    envGroup.add(turbine)
+  })
+
+  // 5. 沙漠防风固沙草方格与挡沙栅栏网 (Desert Sand-Fixation Barriers)
   const barrierGroup = new THREE.Group()
   barrierGroup.position.set(-85, 0.1, -55)
   barrierGroup.rotation.y = Math.PI / 4
@@ -1731,6 +2083,50 @@ function buildDesertStratumAndWellbore() {
     group.add(jetMesh)
   }
 
+  // 井下射孔孔眼喷射高压原油微雾光晕粒子群 (Perforation Atomized Mist Halos)
+  const mistCount = 240
+  const mistPos = new Float32Array(mistCount * 3)
+  const mistColors = new Float32Array(mistCount * 3)
+  const amberMist = new THREE.Color(0xfbbf24)
+  const goldMist = new THREE.Color(0xf59e0b)
+
+  for (let j = 0; j < 8; j++) {
+    const angle = (j * Math.PI * 2) / 8
+    const rootX = -15 + Math.cos(angle) * 1.45
+    const rootY = -43 + ((j % 3) - 1) * 1.2
+    const rootZ = Math.sin(angle) * 1.45
+
+    for (let k = 0; k < 30; k++) {
+      const pIdx = (j * 30 + k) * 3
+      const spread = 0.85
+      mistPos[pIdx] = rootX + (Math.random() - 0.5) * spread
+      mistPos[pIdx + 1] = rootY + (Math.random() - 0.5) * spread
+      mistPos[pIdx + 2] = rootZ + (Math.random() - 0.5) * spread
+
+      const c = Math.random() > 0.4 ? amberMist : goldMist
+      mistColors[pIdx] = c.r
+      mistColors[pIdx + 1] = c.g
+      mistColors[pIdx + 2] = c.b
+    }
+  }
+
+  const mistGeo = new THREE.BufferGeometry()
+  mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3))
+  mistGeo.setAttribute('color', new THREE.BufferAttribute(mistColors, 3))
+  perforationMistPoints = new THREE.Points(
+    mistGeo,
+    new THREE.PointsMaterial({
+      size: 3.2,
+      map: softOilSprite,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+  )
+  group.add(perforationMistPoints)
+
   // 油气顶界面微光盘 (Gas-Oil Contact GOC Level at -30m)
   const gocGeo = new THREE.PlaneGeometry(cutawayW * 0.72, cutawayD * 0.75)
   const gocMat = new THREE.MeshBasicMaterial({
@@ -1843,6 +2239,63 @@ function buildDesertStratumAndWellbore() {
     })
   )
   group.add(oilSeepageParticles)
+
+  // 9. 地质剖面三叠系含油砂岩原生原油渗出细流 (Rock Wall Viscous Crude Oil Trickles)
+  // 模拟真实富油岩芯切面原油自发微孔渗出溢淌，呈现高光黑金原油缓缓淌下挂壁油痕
+  const trickleMat = new THREE.MeshStandardMaterial({
+    color: 0x140701,
+    roughness: 0.08,
+    metalness: 0.96,
+    transparent: true,
+    opacity: 0.92,
+  })
+  const trickleDropletGeo = new THREE.SphereGeometry(0.24, 8, 8)
+  oilWallTrickles = []
+
+  // 北背壁渗流 (North Cutaway Wall Trickles, Z = strataBackZ + 2.05)
+  const northXCoords = [-58, -48, -36, -26, -6, 8, 20, 32, 44]
+  northXCoords.forEach((tx, idx) => {
+    const topY = -31 - (idx % 3) * 1.5
+    const btmY = -48 - (idx % 2) * 2.0
+    const midY = (topY + btmY) * 0.5
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(tx, topY, strataBackZ + 2.08),
+      new THREE.Vector3(tx + (idx % 2 === 0 ? 0.6 : -0.6), midY, strataBackZ + 2.12),
+      new THREE.Vector3(tx + (idx % 3 === 0 ? -0.4 : 0.4), btmY + 2, strataBackZ + 2.1),
+      new THREE.Vector3(tx, btmY, strataBackZ + 2.08),
+    ])
+    const tMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.16 + (idx % 3) * 0.05, 8, false), trickleMat)
+    group.add(tMesh)
+    oilWallTrickles.push(tMesh)
+
+    // 渗流末端悬垂油滴 (Viscous Teardrop Bead)
+    const droplet = new THREE.Mesh(trickleDropletGeo, trickleMat)
+    droplet.scale.set(1.0, 1.4, 1.0)
+    droplet.position.set(tx, btmY - 0.25, strataBackZ + 2.1)
+    group.add(droplet)
+  })
+
+  // 西侧壁渗流 (West Cutaway Wall Trickles, X = strataWestX + 2.05)
+  const westZCoords = [-12, -4, 4, 12, 18, 26, 34]
+  westZCoords.forEach((tz, idx) => {
+    const topY = -31.5 - (idx % 3) * 1.2
+    const btmY = -48.5 - (idx % 2) * 2.2
+    const midY = (topY + btmY) * 0.5
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(strataWestX + 2.08, topY, tz),
+      new THREE.Vector3(strataWestX + 2.12, midY, tz + (idx % 2 === 0 ? 0.5 : -0.5)),
+      new THREE.Vector3(strataWestX + 2.1, btmY + 2, tz + (idx % 3 === 0 ? -0.4 : 0.4)),
+      new THREE.Vector3(strataWestX + 2.08, btmY, tz),
+    ])
+    const tMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.16 + (idx % 3) * 0.05, 8, false), trickleMat)
+    group.add(tMesh)
+    oilWallTrickles.push(tMesh)
+
+    const droplet = new THREE.Mesh(trickleDropletGeo, trickleMat)
+    droplet.scale.set(1.0, 1.4, 1.0)
+    droplet.position.set(strataWestX + 2.1, btmY - 0.25, tz)
+    group.add(droplet)
+  })
 
   scene.add(group)
 }
@@ -4027,10 +4480,24 @@ function buildPumpingUnit() {
   rails.position.y = 0.2
   motorGroup.add(rails)
 
-  const motorBody = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.65, 4.5, 16), industrialBlue)
+  const motorBody = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.65, 4.5, 20), industrialBlue)
   motorBody.rotation.z = Math.PI / 2
   motorBody.position.y = 2.0
   motorGroup.add(motorBody)
+
+  // 12 道外壳轴向铸造散热肋条 (Longitudinal Cooling Fins)
+  for (let f = 0; f < 12; f++) {
+    const fAng = (f * Math.PI * 2) / 12
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.22, 0.08), heavySteel)
+    fin.position.set(0, 2.0 + Math.sin(fAng) * 1.72, Math.cos(fAng) * 1.72)
+    fin.rotation.x = fAng
+    motorGroup.add(fin)
+  }
+
+  // 电机吊装铸钢吊环 (Lifting Eye Bolt)
+  const eyeBolt = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.07, 6, 12), chromeRod)
+  eyeBolt.position.set(0, 3.85, 0)
+  motorGroup.add(eyeBolt)
 
   const fanCowl = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 1.0, 16), heavySteel)
   fanCowl.rotation.z = Math.PI / 2
@@ -4041,10 +4508,48 @@ function buildPumpingUnit() {
   jBox.position.set(0, 3.8, 0)
   motorGroup.add(jBox)
 
-  const beltGuard = new THREE.Mesh(new THREE.BoxGeometry(6.8, 4.8, 1.4), hazardYellow)
-  beltGuard.position.set(3.8, 2.8, -2.4)
-  beltGuard.rotation.z = 0.25
+  // 减速机高速轴铸铁皮带大飞轮 (V-Belt Driven Sheave / Pulley with Rim & Spokes)
+  const sheaveGroup = new THREE.Group()
+  sheaveGroup.position.set(4.6, 2.4, -2.4)
+  sheaveGroup.rotation.x = Math.PI / 2
+
+  // 铸铁外圈轮缘 (带 4 道 V 型皮带梯形轮槽)
+  const sheaveRim = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.45, 24), castIron)
+  sheaveGroup.add(sheaveRim)
+
+  // 中心带键槽轮毂
+  const sheaveHub = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.65, 16), heavySteel)
+  sheaveGroup.add(sheaveHub)
+
+  // 6 根重载铸造轮辐 (Spokes)
+  for (let sp = 0; sp < 6; sp++) {
+    const sAng = (sp * Math.PI) / 3
+    const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.28, 1.6), castIron)
+    spoke.position.set(Math.cos(sAng) * 1.25, 0, Math.sin(sAng) * 1.25)
+    spoke.rotation.y = -sAng
+    sheaveGroup.add(spoke)
+  }
+  motorGroup.add(sheaveGroup)
+
+  // 电机端小驱动皮带轮 (Motor Drive Pulley)
+  const motorPulley = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.5, 16), heavySteel)
+  motorPulley.rotation.x = Math.PI / 2
+  motorPulley.position.set(0, 2.0, -2.4)
+  motorGroup.add(motorPulley)
+
+  // 机械皮带传动安全防护罩 (Louvered Heavy V-Belt Guard with Ventilation Slots)
+  const beltGuard = new THREE.Mesh(new THREE.BoxGeometry(7.2, 4.6, 1.2), hazardYellow)
+  beltGuard.position.set(3.8, 2.6, -2.4)
+  beltGuard.rotation.z = 0.22
   motorGroup.add(beltGuard)
+
+  // 百叶窗散热透气槽孔
+  for (let l = -1.4; l <= 1.4; l += 0.55) {
+    const louver = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.12, 0.18), heavySteel)
+    louver.position.set(3.8, 2.6 + l, -1.78)
+    louver.rotation.z = 0.22
+    motorGroup.add(louver)
+  }
 
   pumpGroup.add(motorGroup)
 
@@ -4228,15 +4733,79 @@ function buildPumpingUnit() {
     chokeWheel.rotation.x = Math.PI / 2
     chokeWheel.position.set(0, 5.4, ws * 3.1)
     xTree.add(chokeWheel)
+
+    // 在主生产翼阀加装 API 6A 级液动紧急切断阀 (Surface Safety Valve - SSV / ESD Actuator)
+    if (ws === 1) {
+      const ssvActuator = new THREE.Group()
+      ssvActuator.position.set(0, 4.4, ws * 3.9)
+
+      // 锻钢高压液压执行机构缸体 (Hydraulic Cylinder Body)
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 1.4, 16), valveRed)
+      cyl.rotation.x = Math.PI / 2
+      ssvActuator.add(cyl)
+
+      // 顶部阀位行程指示杆 (Valve Position Indicator Stem)
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.5, 8), chromeRod)
+      stem.rotation.x = Math.PI / 2
+      stem.position.z = 0.95
+      ssvActuator.add(stem)
+
+      // 应急手动覆盖手轮 (Emergency Manual Override Wheel)
+      const mOverride = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.06, 6, 12), hazardYellow)
+      mOverride.position.z = 1.2
+      ssvActuator.add(mOverride)
+
+      // 液压控制不锈钢仪表导管 (Hydraulic Tubing)
+      const ssvTubing = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 3.8, 6), chromeRod)
+      ssvTubing.position.set(0.45, -1.8, 0)
+      ssvActuator.add(ssvTubing)
+
+      xTree.add(ssvActuator)
+    }
   }
 
   // 四通上方清蜡防喷法兰 (Y = 5.15)
   addFlangePair(xTree, 5.15)
 
-  // 防喷盒与防污接油盘
+  // 真实光杆动密封防喷盒总成与防污接油盘 (Polished Rod Stuffing Box & Drip Tray)
+  const boxGroup = new THREE.Group()
+  boxGroup.position.y = 6.2
+
   const stuffingBox = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.95, 2.0, 16), hazardYellow)
-  stuffingBox.position.y = 6.2
-  xTree.add(stuffingBox)
+  boxGroup.add(stuffingBox)
+
+  // 动密封盘根压盖与 4 根垂直调紧螺柱 (Gland Follower Flange & Studs)
+  const glandFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.92, 0.25, 16), heavySteel)
+  glandFlange.position.y = 0.9
+  boxGroup.add(glandFlange)
+
+  for (let a = 0; a < 4; a++) {
+    const aAng = (a * Math.PI) / 2
+    const gBolt = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6), chromeRod)
+    gBolt.position.set(Math.cos(aAng) * 0.78, 0.9, Math.sin(aAng) * 0.78)
+    boxGroup.add(gBolt)
+  }
+
+  // 黄铜自动注脂咀与渗油引流回收软管 (Brass Zerk & Drain Hose)
+  const boxZerk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.45, 8), hazardYellow)
+  boxZerk.rotation.z = Math.PI / 2
+  boxZerk.position.set(0.9, 0.2, 0)
+  boxGroup.add(boxZerk)
+
+  // 盘根微渗原油引流耐油橡胶软管 (Braided Effluent Drain Hose)
+  const hoseCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(1.1, 0.2, 0),
+    new THREE.Vector3(1.5, -0.4, 0.3),
+    new THREE.Vector3(1.3, -1.0, 0.35),
+    new THREE.Vector3(0.9, -1.15, 0.15),
+  ])
+  const drainHose = new THREE.Mesh(
+    new THREE.TubeGeometry(hoseCurve, 16, 0.05, 8, false),
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 })
+  )
+  boxGroup.add(drainHose)
+
+  xTree.add(boxGroup)
 
   const dripTray = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.1, 0.35, 16), heavySteel)
   dripTray.position.y = 5.2
@@ -4374,7 +4943,7 @@ function buildPumpingUnit() {
   antPole.position.set(0.65, 4.8, 0)
   rtuGroup.add(antPole)
 
-  const antTip = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }))
+  const antTip = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }))
   antTip.position.set(0.65, 6.9, 0)
   rtuGroup.add(antTip)
 
@@ -4468,12 +5037,12 @@ function buildPumpingUnit() {
   burner.position.set(-5.0, 2.0, 0)
   heaterGroup.add(burner)
 
-  // 顶部不锈钢高空烟囱与防雨风帽 (Exhaust Stack)
+  // 顶部不锈钢高空烟囱与防雨风帽 (Exhaust Stack & Flared Weather Cap)
   const stackPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 5.2, 12), chromeRod)
   stackPipe.position.set(2.8, 5.4, 0)
   heaterGroup.add(stackPipe)
 
-  const rainCap = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.45, 12), castIron)
+  const rainCap = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.35, 0.35, 16), castIron)
   rainCap.position.set(2.8, 8.1, 0)
   heaterGroup.add(rainCap)
 
@@ -4700,6 +5269,66 @@ function buildPumpingUnit() {
       pumpGroup.add(bolt)
     }
   }
+
+  // 22. 井口化学药剂高压加药撬块 (Corrosion Inhibitor & Demulsifier Chemical Dosing Skid)
+  // 荒漠重油开采标准设施：持续向采油树翼阀注入缓蚀阻垢剂与降粘破乳剂
+  const dosingSkid = new THREE.Group()
+  dosingSkid.position.set(13.8, 0.2, 6.8)
+
+  // 撬装槽钢框架与二次防溢围堰托盘 (Containment Skid)
+  const dSkidBase = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.45, 3.2), heavySteel)
+  dSkidBase.position.y = 0.22
+  dosingSkid.add(dSkidBase)
+
+  const dCurb = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.35, 3.4), hazardYellow)
+  dCurb.position.y = 0.45
+  dosingSkid.add(dCurb)
+
+  // 316L 不锈钢立式药剂储罐 (Chemical Reagent Drum)
+  const chemTank = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.85, 0.85, 2.4, 16),
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 })
+  )
+  chemTank.position.set(-1.0, 1.5, 0)
+  dosingSkid.add(chemTank)
+
+  // 罐顶加药漏斗与防雨呼吸器
+  const chemFunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.12, 0.5, 12), castIron)
+  chemFunnel.position.set(-1.0, 2.9, 0.3)
+  dosingSkid.add(chemFunnel)
+
+  // 罐体磁翻板液位计
+  const chemLg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0, 8), chromeRod)
+  chemLg.position.set(-1.0, 1.5, 0.92)
+  dosingSkid.add(chemLg)
+
+  // 双联防爆高压柱塞计量泵组 (Dual Explosion-Proof Plunger Dosing Pumps)
+  const chemPump = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.9, 1.4),
+    new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.85 })
+  )
+  chemPump.position.set(1.0, 0.8, 0)
+  dosingSkid.add(chemPump)
+
+  // 脉动阻尼蓄能器 (Pulsation Dampener Bottle)
+  const dampener = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 10), castIron)
+  dampener.position.set(1.0, 1.6, 0.3)
+  dosingSkid.add(dampener)
+
+  // 高压毛细注药管线直连采油树翼阀 (Capillary Injection Line)
+  const injCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(1.0, 1.4, -0.2),
+    new THREE.Vector3(1.8, 1.8, -1.8),
+    new THREE.Vector3(3.2, 2.8, -4.5),
+    new THREE.Vector3(4.4, 4.4, -5.6), // 注入采油树翼阀加药孔
+  ])
+  const injLine = new THREE.Mesh(
+    new THREE.TubeGeometry(injCurve, 20, 0.04, 6, false),
+    new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.1 })
+  )
+  dosingSkid.add(injLine)
+
+  pumpGroup.add(dosingSkid)
 
   scene.add(pumpGroup)
 }
@@ -5472,6 +6101,26 @@ function tick() {
       jet.scale.set(s, 1, s)
     })
   }
+
+  // 射孔孔眼喷射高压原油微雾光晕粒子脉冲
+  if (perforationMistPoints) {
+    const mistMat = perforationMistPoints.material as THREE.PointsMaterial
+    mistMat.opacity = isUpStroke ? 0.95 : 0.45
+    mistMat.size = isUpStroke ? 3.6 : 2.2
+  }
+
+  // 地质剖面三叠系含油砂岩原生原油渗出细流微光呼吸
+  if (oilWallTrickles.length > 0) {
+    oilWallTrickles.forEach((trickle, idx) => {
+      const mat = trickle.material as THREE.MeshStandardMaterial
+      mat.roughness = 0.06 + Math.sin(elapsedTime * 2.5 + idx) * 0.02
+    })
+  }
+
+  // 远景绿色风力发电机组叶轮缓慢平稳运转
+  windTurbineRotors.forEach((rotor, idx) => {
+    rotor.rotation.z += 0.012 * (1 + (idx % 2) * 0.18)
+  })
 
   // 储层天然气顶 (Gas Cap) 微光界面伴生轻烃气相微扰呼吸
   if (gasCapPlane) {
