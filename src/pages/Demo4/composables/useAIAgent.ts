@@ -248,7 +248,25 @@ export function useAIAgent() {
     const sources: { title: string; url?: string }[] = []
     let contextText = ''
 
-    // 1. Weather Query
+    // 1. Try local dev server / preview real-time web search API first (DuckDuckGo + Weather + Wiki)
+    try {
+      const searchRes = await fetch(`/api/websearch?q=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(6000),
+      })
+      if (searchRes.ok) {
+        const data = await searchRes.json()
+        if (data.contextText && data.contextText.trim()) {
+          return {
+            contextText: data.contextText,
+            sources: data.sources || [],
+          }
+        }
+      }
+    } catch {
+      // ignore and fallback to client-side direct APIs
+    }
+
+    // 2. Weather Direct Query (Client-side Fallback)
     const isWeather = /天气|下雨|气温|温度|晴天|阴天|降水/.test(query)
     if (isWeather) {
       try {
@@ -258,9 +276,7 @@ export function useAIAgent() {
         const city = cityMatch ? cityMatch[0].replace('市', '') : 'Chengdu'
         const weatherRes = await fetch(
           `https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+湿度%h+风速%w&lang=zh`,
-          {
-            signal: AbortSignal.timeout(3500),
-          },
+          { signal: AbortSignal.timeout(3500) },
         )
         if (weatherRes.ok) {
           const wText = await weatherRes.text()
@@ -276,7 +292,7 @@ export function useAIAgent() {
       }
     }
 
-    // 2. Wikipedia / Encyclopedia Query
+    // 3. Wikipedia Direct Query (Client-side Fallback)
     try {
       const searchKeyword = cleanWikiKeyword(query)
       const rawCleaned = query.replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, '').trim()
@@ -347,19 +363,22 @@ export function useAIAgent() {
     ]
     const uniqueModels = Array.from(new Set(candidateModels))
 
+    // Build clean alternating conversation history for Gemini:
+    // Only previous completed messages, excluding the current pending prompt
+    const historyMsgs = messages.value.slice(0, -1).slice(-4)
     const contents: any[] = []
-    const recent = messages.value.slice(-4)
-    for (const msg of recent) {
-      if (msg.role === 'user') {
-        contents.push({ role: 'user', parts: [{ text: msg.text }] })
-      } else if (msg.role === 'assistant') {
-        contents.push({ role: 'model', parts: [{ text: msg.text }] })
-      }
+    let lastRole = ''
+    for (const msg of historyMsgs) {
+      const role = msg.role === 'assistant' ? 'model' : 'user'
+      if (contents.length === 0 && role === 'model') continue
+      if (role === lastRole) continue
+      contents.push({ role, parts: [{ text: msg.text }] })
+      lastRole = role
     }
 
     const finalUserText = webContext
-      ? `用户问题：“${prompt}”\n${webContext}\n【回答指令】：请结合上述联网权威实时检索数据，用初音未来的亲切口吻、简练清晰（控制在150字以内，极度适合语音播报）地回答用户。务必完整作答，结尾保持自然完整，不要在句中截断。`
-      : `用户提问：“${prompt}”\n【回答指令】：请用初音未来的亲切活泼口吻，简练清晰（150字以内，适合语音播报）完整作答，不要中途截断。`
+      ? `用户问题：“${prompt}”\n${webContext}\n【回答指令】：请结合上述全网实时检索的最新真实结果，用初音未来亲切、活泼、富有科技感的口吻进行总结作答（控制在150字以内，极度适合语音播报）。务必结合真实事实，完整作答，不要中途截断。`
+      : `用户提问：“${prompt}”\n【回答指令】：请用初音未来亲切、活泼、富有科技感的口吻，简练清晰（控制在150字以内，适合语音播报）完整作答，不要中途截断。`
 
     contents.push({ role: 'user', parts: [{ text: finalUserText }] })
 
@@ -397,7 +416,7 @@ export function useAIAgent() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(12000),
+            signal: AbortSignal.timeout(25000),
           })
 
           if (!res.ok) {
@@ -473,10 +492,10 @@ export function useAIAgent() {
 
       if (webGrounding?.contextText) {
         const cleanContext = webGrounding.contextText
-          .replace(/【[^】]+】/, '')
-          .replace(/词条《[^》]+》：/, '')
+          .replace(/【[^】]+】/g, '')
+          .replace(/https?:\/\/\S+/g, '')
           .trim()
-        replyText = `指挥长，已为您联网检索最新权威资料：${cleanContext.slice(0, 180)}`
+        replyText = `指挥长，已为您实时全网检索到最新资讯：\n${cleanContext.slice(0, 180)}...\n您可以查看下方实时来源链接了解详情哦！`
         emotion = 'smile'
         animation = 'Talking_0'
       } else {
@@ -488,7 +507,7 @@ export function useAIAgent() {
           actionTag = mockResult.actionTag
           if (!searchSources) searchSources = mockResult.searchSources
         } else {
-          replyText = `指挥长，初音未来已收到您的提问：“${trimmed}”。目前全网多模态知识索引链路正在极速同步中，您可以向我提问具体的百科词条（如“量子计算机”、“黑洞”、“光刻机”）、实时天气、油价或大屏调度指令哦！`
+          replyText = `指挥长，初音未来已收到您关于“${trimmed}”的指令！全网检索服务暂时响应超时，请稍后刷新重试，或向我询问智慧城市、深地油田与自动驾驶的调度指令哦！`
           emotion = 'smile'
           animation = 'Talking_0'
         }
