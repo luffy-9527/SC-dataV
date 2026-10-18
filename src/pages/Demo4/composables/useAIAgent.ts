@@ -1,8 +1,10 @@
 import { reactive, ref } from 'vue'
 import type { AgentState, AnimationType, ChatMessage, DigitalHumanConfig, FacialEmotion } from '../types'
 
+const ENV_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) || ''
+
 const DEFAULT_CONFIG: DigitalHumanConfig = {
-  apiKey: (import.meta.env.VITE_GEMINI_API_KEY as string) || '',
+  apiKey: ENV_API_KEY,
   model: (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-3.5-flash',
   baseUrl:
     (import.meta.env.VITE_GEMINI_BASE_URL as string) ||
@@ -12,6 +14,21 @@ const DEFAULT_CONFIG: DigitalHumanConfig = {
   selectedVoice: '',
   useMockOnFailure: true,
   enableWebSearch: true,
+}
+
+export function cleanWikiKeyword(raw: string): string {
+  let cleaned = raw
+    .replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, '')
+    .replace(/^(请问|你知道|想问下|帮我查查|帮我查一下|查一下|查查|搜索|查询|百科|介绍一下|介绍下|说说|讲讲|聊聊|什么是|有关|关于|谈谈)/g, '')
+    .replace(/(请问|你知道|想问下|帮我查查|帮我查一下|查一下|查查|搜索|查询|百科|介绍一下|介绍下|说说|讲讲|聊聊|什么是|有关|关于|谈谈)/g, '')
+    .replace(/(是什么|是谁|怎么样|有哪些|有什么用|怎么回事|是什么意思|是指什么|有什么特点|是干什么的|的简介|简介)/g, '')
+    .replace(/(的原理|原理|的定义|定义|的概念|概念|的发展历程|的发展历史|的历史|历史|的资料|资料|的背景|背景)/g, '')
+    .trim()
+
+  if (!cleaned) {
+    cleaned = raw.replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, '').trim()
+  }
+  return cleaned
 }
 
 const SYSTEM_PROMPT = `你叫"初音未来"（Hatsune Miku），是四川智慧数据大脑与工业数字孪生指挥中心的全息AI数字讲解员与交互调度专员。
@@ -121,23 +138,36 @@ export function useAIAgent() {
     const saved = localStorage.getItem('sc_ai_config')
     if (saved) {
       const parsed = JSON.parse(saved)
+      // Never let empty string in localStorage erase the system env API key!
+      if (!parsed.apiKey || !parsed.apiKey.trim()) {
+        parsed.apiKey = ENV_API_KEY
+      }
       Object.assign(config, parsed)
-    }
-    // Auto-migrate obsolete or rate-limited models to gemini-3.5-flash
-    if (
-      !config.model ||
-      config.model === 'gemini-1.5-flash' ||
-      config.model === 'gemini-2.5-flash' ||
-      config.model === 'gemini-3.8-flash'
-    ) {
-      config.model = 'gemini-3.5-flash'
     }
   } catch {
     // ignore
   }
 
+  // Ensure apiKey is always populated if env has one
+  if (!config.apiKey || !config.apiKey.trim()) {
+    config.apiKey = ENV_API_KEY
+  }
+
+  // Auto-migrate obsolete or non-functional models to gemini-3.5-flash
+  if (
+    !config.model ||
+    config.model === 'gemini-1.5-flash' ||
+    config.model === 'gemini-2.0-flash' ||
+    config.model === 'gemini-2.5-flash'
+  ) {
+    config.model = 'gemini-3.5-flash'
+  }
+
   function saveConfig(newConfig: Partial<DigitalHumanConfig>) {
     Object.assign(config, newConfig)
+    if (!config.apiKey || !config.apiKey.trim()) {
+      config.apiKey = ENV_API_KEY
+    }
     try {
       localStorage.setItem('sc_ai_config', JSON.stringify(config))
     } catch {
@@ -248,39 +278,49 @@ export function useAIAgent() {
 
     // 2. Wikipedia / Encyclopedia Query
     try {
-      const searchKeyword =
-        query
-          .replace(/(请问|你知道|是什么|是谁|怎么样|介绍一下|有哪些|百科|查询|搜索|讲讲)/g, '')
-          .trim() || query
+      const searchKeyword = cleanWikiKeyword(query)
+      const rawCleaned = query.replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, '').trim()
+      const searchTerms = Array.from(new Set([searchKeyword, rawCleaned])).filter(Boolean)
 
-      const searchUrl = `https://zh.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(
-        searchKeyword,
-      )}&limit=2&format=json&origin=*`
-      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(2000) })
-      if (searchRes.ok) {
-        const searchData = await searchRes.json()
-        const titles = searchData[1] || []
-        const urls = searchData[3] || []
+      const wikiBases = [
+        ...(import.meta.env.DEV ? ['/wiki-proxy'] : []),
+        'https://zh.wikipedia.org',
+      ]
 
-        if (titles.length > 0) {
-          const bestTitle = titles[0]
-          const sumUrl = `https://zh.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
-            bestTitle,
-          )}`
-          const sumRes = await fetch(sumUrl, { signal: AbortSignal.timeout(2000) })
-          if (sumRes.ok) {
-            const sumData = await sumRes.json()
-            if (sumData.extract) {
-              contextText = `【全网实时权威百科数据】词条《${sumData.title}》：${sumData.extract}`
-              sources.push({
-                title: `${sumData.title} · 维基百科`,
-                url:
-                  urls[0] ||
-                  sumData.content_urls?.desktop?.page ||
-                  `https://zh.wikipedia.org/wiki/${encodeURIComponent(bestTitle)}`,
-              })
-              return { contextText, sources }
+      for (const term of searchTerms) {
+        for (const base of wikiBases) {
+          try {
+            const searchUrl = `${base}/w/api.php?action=opensearch&search=${encodeURIComponent(
+              term,
+            )}&limit=2&format=json&origin=*`
+            const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(3000) })
+            if (!searchRes.ok) continue
+
+            const searchData = await searchRes.json()
+            const titles = searchData[1] || []
+            const urls = searchData[3] || []
+
+            if (titles.length > 0) {
+              const bestTitle = titles[0]
+              const sumUrl = `${base}/api/rest_v1/page/summary/${encodeURIComponent(bestTitle)}`
+              const sumRes = await fetch(sumUrl, { signal: AbortSignal.timeout(3000) })
+              if (sumRes.ok) {
+                const sumData = await sumRes.json()
+                if (sumData.extract) {
+                  contextText = `【全网实时权威百科数据】词条《${sumData.title}》：${sumData.extract}`
+                  sources.push({
+                    title: `${sumData.title} · 维基百科`,
+                    url:
+                      urls[0] ||
+                      sumData.content_urls?.desktop?.page ||
+                      `https://zh.wikipedia.org/wiki/${encodeURIComponent(bestTitle)}`,
+                  })
+                  return { contextText, sources }
+                }
+              }
             }
+          } catch {
+            // try next base or term
           }
         }
       }
@@ -295,7 +335,7 @@ export function useAIAgent() {
     prompt: string,
     webContext?: string,
   ): Promise<{ text: string }> {
-    const apiKey = config.apiKey.trim()
+    const apiKey = (config.apiKey || ENV_API_KEY || '').trim()
     if (!apiKey) {
       throw new Error('未配置 API Key')
     }
@@ -303,8 +343,7 @@ export function useAIAgent() {
     const candidateModels = [
       config.model || 'gemini-3.5-flash',
       'gemini-3.5-flash',
-      'gemini-flash-latest',
-      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
     ]
     const uniqueModels = Array.from(new Set(candidateModels))
 
@@ -324,55 +363,64 @@ export function useAIAgent() {
 
     contents.push({ role: 'user', parts: [{ text: finalUserText }] })
 
+    const baseCandidates = [
+      ...(import.meta.env.DEV ? ['/gemini-proxy'] : []),
+      config.baseUrl.replace(/\/+$/, ''),
+      'https://generativelanguage.googleapis.com',
+    ]
+    const uniqueBases = Array.from(new Set(baseCandidates.filter(Boolean)))
+
     let lastError: Error | null = null
 
-    for (const model of uniqueModels) {
-      const endpoint = `${config.baseUrl.replace(/\/+$/, '')}/v1beta/models/${model}:generateContent?key=${apiKey}`
+    for (const base of uniqueBases) {
+      for (const model of uniqueModels) {
+        const endpoint = `${base}/v1beta/models/${model}:generateContent?key=${apiKey}`
 
-      const requestBody: any = {
-        systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024,
-          thinkingConfig: {
-            thinkingBudget: 0,
+        const requestBody: any = {
+          systemInstruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
           },
-        },
-      }
-
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+          contents,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
-          body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(12000),
-        })
-
-        if (!res.ok) {
-          const errJson = await res.json().catch(() => ({}))
-          throw new Error(errJson?.error?.message || `API 请求失败 [HTTP ${res.status}]`)
         }
 
-        const data = await res.json()
-        const parts = data?.candidates?.[0]?.content?.parts || []
-        const text = parts
-          .map((p: any) => p.text)
-          .filter(Boolean)
-          .join('\n')
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(12000),
+          })
 
-        if (!text) {
-          throw new Error('API 返回内容为空')
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}))
+            throw new Error(errJson?.error?.message || `API 请求失败 [HTTP ${res.status}]`)
+          }
+
+          const data = await res.json()
+          const parts = data?.candidates?.[0]?.content?.parts || []
+          const text = parts
+            .map((p: any) => p.text)
+            .filter(Boolean)
+            .join('\n')
+
+          if (!text) {
+            throw new Error('API 返回内容为空')
+          }
+
+          return { text: text.trim() }
+        } catch (err: any) {
+          console.warn(`Base ${base} Model ${model} request error:`, err?.message || err)
+          lastError = err
         }
-
-        return { text: text.trim() }
-      } catch (err: any) {
-        console.warn(`Model ${model} request error:`, err?.message || err)
-        lastError = err
       }
     }
 
@@ -411,8 +459,10 @@ export function useAIAgent() {
       }
     }
 
+    const activeApiKey = (config.apiKey || ENV_API_KEY || '').trim()
+
     try {
-      if (config.apiKey) {
+      if (activeApiKey) {
         const geminiRes = await queryGemini(trimmed, webGrounding?.contextText)
         replyText = geminiRes.text
       } else {
@@ -426,7 +476,7 @@ export function useAIAgent() {
           .replace(/【[^】]+】/, '')
           .replace(/词条《[^》]+》：/, '')
           .trim()
-        replyText = `已为您联网检索最新百科资讯：${cleanContext.slice(0, 180)}`
+        replyText = `指挥长，已为您联网检索最新权威资料：${cleanContext.slice(0, 180)}`
         emotion = 'smile'
         animation = 'Talking_0'
       } else {
@@ -438,7 +488,7 @@ export function useAIAgent() {
           actionTag = mockResult.actionTag
           if (!searchSources) searchSources = mockResult.searchSources
         } else {
-          replyText = `已收到您的提问：“${trimmed}”。我是全息数字人初音未来，目前知识中枢正在对该主题进行更深度的多模态索引。您可以向我提问具体的百科实体名称、时事天气或大屏调度指令哦！`
+          replyText = `指挥长，初音未来已收到您的提问：“${trimmed}”。目前全网多模态知识索引链路正在极速同步中，您可以向我提问具体的百科词条（如“量子计算机”、“黑洞”、“光刻机”）、实时天气、油价或大屏调度指令哦！`
           emotion = 'smile'
           animation = 'Talking_0'
         }

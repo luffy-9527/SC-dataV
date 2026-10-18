@@ -100,8 +100,10 @@ const VOICE_PRESETS: VoicePreset[] = [
 
 const activePresetId = ref<string>('default')
 
+const ENV_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) || ''
+
 const localConfig = reactive<DigitalHumanConfig>({
-  apiKey: '',
+  apiKey: ENV_API_KEY,
   model: 'gemini-3.5-flash',
   baseUrl: 'https://generativelanguage.googleapis.com',
   voicePitch: 1.05,
@@ -173,6 +175,9 @@ watch(
   () => props.config,
   (cfg) => {
     Object.assign(localConfig, cfg)
+    if (!localConfig.apiKey || !localConfig.apiKey.trim()) {
+      localConfig.apiKey = ENV_API_KEY
+    }
     const sv = cfg.selectedVoice?.toLowerCase() || ''
     if (sv.includes('ja') || sv.includes('jp')) {
       activePresetId.value = 'japanese'
@@ -329,7 +334,11 @@ function handleClose() {
 
 function handleSave() {
   stopPreviewVoice()
-  emit('save', { ...localConfig })
+  const savePayload = { ...localConfig }
+  if (!savePayload.apiKey || !savePayload.apiKey.trim()) {
+    savePayload.apiKey = ENV_API_KEY
+  }
+  emit('save', savePayload)
   emit('close')
 }
 
@@ -389,7 +398,7 @@ onBeforeUnmount(() => {
               v-model="localConfig.apiKey"
               :type="showKey ? 'text' : 'password'"
               class="form-input"
-              placeholder="请输入您的 Gemini API Key"
+              placeholder="系统已内置有效 API Key（留空则使用默认配置）"
             />
             <button type="button" class="toggle-eye-btn" @click="showKey = !showKey">
               {{ showKey ? '隐藏' : '显示' }}
@@ -411,10 +420,8 @@ onBeforeUnmount(() => {
           <label class="form-label">大模型内核版本</label>
           <select v-model="localConfig.model" class="form-select">
             <option value="gemini-3.5-flash">Gemini 3.5 Flash（官方推荐 · 极速生成与百科支持）</option>
-            <option value="gemini-flash-latest">Gemini Flash Latest（自动适配最新模型）</option>
-            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite（超低延迟响应）</option>
-            <option value="gemini-3.8-flash">Gemini 3.8 Flash（前沿模型）</option>
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro（深度逻辑推理）</option>
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash（前沿高智力多模态模型）</option>
+            <option value="gemini-flash-latest">Gemini Flash Latest（自动适配最新版本）</option>
           </select>
         </div>
 
