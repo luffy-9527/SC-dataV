@@ -5,7 +5,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/demo1',
+      redirect: '/demo4',
     },
     {
       path: '/demo1',
@@ -23,8 +23,13 @@ const router = createRouter({
       component: () => import('@/pages/Demo3/index.vue'),
     },
     {
+      path: '/demo4',
+      name: 'Demo4',
+      component: () => import('@/pages/Demo4/index.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
-      redirect: '/demo1',
+      redirect: '/demo4',
     },
   ],
 })

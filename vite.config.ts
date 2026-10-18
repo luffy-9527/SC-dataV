@@ -17,7 +17,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 8888,
-    open: '/#/demo1',
+    open: '/#/demo4',
   },
   optimizeDeps: {
     include: ['d3-geo'],
