@@ -27,29 +27,32 @@ const inputText = ref('')
 const isExpanded = ref(true)
 const streamRef = ref<HTMLElement | null>(null)
 
-const quickPrompts = [
-  '初音未来是什么时候诞生的？',
-  '成都今天天气如何？',
-  '量子计算机的原理是什么？',
-  '介绍一下三星堆遗址的历史',
-  '国际原油今日行情走势',
-  '汇报四川省今日核心态势',
-  '诊断万米深地油田井下异常',
-  '请给我展示一段才艺舞蹈',
-]
+function formatSourceUrl(url?: string, title?: string): string {
+  if (!url) {
+    return `https://www.google.com/search?q=${encodeURIComponent(title || '全网实时检索')}`
+  }
+  if (url.startsWith('//')) {
+    return `https:${url}`
+  }
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  const match = url.match(/uddg=([^&]+)/)
+  if (match) {
+    try {
+      return decodeURIComponent(match[1])
+    } catch {
+      // ignore
+    }
+  }
+  return `https://${url.replace(/^\/+/, '')}`
+}
 
 function handleSubmit() {
   const val = inputText.value.trim()
   if (!val || props.disabled) return
   emit('send', val)
   inputText.value = ''
-  isExpanded.value = true
-  scrollToBottom()
-}
-
-function handleQuickClick(prompt: string) {
-  if (props.disabled) return
-  emit('send', prompt)
   isExpanded.value = true
   scrollToBottom()
 }
@@ -206,13 +209,31 @@ function getActionInfo(actionTag?: string) {
               class="message-sources-bar"
             >
               <span class="sources-label">🌐 实时信源：</span>
-              <span
+              <a
                 v-for="(src, idx) in msg.searchSources"
                 :key="idx"
                 class="source-pill-tag"
+                :href="formatSourceUrl(src.url, src.title)"
+                target="_blank"
+                rel="noopener noreferrer"
+                :title="`点击在新标签页访问来源：${src.title}`"
+                @click.stop
               >
-                {{ src.title }}
-              </span>
+                <span>{{ src.title }}</span>
+                <svg
+                  class="source-link-icon"
+                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
             </div>
 
             <!-- 业务大屏一键调度联动胶囊 -->
@@ -253,21 +274,6 @@ function getActionInfo(actionTag?: string) {
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 3. 快捷提问胶囊滑轨 (横向平滑滚动，无视觉遮挡) -->
-      <div class="quick-prompts-bar">
-        <button
-          v-for="prompt in quickPrompts"
-          :key="prompt"
-          type="button"
-          class="prompt-pill"
-          :disabled="disabled"
-          @click="handleQuickClick(prompt)"
-        >
-          <span class="pill-spark">✦</span>
-          <span>{{ prompt }}</span>
-        </button>
       </div>
 
       <!-- 4. 输入交互区 -->
@@ -684,11 +690,35 @@ function getActionInfo(actionTag?: string) {
 }
 
 .source-pill-tag {
-  color: #94a3b8;
+  color: #7dd3fc;
   background: rgba(0, 242, 254, 0.08);
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  border: 1px solid rgba(0, 242, 254, 0.25);
   border-radius: 10px;
-  padding: 1px 7px;
+  padding: 1px 8px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.source-pill-tag:hover {
+  color: #ffffff;
+  background: rgba(0, 242, 254, 0.22);
+  border-color: rgba(0, 242, 254, 0.65);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+  transform: translateY(-1px);
+}
+
+.source-link-icon {
+  opacity: 0.75;
+  transition: transform 0.2s;
+}
+
+.source-pill-tag:hover .source-link-icon {
+  opacity: 1;
+  transform: translate(1px, -1px);
 }
 
 .action-jump-wrap {
@@ -748,57 +778,6 @@ function getActionInfo(actionTag?: string) {
 @keyframes typing {
   0%, 100% { opacity: 0.2; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-3px); }
-}
-
-/* 3. 快捷提问胶囊条 */
-.quick-prompts-bar {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  overflow-x: auto;
-  padding: 6px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  mask-image: linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%);
-}
-
-.quick-prompts-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.prompt-pill {
-  flex-shrink: 0;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #94a3b8;
-  padding: 4px 11px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  cursor: pointer;
-  transition: all 0.25s;
-  backdrop-filter: blur(8px);
-}
-
-.prompt-pill:hover:not(:disabled) {
-  color: #00f2fe;
-  border-color: rgba(0, 242, 254, 0.45);
-  background: rgba(0, 242, 254, 0.12);
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
-  transform: translateY(-1px);
-}
-
-.pill-spark {
-  color: #00f2fe;
-  font-size: 9px;
 }
 
 /* 4. 输入交互区 */

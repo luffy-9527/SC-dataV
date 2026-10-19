@@ -46,6 +46,11 @@ function liveWebSearchPlugin() {
               url = decodeURIComponent(uddgMatch[1])
             } catch {}
           }
+          if (url.startsWith('//')) {
+            url = `https:${url}`
+          } else if (!/^https?:\/\//i.test(url)) {
+            url = `https://duckduckgo.com${url.startsWith('/') ? '' : '/'}${url}`
+          }
           let title = '全网实时检索'
           try {
             const u = new URL(url)
