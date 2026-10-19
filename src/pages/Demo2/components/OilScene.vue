@@ -8002,15 +8002,15 @@ function buildTelemetryBadges() {
 
   const badges: { text: string; value: string; pos: [number, number, number]; target: [number, number, number]; color: string; deviceKey?: string }[] = [
     { text: '泥浆循环固控中心', value: '流量: 48.5L/s · 泵压24MPa', pos: [-56, 18, 10], target: [-44, 4.0, 10], color: '#38bdf8' },
-    { text: '固井混浆泵车总成', value: '水泥密度: 1.92g/cm³ · 正常', pos: [-46, 17, -32], target: [-38, 3.8, -26], color: '#f59e0b' },
+    { text: '固井混浆泵车总成', value: '水泥密度: 1.92g/cm³ · 正常', pos: [-46, 17, 76], target: [-46, 4.0, 64], color: '#f59e0b' },
     { text: '1# 游梁式抽油机', value: '功图: 游动阀漏失 · 载荷 72.4kN', pos: [34, 28, 42], target: [22, 18, 34], color: '#f59e0b', deviceKey: 'pump-jack-1' },
     { text: '2# 游梁式抽油机', value: '功图: 气锁供液不足 · 充满 51.8%', pos: [58, 28, -12], target: [48, 18, -16], color: '#f59e0b', deviceKey: 'pump-jack-2' },
     { text: '3# 游梁式抽油机', value: '功图: 正常饱满 · 载荷 86.4kN', pos: [48, 30, 14], target: [34, 19.5, 10], color: '#38bdf8', deviceKey: 'pumping-unit' },
     { text: '井口多参数智能采油树', value: '油压: 14.8MPa · 井温: 68.5℃', pos: [58, 16, 28], target: [45.7, 5.2, 23.9], color: '#10b981', deviceKey: 'xTree' },
     { text: '卧式三相生产分离器', value: '瞬时流量: 1,428.6t/d · 稳产', pos: [72, 17, 24], target: [59.8, 3.5, 19.7], color: '#38bdf8', deviceKey: 'separator' },
     { text: '原油高压水套加热炉', value: '水套浴温: 82.5℃ · 控温正常', pos: [65, 15, 6], target: [52.4, 3.2, 10.2], color: '#f59e0b', deviceKey: 'heater' },
-    { text: '外输增压与装车栈桥', value: '多级泵扬程: 180m · 装车正常', pos: [-22, 17, -18], target: [-32, 4.0, -22], color: '#10b981', deviceKey: 'loading-rack' },
-    { text: '荒漠长输 PIG 清管站', value: '智能超声测厚: 14.2mm · A级', pos: [-62, 16, -30], target: [-85, 3.0, -42], color: '#38bdf8', deviceKey: 'long-pipeline' },
+    { text: '外输增压与装车栈桥', value: '多级泵扬程: 180m · 装车正常', pos: [-14, 17, -18], target: [-24, 4.0, -24], color: '#10b981', deviceKey: 'loading-rack' },
+    { text: '荒漠长输 PIG 清管站', value: '智能超声测厚: 14.2mm · A级', pos: [-98, 17, -32], target: [-112, 3.5, -44], color: '#38bdf8', deviceKey: 'long-pipeline' },
     { text: 'MWD随钻测井探针', value: '井斜: 0.82° · 方位124°', pos: [-48, -36, 12], target: [-15, -42, 2], color: '#00f0ff' },
   ]
 
