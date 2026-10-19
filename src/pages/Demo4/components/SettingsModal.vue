@@ -6,6 +6,7 @@ interface Props {
   visible: boolean
   config: DigitalHumanConfig
   voices: SpeechSynthesisVoice[]
+  testGptSovits?: (url: string) => Promise<{ success: boolean; message: string }>
 }
 
 const props = defineProps<Props>()
@@ -16,6 +17,8 @@ const emit = defineEmits<{
 
 const showKey = ref(false)
 const isTestingVoice = ref(false)
+const isTestingGpt = ref(false)
+const gptTestStatus = ref<{ success?: boolean; text: string } | null>(null)
 
 interface VoicePreset {
   id: string
@@ -111,7 +114,23 @@ const localConfig = reactive<DigitalHumanConfig>({
   selectedVoice: '',
   useMockOnFailure: true,
   enableWebSearch: true,
+  enableGptSovits: false,
+  gptSovitsUrl: 'http://127.0.0.1:9880',
 })
+
+async function handleTestGptSovits() {
+  if (!props.testGptSovits) return
+  isTestingGpt.value = true
+  gptTestStatus.value = { text: '正在探测并向本地 AI 语音服务发送合成测试...' }
+  try {
+    const res = await props.testGptSovits(localConfig.gptSovitsUrl || 'http://127.0.0.1:9880')
+    gptTestStatus.value = { success: res.success, text: res.message }
+  } catch (err: any) {
+    gptTestStatus.value = { success: false, text: `探测异常: ${err?.message || '网络连接超时'}` }
+  } finally {
+    isTestingGpt.value = false
+  }
+}
 
 function getBestDefaultVoice(): SpeechSynthesisVoice | undefined {
   if (!props.voices || props.voices.length === 0) return undefined
@@ -423,6 +442,48 @@ onBeforeUnmount(() => {
             <option value="gemini-3.8-flash">Gemini 3.8 Flash（前沿高智力多模态模型）</option>
             <option value="gemini-flash-latest">Gemini Flash Latest（自动适配最新版本）</option>
           </select>
+        </div>
+
+        <!-- GPT-SoVITS 开源 AI 原声引擎支持 -->
+        <div class="gpt-sovits-card-box">
+          <div class="gpt-header-row">
+            <label class="checkbox-row">
+              <input v-model="localConfig.enableGptSovits" type="checkbox" class="tech-checkbox" />
+              <span class="checkbox-text font-bold">优先启用 GPT-SoVITS 开源 AI 拟真原声</span>
+            </label>
+            <span class="badge-sovits">100% 官方母带音色</span>
+          </div>
+          <p class="gpt-tip-text">
+            开启后优先向本地/远程 GPT-SoVITS 服务请求初音未来本尊 AI 声音；未开启或服务离线时，系统将<strong>自动平滑回退</strong>至内置的晓晓甜美音色，确保任何环境下都稳定出声。
+          </p>
+
+          <div v-if="localConfig.enableGptSovits" class="gpt-input-group">
+            <div class="gpt-url-row">
+              <span class="gpt-url-label">API 服务端点：</span>
+              <input
+                v-model="localConfig.gptSovitsUrl"
+                type="text"
+                class="form-input gpt-url-input"
+                placeholder="默认 http://127.0.0.1:9880"
+              />
+              <button
+                type="button"
+                class="test-gpt-btn"
+                :disabled="isTestingGpt"
+                @click="handleTestGptSovits"
+              >
+                <span>{{ isTestingGpt ? '正在探测...' : '⚡ 测试连接并试听' }}</span>
+              </button>
+            </div>
+
+            <div
+              v-if="gptTestStatus"
+              class="gpt-status-badge"
+              :class="{ success: gptTestStatus.success, error: gptTestStatus.success === false }"
+            >
+              {{ gptTestStatus.text }}
+            </div>
+          </div>
         </div>
 
         <!-- 初音未来专属调音预设卡片群 -->
@@ -915,6 +976,110 @@ onBeforeUnmount(() => {
 .btn-primary:hover {
   opacity: 0.95;
   box-shadow: 0 0 20px rgba(0, 242, 254, 0.55);
+}
+
+/* GPT-SoVITS 专属卡片 */
+.gpt-sovits-card-box {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.05) 0%, rgba(168, 85, 247, 0.07) 100%);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gpt-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.font-bold {
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.badge-sovits {
+  font-size: 10px;
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.gpt-tip-text {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.gpt-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.gpt-url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gpt-url-label {
+  font-size: 11px;
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+
+.gpt-url-input {
+  flex: 1;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.test-gpt-btn {
+  white-space: nowrap;
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.4);
+  color: #00f2fe;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.test-gpt-btn:hover:not(:disabled) {
+  background: rgba(0, 242, 254, 0.25);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+}
+
+.gpt-status-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.gpt-status-badge.success {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.gpt-status-badge.error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 @keyframes pulse {

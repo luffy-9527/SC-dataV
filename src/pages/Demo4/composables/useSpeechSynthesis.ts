@@ -104,6 +104,11 @@ export function useSpeechSynthesis() {
   const pitch = ref(1.05)
   const rate = ref(1.0)
 
+  // GPT-SoVITS 开源 AI 原声配置
+  const enableGptSovits = ref(false)
+  const gptSovitsUrl = ref('http://127.0.0.1:9880')
+  const isGptSovitsActive = ref(false)
+
   // Current calculated viseme values to drive 3D mouth morph targets
   const currentVisemes = ref<VisemeFrame>({
     viseme_aa: 0,
@@ -266,8 +271,38 @@ export function useSpeechSynthesis() {
     update()
   }
 
-  function speak(
-    text: string,
+  let currentAudio: HTMLAudioElement | null = null
+  let currentAudioUrl: string | null = null
+
+  async function fetchGptSovitsAudio(text: string, baseUrl: string): Promise<Blob | null> {
+    const cleanUrl = baseUrl.replace(/\/+$/, '')
+    const endpoints = [
+      `${cleanUrl}/tts?text=${encodeURIComponent(text)}&text_lang=zh`,
+      `${cleanUrl}/tts?text=${encodeURIComponent(text)}&text_language=zh`,
+      `${cleanUrl}/?text=${encodeURIComponent(text)}&text_language=zh`,
+      `${cleanUrl}/?text=${encodeURIComponent(text)}&text_lang=zh`,
+    ]
+
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          signal: AbortSignal.timeout(5000),
+        })
+        if (res.ok) {
+          const blob = await res.blob()
+          if (blob && blob.size > 200) {
+            return blob
+          }
+        }
+      } catch {
+        // try next
+      }
+    }
+    return null
+  }
+
+  function speakNative(
+    cleanText: string,
     options?: {
       onStart?: () => void
       onEnd?: () => void
@@ -279,6 +314,46 @@ export function useSpeechSynthesis() {
       return
     }
 
+    if (options?.suppressChirp === false) {
+      audioEngine.playHoloChirp()
+    }
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    if (currentVoice.value) {
+      utterance.voice = currentVoice.value
+    }
+    utterance.pitch = pitch.value
+    utterance.rate = rate.value
+    utterance.lang = currentVoice.value?.lang || 'zh-CN'
+
+    utterance.onstart = () => {
+      isSpeaking.value = true
+      isGptSovitsActive.value = false
+      options?.onStart?.()
+    }
+
+    utterance.onend = () => {
+      isSpeaking.value = false
+      options?.onEnd?.()
+    }
+
+    utterance.onerror = (e) => {
+      console.warn('SpeechSynthesis error:', e)
+      isSpeaking.value = false
+      options?.onEnd?.()
+    }
+
+    window.speechSynthesis.speak(utterance)
+  }
+
+  async function speak(
+    text: string,
+    options?: {
+      onStart?: () => void
+      onEnd?: () => void
+      suppressChirp?: boolean
+    },
+  ) {
     // Cancel any previous speech
     stop()
 
@@ -297,43 +372,95 @@ export function useSpeechSynthesis() {
       return
     }
 
-    // Play holographic chime only if explicitly requested
-    if (options?.suppressChirp === false) {
-      audioEngine.playHoloChirp()
+    // 1. 若开启 GPT-SoVITS，优先请求本地/远程 AI 原声服务
+    if (enableGptSovits.value && gptSovitsUrl.value.trim()) {
+      try {
+        const audioBlob = await fetchGptSovitsAudio(cleanText, gptSovitsUrl.value.trim())
+        if (audioBlob) {
+          if (options?.suppressChirp === false) {
+            audioEngine.playHoloChirp()
+          }
+
+          const blobUrl = URL.createObjectURL(audioBlob)
+          currentAudioUrl = blobUrl
+          currentAudio = new Audio(blobUrl)
+
+          currentAudio.onplay = () => {
+            isSpeaking.value = true
+            isGptSovitsActive.value = true
+            options?.onStart?.()
+          }
+
+          currentAudio.onended = () => {
+            isSpeaking.value = false
+            isGptSovitsActive.value = false
+            if (currentAudioUrl) {
+              URL.revokeObjectURL(currentAudioUrl)
+              currentAudioUrl = null
+            }
+            currentAudio = null
+            options?.onEnd?.()
+          }
+
+          currentAudio.onerror = () => {
+            isSpeaking.value = false
+            isGptSovitsActive.value = false
+            if (currentAudioUrl) {
+              URL.revokeObjectURL(currentAudioUrl)
+              currentAudioUrl = null
+            }
+            currentAudio = null
+            // 播放出错时平滑回退到系统原生语音
+            speakNative(cleanText, options)
+          }
+
+          await currentAudio.play()
+          return
+        }
+      } catch (err) {
+        console.warn('GPT-SoVITS 语音服务未响应，自动平滑回退至系统原生语音:', err)
+      }
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-    if (currentVoice.value) {
-      utterance.voice = currentVoice.value
-    }
-    utterance.pitch = pitch.value
-    utterance.rate = rate.value
-    utterance.lang = currentVoice.value?.lang || 'zh-CN'
-
-    utterance.onstart = () => {
-      isSpeaking.value = true
-      options?.onStart?.()
-    }
-
-    utterance.onend = () => {
-      isSpeaking.value = false
-      options?.onEnd?.()
-    }
-
-    utterance.onerror = (e) => {
-      console.warn('SpeechSynthesis error:', e)
-      isSpeaking.value = false
-      options?.onEnd?.()
-    }
-
-    window.speechSynthesis.speak(utterance)
+    // 2. 默认或回退通道：调用浏览器系统原生语音
+    speakNative(cleanText, options)
   }
 
   function stop() {
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+      currentAudio = null
+    }
+    if (currentAudioUrl) {
+      URL.revokeObjectURL(currentAudioUrl)
+      currentAudioUrl = null
+    }
     if (isSupported.value) {
       window.speechSynthesis.cancel()
     }
     isSpeaking.value = false
+    isGptSovitsActive.value = false
+  }
+
+  // 测试 GPT-SoVITS 连通性
+  async function testGptSovits(
+    url: string,
+    sampleText = '指挥长好！初音未来开源AI原声连接正常！',
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const blob = await fetchGptSovitsAudio(sampleText, url)
+      if (blob) {
+        const testAudioUrl = URL.createObjectURL(blob)
+        const testAudio = new Audio(testAudioUrl)
+        testAudio.onended = () => URL.revokeObjectURL(testAudioUrl)
+        await testAudio.play()
+        return { success: true, message: '✅ 连接成功！已听到初音未来 AI 原声！' }
+      }
+      return { success: false, message: '未获取到音频流，请确认服务已启动 (如: python api.py)' }
+    } catch (e: any) {
+      return { success: false, message: `连接失败: ${e?.message || '网络连接被拒绝或跨域被拦截'}` }
+    }
   }
 
   // Play audio blip
@@ -352,6 +479,9 @@ export function useSpeechSynthesis() {
   return {
     isSupported,
     isSpeaking,
+    isGptSovitsActive,
+    enableGptSovits,
+    gptSovitsUrl,
     voices,
     currentVoice,
     setVoiceByName,
@@ -361,6 +491,7 @@ export function useSpeechSynthesis() {
     audioSpectrum,
     speak,
     stop,
+    testGptSovits,
     playClickBlip,
   }
 }

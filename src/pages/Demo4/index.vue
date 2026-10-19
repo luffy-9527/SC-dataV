@@ -33,14 +33,19 @@ const {
   audioSpectrum,
   pitch,
   rate,
+  enableGptSovits,
+  gptSovitsUrl,
   speak,
   stop: stopSpeaking,
+  testGptSovits,
 } = useSpeechSynthesis()
 
 // Apply saved voice config
 if (config.voicePitch) pitch.value = config.voicePitch
 if (config.voiceRate) rate.value = config.voiceRate
 if (config.selectedVoice) setVoiceByName(config.selectedVoice)
+if (config.enableGptSovits !== undefined) enableGptSovits.value = config.enableGptSovits
+if (config.gptSovitsUrl) gptSovitsUrl.value = config.gptSovitsUrl
 
 const {
   isListening,
@@ -114,6 +119,8 @@ function handleSaveSettings(newConfig: any) {
   if (newConfig.voicePitch !== undefined) pitch.value = newConfig.voicePitch
   if (newConfig.voiceRate !== undefined) rate.value = newConfig.voiceRate
   if (newConfig.selectedVoice !== undefined) setVoiceByName(newConfig.selectedVoice || '')
+  if (newConfig.enableGptSovits !== undefined) enableGptSovits.value = newConfig.enableGptSovits
+  if (newConfig.gptSovitsUrl !== undefined) gptSovitsUrl.value = newConfig.gptSovitsUrl
 }
 
 // Clear Context History
@@ -209,6 +216,7 @@ onBeforeUnmount(() => {
       :visible="isSettingsVisible"
       :config="config"
       :voices="voices"
+      :test-gpt-sovits="testGptSovits"
       @close="isSettingsVisible = false"
       @save="handleSaveSettings"
     />

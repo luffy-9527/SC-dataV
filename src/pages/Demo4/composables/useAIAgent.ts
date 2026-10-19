@@ -14,6 +14,8 @@ const DEFAULT_CONFIG: DigitalHumanConfig = {
   selectedVoice: '',
   useMockOnFailure: true,
   enableWebSearch: true,
+  enableGptSovits: false,
+  gptSovitsUrl: 'http://127.0.0.1:9880',
 }
 
 export function cleanWikiKeyword(raw: string): string {

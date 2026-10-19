@@ -48,4 +48,6 @@ export interface DigitalHumanConfig {
   selectedVoice: string
   useMockOnFailure: boolean
   enableWebSearch: boolean
+  enableGptSovits?: boolean
+  gptSovitsUrl?: string
 }
