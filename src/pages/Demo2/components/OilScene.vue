@@ -395,7 +395,7 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
     name: '原油外输泵房与装车栈桥',
     shortLabel: '外输装车',
     cameraPos: [-5, 24, 10],
-    targetPos: [-36, 4.0, -28],
+    targetPos: [-24, 3.5, -24],
     title: '储运区外输增压多级泵与发油鹤管装车栈桥',
     status: '密闭安全发运中',
     metrics: [
@@ -411,8 +411,8 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
     id: 'long-pipeline',
     name: '荒漠长输保温输油管廊与 PIG 清管站',
     shortLabel: '长输管网',
-    cameraPos: [-46, 22, -8],
-    targetPos: [-85, 2.5, -42],
+    cameraPos: [-88, 18, -20],
+    targetPos: [-112, 3.5, -44],
     title: '荒漠架空长输保温输油管廊与智能 PIG 清管内检测站',
     status: '智能巡检中 · 运行平稳',
     metrics: [
@@ -1994,57 +1994,7 @@ function buildDesertDunesAndEnvironment() {
     envGroup.add(bush)
   })
 
-  // 6. 大漠野战作业生活营区活动方舱群 (Desert Camp Modular Cabins)
-  const campGroup = new THREE.Group()
-  campGroup.position.set(65, 0.1, -60)
-  campGroup.rotation.y = -Math.PI / 4.5
 
-  const cabinWhite = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35 })
-  const cabinBlue = new THREE.MeshBasicMaterial({ color: 0x0284c7 })
-  const cabinDoor = new THREE.MeshBasicMaterial({ color: 0x334155 })
-
-  for (let i = 0; i < 3; i++) {
-    const cabin = new THREE.Group()
-    cabin.position.set(0, 0, i * 11)
-
-    // 箱体 (Container Body)
-    const box = new THREE.Mesh(new THREE.BoxGeometry(16, 4.2, 6.5), cabinWhite)
-    box.position.y = 2.2
-    cabin.add(box)
-
-    // 箱体腰线科技蓝条纹
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(16.05, 0.6, 6.55), cabinBlue)
-    stripe.position.y = 2.4
-    cabin.add(stripe)
-
-    // 箱门与窗户
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.0, 0.1), cabinDoor)
-    door.position.set(-4, 1.6, 3.3)
-    cabin.add(door)
-
-    // 空调室外机
-    const ac = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 1.0), new THREE.MeshStandardMaterial({ color: 0x94a3b8 }))
-    ac.position.set(5, 3.2, 3.5)
-    cabin.add(ac)
-
-    // 营地卫星通信锅盖天线 (第1栋房顶)
-    if (i === 0) {
-      const dishPole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0x64748b }))
-      dishPole.position.set(0, 5.5, 0)
-      cabin.add(dishPole)
-
-      const dish = new THREE.Mesh(
-        new THREE.SphereGeometry(1.6, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2.2),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, side: THREE.DoubleSide }),
-      )
-      dish.rotation.x = Math.PI / 3
-      dish.position.set(0, 7.0, 0)
-      cabin.add(dish)
-    }
-
-    campGroup.add(cabin)
-  }
-  envGroup.add(campGroup)
 
   // 7. 大漠微风扬沙流动粒子 (Desert Sand Dust Particles)
   const dustCount = 450
@@ -4393,18 +4343,18 @@ function buildModularContainerCamp() {
   }
 
   // 1. 西翼生活营区 (Living & Accommodation Camp)
-  // 位于井场西侧平整碎石场地: X = -64, Z = 0
-  const westPad = new THREE.Mesh(new THREE.BoxGeometry(32, 0.3, 62), padGravel)
-  westPad.position.set(-64, 0.15, 0)
+  // 位于井场西侧平整碎石场地: X = -82, Z = 8，与固控泥浆区保持10米安全消防通道距离
+  const westPad = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 52), padGravel)
+  westPad.position.set(-82, 0.15, 8)
   campGroup.add(westPad)
 
-  const westRows = [-71, -57]
-  const westZs = [-21, -7, 7, 21]
+  const westRows = [-88, -76]
+  const westZs = [-10, 2, 14, 26]
   westRows.forEach((rx) => {
     westZs.forEach((rz) => {
       const c = createCabin()
       c.position.set(rx, 0.3, rz)
-      c.rotation.y = rx === -71 ? Math.PI : 0 // 门窗朝向中间营区主道
+      c.rotation.y = rx === -88 ? Math.PI : 0 // 门窗朝向中间营区主道
       campGroup.add(c)
     })
   })
@@ -4429,9 +4379,9 @@ function buildModularContainerCamp() {
 
   // 3. 营区照明路灯 (Street Lamps)
   const lampConfigs = [
-    { lx: -64, lz: -18 },
-    { lx: -64, lz: 0 },
-    { lx: -64, lz: 18 },
+    { lx: -82, lz: -4 },
+    { lx: -82, lz: 8 },
+    { lx: -82, lz: 20 },
     { lx: 46, lz: -72 },
     { lx: 46, lz: -62 },
     { lx: 46, lz: -52 },
@@ -5153,7 +5103,8 @@ function buildMudSystem() {
 function buildPowerAndBOPControl() {
   if (!scene) return
   const powerGroup = new THREE.Group()
-  powerGroup.position.set(12, 0.2, 35)
+  // 位于井场南后方动力公用区 (X = 4, Z = 66)，与排管堆场及抽油机保持充足安全间距，彻底消除穿模
+  powerGroup.position.set(4, 0.2, 66)
 
   const genBox = new THREE.Mesh(new THREE.BoxGeometry(14, 5.5, 8), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7 }))
   genBox.position.y = 2.75
@@ -5164,12 +5115,12 @@ function buildPowerAndBOPControl() {
   powerGroup.add(exhaust)
 
   const koomeyBox = new THREE.Mesh(new THREE.BoxGeometry(8, 3.5, 6), new THREE.MeshStandardMaterial({ color: 0x0284c7 }))
-  koomeyBox.position.set(-14, 1.75, 0)
+  koomeyBox.position.set(-10, 1.75, 0)
   powerGroup.add(koomeyBox)
 
   for (let b = 0; b < 4; b++) {
     const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.6, 12), new THREE.MeshStandardMaterial({ color: 0xef4444 }))
-    bottle.position.set(-16.5 + b * 1.5, 4.2, 0)
+    bottle.position.set(-12.5 + b * 1.5, 4.2, 0)
     powerGroup.add(bottle)
   }
 
@@ -5192,8 +5143,9 @@ function buildSpecialFleet() {
 
   // 1. 重型越野起重机吊车 (Heavy Mobile Crane with 3-Stage Telescopic Boom & Double Sheave Block)
   const craneGroup = new THREE.Group()
-  craneGroup.position.set(-44, 0.2, 38) // 位于西排管堆场外侧设备通道，起吊姿态开阔无遮挡
-  craneGroup.rotation.y = Math.PI / 4.2
+  // 位于西排管堆场外侧开阔通道 (X = -48, Z = 42)，正对排管架与入场干道，与堆场保持 15m 充裕作业距离
+  craneGroup.position.set(-48, 0.2, 42)
+  craneGroup.rotation.y = Math.PI / 2
 
   // 车架重型箱形工字大梁底盘与保险杠
   const craneChassis = new THREE.Mesh(new THREE.BoxGeometry(8.4, 2.2, 19), truckYellow)
@@ -5340,8 +5292,9 @@ function buildSpecialFleet() {
 
   // 2. 固井注水泥双泵混浆车 (Dual-Pump Cementing Truck with Swivel Manifold)
   const cTruck = new THREE.Group()
-  cTruck.position.set(-42, 0.2, -28)
-  cTruck.rotation.y = Math.PI / 4
+  // 部署于井场南侧主入场道路待命区 (X = -46, Z = 64)，彻底移出储罐区与泵房，杜绝穿模
+  cTruck.position.set(-46, 0.2, 64)
+  cTruck.rotation.y = -Math.PI / 4.5
 
   const chassis = new THREE.Mesh(new THREE.BoxGeometry(7, 1.2, 18), steelDark)
   chassis.position.y = 1.6
@@ -5556,8 +5509,9 @@ function buildSpecialFleet() {
 
   // 6. 沙漠超重型多轴压裂混砂车 (Fracturing Truck)
   const fracTruck = new THREE.Group()
-  fracTruck.position.set(-65, 0.15, -15)
-  fracTruck.rotation.y = Math.PI / 5
+  // 部署于井场南侧进场干道路肩 (X = -62, Z = 56)，与固井车并列编队，远离营区，杜绝穿模
+  fracTruck.position.set(-62, 0.15, 56)
+  fracTruck.rotation.y = -Math.PI / 4
 
   const fracChassis = new THREE.Mesh(new THREE.BoxGeometry(6.8, 1.4, 20), darkTire)
   fracChassis.position.y = 1.5

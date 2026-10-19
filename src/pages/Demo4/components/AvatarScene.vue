@@ -134,30 +134,35 @@ function setupLighting() {
   if (!scene) return
 
   // Ambient soft cyber light
-  const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.85)
+  const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.9)
   scene.add(ambientLight)
 
-  // Front Key Light (Soft warm anime key light, not harsh white)
-  const keyLight = new THREE.DirectionalLight(0xfff8f0, 1.25)
-  keyLight.position.set(1.5, 2.4, 2.2)
+  // Front Key Light (Soft warm anime key light)
+  const keyLight = new THREE.DirectionalLight(0xfff8f0, 1.1)
+  keyLight.position.set(1.4, 2.2, 2.0)
   keyLight.castShadow = true
   keyLight.shadow.mapSize.width = 1024
   keyLight.shadow.mapSize.height = 1024
   keyLight.shadow.bias = -0.0001
   scene.add(keyLight)
 
+  // Front Direct Face Beauty Light (柔和正前脸部专属美颜补光，让面部通透红润白皙)
+  const faceBeautyLight = new THREE.DirectionalLight(0xfff4ec, 0.95)
+  faceBeautyLight.position.set(0, 1.35, 2.3)
+  scene.add(faceBeautyLight)
+
   // Front-Left Soft Sky-Blue Fill Light
-  const fillLight = new THREE.DirectionalLight(0xbae6fd, 0.7)
+  const fillLight = new THREE.DirectionalLight(0xbae6fd, 0.75)
   fillLight.position.set(-1.6, 1.6, 1.8)
   scene.add(fillLight)
 
   // Left Cyan Rim Light (Neon edge glow on twintails)
-  const cyanRim = new THREE.DirectionalLight(0x00f2fe, 1.5)
+  const cyanRim = new THREE.DirectionalLight(0x00f2fe, 1.6)
   cyanRim.position.set(-2.2, 1.8, -1.2)
   scene.add(cyanRim)
 
   // Right Purple Rim Light (Magenta neon edge on twintails)
-  const purpleRim = new THREE.DirectionalLight(0xc084fc, 1.2)
+  const purpleRim = new THREE.DirectionalLight(0xc084fc, 1.3)
   purpleRim.position.set(2.2, 1.8, -1.2)
   scene.add(purpleRim)
 
@@ -320,66 +325,34 @@ function setupHolographicStage() {
   scene.add(particleSystem)
 }
 
-function resolveActionName(type: 'anime' | 'magical', anim: AnimationType): string {
-  if (type === 'anime') {
-    switch (anim) {
-      case 'Idle':
-        return 'Cafe_Idle'
-      case 'Talking_0':
-        return 'Cafe_Reaction' // 数据研判阐释
-      case 'Talking_1':
-        return 'Cafe_Reaction' // 优雅手势讲解
-      case 'Talking_2':
-        return 'Tactical_Start' // 战术致意
-      case 'Laughing':
-        return 'Cafe_Idle' // 亲切甜美微笑
-      case 'Rumba':
-        return 'Cafe_Reaction' // 才艺律动
-      case 'StagePose':
-        return 'Tactical_Start' // 舞台主奏独唱姿态
-      case 'StageCheer':
-        return 'Cafe_Reaction' // 舞台欢呼应援
-      case 'Walk':
-        return 'Cafe_Walk' // 原地萌态巡台步
-      case 'FocusPose':
-        return 'Tactical_Start' // 眼神聚焦特写
-      case 'Angry':
-      case 'Crying':
-      case 'Terrified':
-        return 'Vital_Retreat' // 严谨警示与应急防御
-      default:
-        return 'Cafe_Idle'
-    }
-  } else {
-    switch (anim) {
-      case 'Idle':
-        return 'PLA_shakeDownSway' // 自然呼吸摆动
-      case 'Talking_0':
-        return 'PLA_shakeDown_slowUp' // 深度数据研判
-      case 'Talking_1':
-        return 'PLA_shakeDownUp_wave' // 优雅手势挥手讲解
-      case 'Talking_2':
-        return 'PLA_shakeDown_shakeUp' // 战术致敬致意
-      case 'Laughing':
-        return 'PLA_shakeDown1_shakeDownSway' // 亲切甜美微笑
-      case 'Rumba':
-        return 'PLA_slowUp_songStart002' // 官方演唱会32步正规舞蹈
-      case 'StagePose':
-        return 'PLA_songStart.001' // 舞台主奏姿态
-      case 'StageCheer':
-        return 'PLA_songStart.002' // 舞台欢呼跃动
-      case 'Walk':
-        return 'walk' // 优雅巡台步态
-      case 'FocusPose':
-        return 'PLA_slowUp_shakeDownUp' // 聚焦推镜头特写
-      case 'Angry':
-        return 'PLA_normal_shakeDown' // 严谨态势调度警示
-      case 'Crying':
-      case 'Terrified':
-        return 'PLA_normal_shakeUp' // 应急态势响应
-      default:
-        return 'PLA_shakeDownSway'
-    }
+function resolveActionName(_type: 'anime' | 'magical', anim: AnimationType): string {
+  switch (anim) {
+    case 'Idle':
+      return 'Cafe_Idle' // 优雅舒缓待机呼吸
+    case 'Talking_0':
+      return 'Cafe_Reaction' // 数据研判微点头讲解
+    case 'Talking_1':
+      return 'Cafe_Reaction' // 亲切手势挥手讲解
+    case 'Talking_2':
+      return 'Tactical_Start' // 战术端庄致意姿态
+    case 'Laughing':
+      return 'Cafe_Idle' // 亲切甜美微笑
+    case 'Rumba':
+      return 'Exs_Cutin' // 动感才艺旋律特写
+    case 'StagePose':
+      return 'Tactical_Start' // 舞台主奏独唱姿态
+    case 'StageCheer':
+      return 'Exs' // 舞台华丽应援与才艺大招
+    case 'Walk':
+      return 'Cafe_Walk' // 原地萌态巡台步
+    case 'FocusPose':
+      return 'Tactical_Start' // 眼神聚焦特写
+    case 'Angry':
+    case 'Crying':
+    case 'Terrified':
+      return 'Vital_Retreat' // 严谨警示与应急防御
+    default:
+      return 'Cafe_Idle'
   }
 }
 
@@ -407,7 +380,8 @@ function loadMikuModel(type: 'anime' | 'magical') {
   const gltfLoader = new GLTFLoader()
   gltfLoader.setDRACOLoader(dracoLoader)
 
-  const modelPath = type === 'magical' ? '/models/miku_magical.glb' : '/models/miku_bluearchive.glb'
+  // 统一采用二次元高精手办级初音未来模型，彻底告别方块低模
+  const modelPath = '/models/miku_bluearchive.glb'
 
   gltfLoader.load(
     modelPath,
@@ -431,13 +405,58 @@ function loadMikuModel(type: 'anime' | 'magical') {
           mesh.receiveShadow = true
 
           if (mesh.material) {
-            const mat = mesh.material as THREE.MeshStandardMaterial
-            mat.roughness = 0.85
-            mat.metalness = 0.0
-            mat.side = THREE.DoubleSide
+            const mat = (mesh.material as THREE.MeshStandardMaterial).clone()
+            mesh.material = mat
+
+            const mname = (mat.name || child.name || '').toLowerCase()
+            const isHair = mname.includes('hair')
+            const isFace = mname.includes('face')
+            const isEye = mname.includes('eye') || mname.includes('mouth')
+            const isOutline = mname.includes('outline')
+            const isBody = mname.includes('body')
+
             if (mat.map) {
               mat.map.colorSpace = THREE.SRGBColorSpace
             }
+
+            if (type === 'magical') {
+              // 魔法未来Live 全息发光态（赛博发光发丝 + 全息描边 + 通透微光）
+              if (isHair) {
+                mat.roughness = 0.28
+                mat.metalness = 0.08
+                mat.emissive = new THREE.Color(0x00d8e6)
+                mat.emissiveIntensity = 0.36
+              } else if (isFace || isEye) {
+                mat.roughness = 0.55
+                mat.metalness = 0.0
+                mat.emissive = new THREE.Color(0xffdbe0)
+                mat.emissiveIntensity = 0.08
+              } else if (isOutline) {
+                mat.color = new THREE.Color(0x00f2fe)
+              } else if (isBody) {
+                mat.roughness = 0.42
+                mat.metalness = 0.12
+                mat.emissive = new THREE.Color(0x0284c7)
+                mat.emissiveIntensity = 0.18
+              }
+            } else {
+              // 全息数智专员 经典二次元手办级饱满质感
+              if (isHair) {
+                mat.roughness = 0.42
+                mat.metalness = 0.04
+                mat.emissive = new THREE.Color(0x005963)
+                mat.emissiveIntensity = 0.12
+              } else if (isFace || isEye) {
+                mat.roughness = 0.6
+                mat.metalness = 0.0
+              } else if (isOutline) {
+                mat.color = new THREE.Color(0x0f172a)
+              } else if (isBody) {
+                mat.roughness = 0.65
+                mat.metalness = 0.06
+              }
+            }
+            mat.side = THREE.DoubleSide
           }
         }
 
@@ -462,8 +481,8 @@ function loadMikuModel(type: 'anime' | 'magical') {
       const initialSize = new THREE.Vector3()
       initialBox.getSize(initialSize)
 
-      // Chibi anime model proportion height ~1.28m, Magical Mirai ~1.50m
-      const targetHeight = type === 'anime' ? 1.28 : 1.5
+      // 精确适配初音未来高度为 1.42m，位于舞台与半身讲解黄金视野中轴线
+      const targetHeight = 1.42
       const scaleFactor = targetHeight / Math.max(initialSize.y, 0.001)
       model.scale.setScalar(scaleFactor)
 
@@ -474,7 +493,7 @@ function loadMikuModel(type: 'anime' | 'magical') {
 
       model.position.x = -center.x
       model.position.z = -center.z
-      model.position.y = -scaledBox.min.y // Place feet directly on the holographic pedestal surface (y = 0)
+      model.position.y = -scaledBox.min.y // 脚底精准踏立在全息底座表面 (y = 0)
       model.rotation.set(0, 0, 0)
       baseModelY = model.position.y
 
@@ -533,8 +552,7 @@ function playAnimation(name: AnimationType, force = false) {
   const clipName = resolveActionName(props.modelType, name)
   let targetAction = actions[clipName]
   if (!targetAction) {
-    const fallback = props.modelType === 'anime' ? 'Cafe_Idle' : 'PLA_shakeDownSway'
-    targetAction = actions[fallback] || Object.values(actions)[0]
+    targetAction = actions['Cafe_Idle'] || Object.values(actions)[0]
   }
   if (!targetAction) return
 

@@ -199,8 +199,8 @@ onBeforeUnmount(() => {
           >
             <div class="style-icon-dot cyan" />
             <div class="style-text-box">
-              <span class="style-name">蔚蓝动漫萌系</span>
-              <span class="style-sub">经典高精贴图</span>
+              <span class="style-name">全息数智专员</span>
+              <span class="style-sub">高精手办 · 经典原色</span>
             </div>
             <span v-if="modelType === 'anime'" class="active-check">✓</span>
           </button>
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
             <div class="style-icon-dot purple" />
             <div class="style-text-box">
               <span class="style-name">魔法未来Live</span>
-              <span class="style-sub">舞台全息32步</span>
+              <span class="style-sub">舞台全息 · 赛博发光</span>
             </div>
             <span v-if="modelType === 'magical'" class="active-check">✓</span>
           </button>
