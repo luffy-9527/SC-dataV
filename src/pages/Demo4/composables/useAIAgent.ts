@@ -248,22 +248,23 @@ export function useAIAgent() {
     const sources: { title: string; url?: string }[] = []
     let contextText = ''
 
-    // 1. Try local dev server / preview real-time web search API first (DuckDuckGo + Weather + Wiki)
+    // 1. Try server real-time web search API first (Local dev server / Cloudflare Functions / Workers)
     try {
       const searchRes = await fetch(`/api/websearch?q=${encodeURIComponent(query)}`, {
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(8000),
       })
-      if (searchRes.ok) {
+      const contentType = searchRes.headers.get('content-type') || ''
+      if (searchRes.ok && contentType.includes('application/json')) {
         const data = await searchRes.json()
-        if (data.contextText && data.contextText.trim()) {
+        if (data && data.contextText && data.contextText.trim()) {
           return {
             contextText: data.contextText,
             sources: data.sources || [],
           }
         }
       }
-    } catch {
-      // ignore and fallback to client-side direct APIs
+    } catch (e) {
+      console.warn('联网检索端点响应异常，启用客户端备用检索源:', e)
     }
 
     // 2. Weather Direct Query (Client-side Fallback)
@@ -299,7 +300,7 @@ export function useAIAgent() {
       const searchTerms = Array.from(new Set([searchKeyword, rawCleaned])).filter(Boolean)
 
       const wikiBases = [
-        ...(import.meta.env.DEV ? ['/wiki-proxy'] : []),
+        '/wiki-proxy',
         'https://zh.wikipedia.org',
       ]
 
@@ -383,7 +384,7 @@ export function useAIAgent() {
     contents.push({ role: 'user', parts: [{ text: finalUserText }] })
 
     const baseCandidates = [
-      ...(import.meta.env.DEV ? ['/gemini-proxy'] : []),
+      '/gemini-proxy',
       config.baseUrl.replace(/\/+$/, ''),
       'https://generativelanguage.googleapis.com',
     ]
