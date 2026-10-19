@@ -20,6 +20,7 @@ const navItems = [
   { path: '/demo1', name: 'Demo1 智慧城市' },
   { path: '/demo2', name: 'Demo2 智慧油田' },
   { path: '/demo3', name: 'Demo3 自动驾驶' },
+  { path: '/demo4', name: 'Demo4 AI数字人' },
 ]
 
 function navigateTo(path: string) {

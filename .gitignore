@@ -12,6 +12,9 @@ dist
 dist-ssr
 back
 *.local
+.env
+.env.*
+!.env.example
 .qoder
 replacement-files/
 

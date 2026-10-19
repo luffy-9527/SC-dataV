@@ -89,6 +89,9 @@ onBeforeUnmount(() => {
         <button class="nav-switch-btn" title="切换到自动驾驶数字孪生大屏" @click="navigateTo('/demo3')">
           <span>Demo3 智驾</span>
         </button>
+        <button class="nav-switch-btn" title="切换到AI数字人智能指挥舱" @click="navigateTo('/demo4')">
+          <span>Demo4 数字人</span>
+        </button>
       </div>
       <a
         class="github-link"

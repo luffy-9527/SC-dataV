@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+</script>
+
 <template>
   <header class="headder">
     <svg class="headder__bg" viewBox="0 0 1920 82" preserveAspectRatio="none" aria-hidden="true">
@@ -14,14 +20,17 @@
 
     <div class="headder__actions">
       <div class="headder__switcher">
-        <router-link to="/demo1" class="headder__switch-btn active" title="当前：智慧城市">
+        <router-link to="/demo1" class="headder__switch-btn" :class="{ active: route.path === '/demo1' }" title="当前：智慧城市">
           <span>Demo1 城市</span>
         </router-link>
-        <router-link to="/demo2" class="headder__switch-btn" title="切换到工业级石油开采大屏">
+        <router-link to="/demo2" class="headder__switch-btn" :class="{ active: route.path === '/demo2' }" title="切换到工业级石油开采大屏">
           <span>Demo2 油田</span>
         </router-link>
-        <router-link to="/demo3" class="headder__switch-btn" title="切换到自动驾驶数字孪生大屏">
+        <router-link to="/demo3" class="headder__switch-btn" :class="{ active: route.path === '/demo3' }" title="切换到自动驾驶数字孪生大屏">
           <span>Demo3 智驾</span>
+        </router-link>
+        <router-link to="/demo4" class="headder__switch-btn" :class="{ active: route.path === '/demo4' }" title="切换到AI数字人智能指挥舱">
+          <span>Demo4 数字人</span>
         </router-link>
       </div>
       <a class="headder__github" href="https://github.com/luffy-9527/SC-dataV" target="_blank" rel="noreferrer" title="GitHub">
