@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import AvatarScene from './components/AvatarScene.vue'
 import TopNavBar from './components/TopNavBar.vue'
 import LeftPanel from './components/LeftPanel.vue'
-import RightPanel from './components/RightPanel.vue'
+import RightPanel, { type KnowledgeSlice } from './components/RightPanel.vue'
 import ChatDock from './components/ChatDock.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import { useAIAgent } from './composables/useAIAgent'
@@ -23,6 +23,7 @@ const {
   setIdle,
   clearMessages,
   toggleWebSearch,
+  generateRealtimeAnalysisReport,
 } = useAIAgent()
 
 const {
@@ -35,6 +36,7 @@ const {
   rate,
   enableGptSovits,
   gptSovitsUrl,
+  gptSovitsCharacter,
   speak,
   stop: stopSpeaking,
   testGptSovits,
@@ -46,6 +48,7 @@ if (config.voiceRate) rate.value = config.voiceRate
 if (config.selectedVoice) setVoiceByName(config.selectedVoice)
 if (config.enableGptSovits !== undefined) enableGptSovits.value = config.enableGptSovits
 if (config.gptSovitsUrl) gptSovitsUrl.value = config.gptSovitsUrl
+if (config.gptSovitsCharacter) gptSovitsCharacter.value = config.gptSovitsCharacter
 
 const {
   isListening,
@@ -58,6 +61,7 @@ const cameraView = ref<CameraViewMode>('medium')
 const currentFps = ref(60)
 const isSettingsVisible = ref(false)
 const modelType = ref<'anime' | 'magical'>('anime')
+const activeBroadcastingId = ref<string | null>(null)
 
 // Last spoken message and web grounding sources for SubtitleOverlay
 const lastSpokenMessage = ref(messages.value[0]?.text || '')
@@ -121,18 +125,68 @@ function handleSaveSettings(newConfig: any) {
   if (newConfig.selectedVoice !== undefined) setVoiceByName(newConfig.selectedVoice || '')
   if (newConfig.enableGptSovits !== undefined) enableGptSovits.value = newConfig.enableGptSovits
   if (newConfig.gptSovitsUrl !== undefined) gptSovitsUrl.value = newConfig.gptSovitsUrl
+  if (newConfig.gptSovitsCharacter !== undefined) {
+    gptSovitsCharacter.value = newConfig.gptSovitsCharacter
+    const cleanUrl = (newConfig.gptSovitsUrl || gptSovitsUrl.value).replace(/\/+$/, '')
+    fetch(`${cleanUrl}/set_character?character=${encodeURIComponent(newConfig.gptSovitsCharacter)}`).catch(() => {})
+  }
+}
+
+// Handle Broadcast Knowledge from Right Panel (实时分析整合数据)
+async function handleBroadcastKnowledge(slice: KnowledgeSlice) {
+  stopListening()
+  stopSpeaking()
+
+  activeBroadcastingId.value = slice.id
+  agentState.value = 'thinking'
+
+  // 1. 调用多源遥测分析引擎，生成带真实毫秒级动态数据的研判整合报告
+  const report = await generateRealtimeAnalysisReport(slice.id)
+
+  if (report.cameraView) {
+    cameraView.value = report.cameraView
+  }
+  if (report.animation) {
+    currentAnimation.value = report.animation
+  }
+
+  lastSpokenMessage.value = report.text
+  lastActionTag.value = report.actionTag
+
+  // 2. 将带有实时分析整合标记的消息加入对话流
+  messages.value.push({
+    id: `msg_${Date.now()}`,
+    role: 'assistant',
+    text: report.text,
+    time: report.snapshot.timestamp,
+    animation: report.animation,
+    actionTag: report.actionTag,
+  })
+
+  // 3. 开始语音合成与唇形口型驱动
+  speak(report.text, {
+    onStart: () => {
+      agentState.value = 'speaking'
+    },
+    onEnd: () => {
+      activeBroadcastingId.value = null
+      setIdle()
+    },
+  })
 }
 
 // Clear Context History
 function handleClearHistory() {
   clearMessages()
   stopSpeaking()
+  activeBroadcastingId.value = null
   setIdle()
 }
 
 // Stop Speaking Mid-stream
 function handleStopSpeaking() {
   stopSpeaking()
+  activeBroadcastingId.value = null
   setIdle()
 }
 
@@ -175,6 +229,8 @@ onBeforeUnmount(() => {
       :agent-state="agentState"
       :model-name="config.model"
       :enable-web-search="config.enableWebSearch"
+      :enable-gpt-sovits="enableGptSovits"
+      :gpt-sovits-character="gptSovitsCharacter"
       @open-settings="isSettingsVisible = true"
     />
 
@@ -190,9 +246,12 @@ onBeforeUnmount(() => {
       :camera-view="cameraView"
       :current-animation="currentAnimation"
       :model-type="modelType"
+      :active-broadcasting-id="activeBroadcastingId"
+      :is-speaking="isSpeaking"
       @change-camera-view="handleChangeCameraView"
       @change-model-type="(type) => (modelType = type)"
       @play-action="handlePlayAction"
+      @broadcast-knowledge="handleBroadcastKnowledge"
     />
 
     <!-- 5. 全息智能对话交互舱 (保留多轮上下文、聊天记录流、声波条、麦克风、快捷提问、输入框、联网搜索) -->

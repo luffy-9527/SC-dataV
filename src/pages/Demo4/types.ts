@@ -50,4 +50,5 @@ export interface DigitalHumanConfig {
   enableWebSearch: boolean
   enableGptSovits?: boolean
   gptSovitsUrl?: string
+  gptSovitsCharacter?: string
 }

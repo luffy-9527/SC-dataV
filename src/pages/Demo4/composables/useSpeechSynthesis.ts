@@ -107,6 +107,7 @@ export function useSpeechSynthesis() {
   // GPT-SoVITS 开源 AI 原声配置
   const enableGptSovits = ref(false)
   const gptSovitsUrl = ref('http://127.0.0.1:9880')
+  const gptSovitsCharacter = ref('meiko')
   const isGptSovitsActive = ref(false)
 
   // Current calculated viseme values to drive 3D mouth morph targets
@@ -274,19 +275,40 @@ export function useSpeechSynthesis() {
   let currentAudio: HTMLAudioElement | null = null
   let currentAudioUrl: string | null = null
 
-  async function fetchGptSovitsAudio(text: string, baseUrl: string): Promise<Blob | null> {
+  async function fetchGptSovitsAudio(
+    text: string,
+    baseUrl: string,
+    character?: string,
+  ): Promise<Blob | null> {
     const cleanUrl = baseUrl.replace(/\/+$/, '')
-    const endpoints = [
-      `${cleanUrl}/tts?text=${encodeURIComponent(text)}&text_lang=zh`,
-      `${cleanUrl}/tts?text=${encodeURIComponent(text)}&text_language=zh`,
-      `${cleanUrl}/?text=${encodeURIComponent(text)}&text_language=zh`,
-      `${cleanUrl}/?text=${encodeURIComponent(text)}&text_lang=zh`,
-    ]
+    const char = character || gptSovitsCharacter.value || 'meiko'
+    const charParam = `&character=${encodeURIComponent(char)}`
 
-    for (const ep of endpoints) {
+    // 优先直连标准 /tts 接口，设置 45秒超时（长文本合成与模型首次加载需 8~15 秒，绝不能提早中断）
+    const primaryUrl = `${cleanUrl}/tts?text=${encodeURIComponent(text)}&text_lang=zh${charParam}`
+    try {
+      const res = await fetch(primaryUrl, {
+        signal: AbortSignal.timeout(45000),
+      })
+      if (res.ok) {
+        const blob = await res.blob()
+        if (blob && blob.size > 200) {
+          return blob
+        }
+      }
+    } catch (err) {
+      console.warn('[GPT-SoVITS] 主接口响应异常或超时:', err)
+    }
+
+    // 备用兼容接口兜底
+    const fallbacks = [
+      `${cleanUrl}/?text=${encodeURIComponent(text)}&text_language=zh${charParam}`,
+      `${cleanUrl}/tts?text=${encodeURIComponent(text)}&text_language=zh${charParam}`,
+    ]
+    for (const ep of fallbacks) {
       try {
         const res = await fetch(ep, {
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(12000),
         })
         if (res.ok) {
           const blob = await res.blob()
@@ -375,7 +397,11 @@ export function useSpeechSynthesis() {
     // 1. 若开启 GPT-SoVITS，优先请求本地/远程 AI 原声服务
     if (enableGptSovits.value && gptSovitsUrl.value.trim()) {
       try {
-        const audioBlob = await fetchGptSovitsAudio(cleanText, gptSovitsUrl.value.trim())
+        const audioBlob = await fetchGptSovitsAudio(
+          cleanText,
+          gptSovitsUrl.value.trim(),
+          gptSovitsCharacter.value,
+        )
         if (audioBlob) {
           if (options?.suppressChirp === false) {
             audioEngine.playHoloChirp()
@@ -443,21 +469,23 @@ export function useSpeechSynthesis() {
     isGptSovitsActive.value = false
   }
 
-  // 测试 GPT-SoVITS 连通性
+  // 测试 GPT-SoVITS 连通性与角色试听
   async function testGptSovits(
     url: string,
-    sampleText = '指挥长好！初音未来开源AI原声连接正常！',
+    sampleText = '指挥长好！开源AI原声连接正常！',
+    character?: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const blob = await fetchGptSovitsAudio(sampleText, url)
+      const blob = await fetchGptSovitsAudio(sampleText, url, character)
       if (blob) {
         const testAudioUrl = URL.createObjectURL(blob)
         const testAudio = new Audio(testAudioUrl)
         testAudio.onended = () => URL.revokeObjectURL(testAudioUrl)
         await testAudio.play()
-        return { success: true, message: '✅ 连接成功！已听到初音未来 AI 原声！' }
+        const charName = character ? character.toUpperCase() : 'AI'
+        return { success: true, message: `✅ 连接成功！已听到 ${charName} 拟真原声音色！` }
       }
-      return { success: false, message: '未获取到音频流，请确认服务已启动 (如: python api.py)' }
+      return { success: false, message: '未获取到音频流，请确认服务已启动 (如: python run_api.py)' }
     } catch (e: any) {
       return { success: false, message: `连接失败: ${e?.message || '网络连接被拒绝或跨域被拦截'}` }
     }
@@ -482,6 +510,7 @@ export function useSpeechSynthesis() {
     isGptSovitsActive,
     enableGptSovits,
     gptSovitsUrl,
+    gptSovitsCharacter,
     voices,
     currentVoice,
     setVoiceByName,

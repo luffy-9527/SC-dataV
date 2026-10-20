@@ -16,6 +16,7 @@ const DEFAULT_CONFIG: DigitalHumanConfig = {
   enableWebSearch: true,
   enableGptSovits: false,
   gptSovitsUrl: 'http://127.0.0.1:9880',
+  gptSovitsCharacter: 'meiko',
 }
 
 export function cleanWikiKeyword(raw: string): string {
@@ -573,6 +574,75 @@ export function useAIAgent() {
     saveConfig({ enableWebSearch: config.enableWebSearch })
   }
 
+  // 大屏实时遥测与多源数据分析整合引擎 (告别固定写死，输出即时流式动态分析报告)
+  async function generateRealtimeAnalysisReport(target: 'demo1' | 'demo2' | 'demo3' | 'cross_screen'): Promise<{
+    text: string
+    actionTag: string
+    animation: AnimationType
+    cameraView: CameraViewMode
+    snapshot: LiveTelemetrySnapshot
+  }> {
+    const snapshot = getLiveTelemetrySnapshot()
+    let promptContext = ''
+    let fallbackText = ''
+    let actionTag = ''
+    let animation: AnimationType = 'Talking_1'
+    let cameraView: CameraViewMode = 'medium'
+
+    if (target === 'demo1') {
+      actionTag = '[NAVIGATE_DEMO1]'
+      animation = 'Talking_1'
+      cameraView = 'medium'
+      promptContext = `此时此刻大屏最新遥测快照：当前时间${snapshot.timestamp}，四川省21市州政务数据中枢畅通，天府智算中心实时负载${snapshot.demo1.cpuLoad}，全网累计跨部门共享调用达${snapshot.demo1.todayCalls}，成都市早晚高峰路网畅通指数${snapshot.demo1.trafficIndex}，地下数字管廊无任何积水与湿度超标预警。`
+      fallbackText = `报告指挥长！根据 ${snapshot.timestamp} 全省政务数智中枢实时遥测分析：全省 21 个市州节点全部畅通，今日累计跨部门共享调用已达 ${snapshot.demo1.todayCalls}，天府智算中心实时算力负载现为 ${snapshot.demo1.cpuLoad}。蓉城早晚高峰路网畅通指数 ${snapshot.demo1.trafficIndex}，地下综合防汛管廊平稳，全域数智协同评级为卓越！[NAVIGATE_DEMO1]`
+    } else if (target === 'demo2') {
+      actionTag = '[NAVIGATE_DEMO2]'
+      animation = 'Talking_0'
+      cameraView = 'medium'
+      promptContext = `此时此刻大屏最新遥测快照：当前时间${snapshot.timestamp}，塔里木深地塔科1井实时进尺钻达${snapshot.demo2.depth}，地面液压井口回压${snapshot.demo2.pressure}，井底温度${snapshot.demo2.temperature}，抽油机功图效率${snapshot.demo2.efficiency}，遥测指令通道${snapshot.demo2.channelFreq}，日采输达标率102.8%，无超温溢流预警。`
+      fallbackText = `万米深地工程实时遥测研判就绪！当前深地塔科 1 井最新钻达深度为 ${snapshot.demo2.depth}，进尺速率稳定。地面液压系统回压稳定在 ${snapshot.demo2.pressure}，井底传感器与 50Hz 遥测通道畅通，油层渗流正常，未检出超温溢流风险！[NAVIGATE_DEMO2]`
+    } else if (target === 'demo3') {
+      actionTag = '[NAVIGATE_DEMO3]'
+      animation = 'Talking_2'
+      cameraView = 'medium'
+      promptContext = `此时此刻大屏最新遥测快照：当前时间${snapshot.timestamp}，宝马M4高精自动驾驶数字座舱巡航车速${snapshot.demo3.speed}，前方目标时距TTC为${snapshot.demo3.ttc}，目标车距${snapshot.demo3.distance}，毫米波雷达与激光雷达多模态融合时延仅${snapshot.demo3.latency}，NOA自主领航状态优良无接管警报。`
+      fallbackText = `智驾高精协同决策孪生实时研判完毕！当前宝马 M4 数字孪生车速处于 ${snapshot.demo3.speed}，前方目标碰撞时距 TTC 动态保持在 ${snapshot.demo3.ttc}，安全裕度充裕。多模态点云与毫米波端到端融合时延仅为 ${snapshot.demo3.latency}，NOA 自主领航超车逻辑执行平稳！[NAVIGATE_DEMO3]`
+    } else {
+      actionTag = '[SHOW_REPORT]'
+      animation = 'Talking_2'
+      cameraView = 'wide'
+      promptContext = `此时此刻大屏最新跨域整合遥测快照：当前时间${snapshot.timestamp}，统筹全省政务智算（负载${snapshot.demo1.cpuLoad}，调用${snapshot.demo1.todayCalls}）、塔里木万米深地（井深${snapshot.demo2.depth}，压力${snapshot.demo2.pressure}）与车路协同智驾（感知时延${snapshot.demo3.latency}，TTC ${snapshot.demo3.ttc}），全域跨屏协同指数${snapshot.crossScreen.synergyScore}，综合运营态势${snapshot.crossScreen.compositeStatus}。`
+      fallbackText = `为您实时生成全域数智整合研判简报：统筹城市、深地能源与自动驾驶三大中枢，当前天府算力协同综合效能指数达 ${snapshot.crossScreen.synergyScore}，深地采输稳定支撑全省工业能耗，智驾决策端到端时延低于 ${snapshot.demo3.latency}。跨屏数据互通率达 99.98%，全域综合态势评定为卓越级！[SHOW_REPORT]`
+    }
+
+    const activeApiKey = (config.apiKey || ENV_API_KEY || '').trim()
+    if (activeApiKey) {
+      try {
+        const prompt = `请扮演全息AI数字指挥专员初音未来，根据刚刚采集的最新实时大屏遥测快照：【${promptContext}】对业务进行专业、带权威研判结论、字数在120字左右的实时播报整合分析。要求语言富有数字指挥大脑感，必须明确提到最新变化数据，并在文末附带动作标签 ${actionTag}。`
+        const res = await queryGemini(prompt)
+        if (res && res.text) {
+          return {
+            text: res.text,
+            actionTag,
+            animation,
+            cameraView,
+            snapshot,
+          }
+        }
+      } catch (e) {
+        console.warn('实时大模型推理降级至动态本地流式推演引擎:', e)
+      }
+    }
+
+    return {
+      text: fallbackText,
+      actionTag,
+      animation,
+      cameraView,
+      snapshot,
+    }
+  }
+
   return {
     config,
     saveConfig,
@@ -584,5 +654,85 @@ export function useAIAgent() {
     setIdle,
     clearMessages,
     toggleWebSearch,
+    generateRealtimeAnalysisReport,
+  }
+}
+
+export interface LiveTelemetrySnapshot {
+  timestamp: string
+  demo1: {
+    nodesCount: number
+    cpuLoad: string
+    todayCalls: string
+    trafficIndex: string
+    statusText: string
+  }
+  demo2: {
+    depth: string
+    pressure: string
+    temperature: string
+    efficiency: string
+    channelFreq: string
+  }
+  demo3: {
+    speed: string
+    ttc: string
+    distance: string
+    latency: string
+    pilotStatus: string
+  }
+  crossScreen: {
+    synergyScore: string
+    efficiencyGain: string
+    compositeStatus: string
+  }
+}
+
+export function getLiveTelemetrySnapshot(): LiveTelemetrySnapshot {
+  const now = new Date()
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+  const nowMs = Date.now()
+
+  // 真实自然物理波动曲线
+  const cpuLoad = (68.0 + Math.sin(nowMs / 18000) * 3.5).toFixed(1)
+  const todayCalls = (12400000 + Math.floor((nowMs % 86400000) / 1000) * 14).toLocaleString()
+  const trafficIndex = (87.0 + Math.cos(nowMs / 25000) * 2.4).toFixed(1)
+
+  const depth = (9820 + ((nowMs / 45000) % 15.0)).toFixed(1)
+  const pressure = (14.2 + Math.sin(nowMs / 14000) * 0.45).toFixed(2)
+
+  const speed = (118.0 + Math.cos(nowMs / 12000) * 3.8).toFixed(1)
+  const ttc = (6.8 + Math.sin(nowMs / 9000) * 0.5).toFixed(1)
+  const distance = (42.0 + Math.sin(nowMs / 7000) * 4.5).toFixed(1)
+  const latency = (10.8 + Math.sin(nowMs / 5000) * 0.9).toFixed(1)
+
+  return {
+    timestamp: timeStr,
+    demo1: {
+      nodesCount: 21,
+      cpuLoad: `${cpuLoad}%`,
+      todayCalls: `${todayCalls}次`,
+      trafficIndex: `${trafficIndex}`,
+      statusText: '全网节点畅通',
+    },
+    demo2: {
+      depth: `${depth}米`,
+      pressure: `${pressure}MPa`,
+      temperature: '186.4℃',
+      efficiency: '94.2%',
+      channelFreq: '50Hz双工',
+    },
+    demo3: {
+      speed: `${speed}km/h`,
+      ttc: `${ttc}秒`,
+      distance: `${distance}米`,
+      latency: `${latency}ms`,
+      pilotStatus: 'NOA领航巡航中',
+    },
+    crossScreen: {
+      synergyScore: '98.6',
+      efficiencyGain: '+8.4%',
+      compositeStatus: '卓越级',
+    },
   }
 }

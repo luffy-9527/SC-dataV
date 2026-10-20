@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 interface Props {
@@ -7,12 +7,30 @@ interface Props {
   agentState: string
   modelName: string
   enableWebSearch?: boolean
+  enableGptSovits?: boolean
+  gptSovitsCharacter?: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'openSettings'): void
 }>()
+
+const characterDisplayName = computed(() => {
+  const map: Record<string, string> = {
+    meiko: 'MEIKO',
+    kaito: 'KAITO',
+    rin: '镜音铃',
+    len: '镜音连',
+    luka: '巡音流歌',
+    ia: '伊爱IA',
+    yukari: '结月缘雫',
+    akari: '绁星灯',
+    akane: '琴叶茜',
+    aoi: '琴叶葵',
+  }
+  return map[props.gptSovitsCharacter?.toLowerCase() || ''] || props.gptSovitsCharacter?.toUpperCase() || 'MEIKO'
+})
 
 const router = useRouter()
 const currentTime = ref('')
@@ -85,6 +103,15 @@ onBeforeUnmount(() => {
       <div v-if="enableWebSearch" class="grounding-chip" title="已开启 Google Search 实时全网搜索">
         <span class="globe-ping">🌐</span>
         <span class="ground-text">联网模式</span>
+      </div>
+      <div
+        v-if="enableGptSovits"
+        class="sovits-nav-chip"
+        :title="`开源AI拟真原声驱动中（当前角色：${gptSovitsCharacter?.toUpperCase() || 'MEIKO'}）- 点击设置`"
+        @click="emit('openSettings')"
+      >
+        <span class="lightning-ping">⚡</span>
+        <span class="sovits-nav-text">AI原声 · {{ characterDisplayName }}</span>
       </div>
     </div>
 
@@ -171,26 +198,30 @@ onBeforeUnmount(() => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
-  width: 380px;
+  gap: 8px;
+  flex: 1;
+  max-width: 620px;
+  min-width: 0;
 }
 
 .time-box {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  background: rgba(15, 23, 42, 0.65);
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(15, 23, 42, 0.75);
   border: 1px solid rgba(0, 242, 254, 0.25);
   border-radius: 6px;
   font-family: monospace;
-  font-size: 13px;
+  font-size: 12px;
   color: #cbd5e1;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .live-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 8px #10b981;
@@ -198,14 +229,16 @@ onBeforeUnmount(() => {
 }
 
 .badge-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 5px;
+  padding: 4px 8px;
   border-radius: 6px;
   background: rgba(168, 85, 247, 0.12);
   border: 1px solid rgba(168, 85, 247, 0.35);
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chip-label {
@@ -219,16 +252,48 @@ onBeforeUnmount(() => {
 }
 
 .grounding-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
   background: rgba(0, 242, 254, 0.12);
   border: 1px solid rgba(0, 242, 254, 0.4);
   font-size: 11px;
   color: #00f2fe;
   box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sovits-nav-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  font-size: 11px;
+  font-weight: 600;
+  color: #4ade80;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sovits-nav-chip:hover {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: #22c55e;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.45);
+  transform: translateY(-1px);
+}
+
+.lightning-ping {
+  font-size: 11px;
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8));
 }
 
 .globe-ping {
@@ -251,6 +316,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
   margin-top: -6px;
 }
 
@@ -318,8 +384,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 14px;
-  width: 380px;
+  gap: 12px;
+  flex: 1;
+  max-width: 400px;
 }
 
 .fps-capsule {

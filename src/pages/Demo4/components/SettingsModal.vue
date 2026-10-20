@@ -101,6 +101,26 @@ const VOICE_PRESETS: VoicePreset[] = [
   },
 ]
 
+export interface GptCharacter {
+  id: string
+  name: string
+  badge: string
+  sampleText: string
+}
+
+const GPT_SOVITS_CHARACTERS: GptCharacter[] = [
+  { id: 'meiko', name: 'MEIKO', badge: '热情御姐 / 大姐姐原声', sampleText: '指挥长好！我是全息数智专员 MEIKO，全域监控链路运转良好！' },
+  { id: 'kaito', name: 'KAITO (大哥)', badge: '温润沉稳 / 磁性男声', sampleText: '指挥长好！我是 KAITO，各工业指标遥测数据一切正常！' },
+  { id: 'rin', name: '镜音铃 (Rin)', badge: '元气活泼 / 萌系萝莉', sampleText: '指挥长好！我是镜音铃，今天也是元气满满的一天哦！' },
+  { id: 'len', name: '镜音连 (Len)', badge: '清亮少年 / 朝气正太', sampleText: '指挥长好！我是镜音连，随时为您调度大屏各板块！' },
+  { id: 'luka', name: '巡音流歌 (Luka)', badge: '优雅从容 / 知性御姐', sampleText: '指挥长您好，我是巡音流歌，综合数据研判已准备就绪。' },
+  { id: 'ia', name: '伊爱IA', badge: '空灵清澈 / 水晶歌姬', sampleText: '指挥长您好，我是IA，全息交互链路已稳定连接。' },
+  { id: 'yukari', name: '结月缘雫 (Yukari)', badge: '温柔治愈 / 娴静淑女', sampleText: '指挥长好，我是结月缘，很荣幸为您解说今日数据态势。' },
+  { id: 'akari', name: '绁星灯 (Akari)', badge: '灵动俏皮 / 元气少女', sampleText: '指挥长好！我是绁星灯，随时为您汇报全省最新运行快讯！' },
+  { id: 'akane', name: '琴叶茜 (Akane)', badge: '关西热情 / 活泼生动', sampleText: '指挥长你好呀！我是琴叶茜，大屏各项指标我都帮你盯得好好的！' },
+  { id: 'aoi', name: '琴叶葵 (Aoi)', badge: '温婉乖巧 / 细腻柔和', sampleText: '指挥长您好，我是琴叶葵，请允许我为您呈现详尽的数据简报。' },
+]
+
 const activePresetId = ref<string>('default')
 
 const ENV_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) || ''
@@ -116,14 +136,22 @@ const localConfig = reactive<DigitalHumanConfig>({
   enableWebSearch: true,
   enableGptSovits: false,
   gptSovitsUrl: 'http://127.0.0.1:9880',
+  gptSovitsCharacter: 'meiko',
 })
 
 async function handleTestGptSovits() {
   if (!props.testGptSovits) return
   isTestingGpt.value = true
-  gptTestStatus.value = { text: '正在探测并向本地 AI 语音服务发送合成测试...' }
+  gptTestStatus.value = { text: '正在向 AI 语音服务请求合成试听音频...' }
   try {
-    const res = await props.testGptSovits(localConfig.gptSovitsUrl || 'http://127.0.0.1:9880')
+    const charId = localConfig.gptSovitsCharacter || 'meiko'
+    const found = GPT_SOVITS_CHARACTERS.find((c) => c.id === charId)
+    const testText = found?.sampleText || '指挥长好！开源AI原声连接正常！'
+    const res = await props.testGptSovits(
+      localConfig.gptSovitsUrl || 'http://127.0.0.1:9880',
+      testText,
+      charId,
+    )
     gptTestStatus.value = { success: res.success, text: res.message }
   } catch (err: any) {
     gptTestStatus.value = { success: false, text: `探测异常: ${err?.message || '网络连接超时'}` }
@@ -213,6 +241,16 @@ watch(
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => localConfig.gptSovitsCharacter,
+  (newChar) => {
+    if (newChar && localConfig.gptSovitsUrl) {
+      const cleanUrl = localConfig.gptSovitsUrl.replace(/\/+$/, '')
+      fetch(`${cleanUrl}/set_character?character=${encodeURIComponent(newChar)}`).catch(() => {})
+    }
+  },
 )
 
 function applyPreset(preset: VoicePreset) {
@@ -472,8 +510,22 @@ onBeforeUnmount(() => {
                 :disabled="isTestingGpt"
                 @click="handleTestGptSovits"
               >
-                <span>{{ isTestingGpt ? '正在探测...' : '⚡ 测试连接并试听' }}</span>
+                <span>{{ isTestingGpt ? '正在合成...' : '⚡ 试听当前角色' }}</span>
               </button>
+            </div>
+
+            <!-- AI 音色角色选择器 -->
+            <div class="gpt-char-row">
+              <span class="gpt-url-label">AI 声线角色：</span>
+              <select v-model="localConfig.gptSovitsCharacter" class="form-select gpt-char-select">
+                <option
+                  v-for="char in GPT_SOVITS_CHARACTERS"
+                  :key="char.id"
+                  :value="char.id"
+                >
+                  {{ char.name }} · {{ char.badge }}
+                </option>
+              </select>
             </div>
 
             <div
@@ -1025,10 +1077,26 @@ onBeforeUnmount(() => {
   border-top: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
-.gpt-url-row {
+.gpt-url-row,
+.gpt-char-row {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.gpt-char-select {
+  flex: 1;
+  font-size: 12px;
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  color: #e2e8f0;
+  border-radius: 6px;
+}
+
+.gpt-char-select:focus {
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
 }
 
 .gpt-url-label {
