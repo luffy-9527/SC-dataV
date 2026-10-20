@@ -2890,20 +2890,47 @@ function buildDesertStratumAndWellbore() {
     const layerGroup = new THREE.Group()
     const layerTexture = createStratumSedimentaryTexture(layer.texType)
 
-    // A. 北背壁 (North Back Wall) - 位于 Z = strataBackZ，厚度仅 0.8m，半透明微晶地质质感，绝不遮挡内部井筒与粒子！
+    // A. 北背壁 (North Back Wall) - 位于 Z = strataBackZ，厚度 0.8m，半透明微晶地质质感
     const backGeo = new THREE.BoxGeometry(cutawayW, layer.thickness, 0.8)
     const backMat = new THREE.MeshStandardMaterial({
       color: layer.color,
       map: layerTexture || undefined,
-      roughness: 0.52,
-      metalness: 0.38,
+      roughness: 0.45,
+      metalness: 0.42,
       transparent: true,
-      opacity: 0.58,
+      opacity: 0.52,
     })
     const backWall = new THREE.Mesh(backGeo, backMat)
     backWall.position.set(strataCenterX, layer.top - layer.thickness / 2, strataBackZ)
     backWall.receiveShadow = true
     layerGroup.add(backWall)
+
+    // 背壁表面三维地震反射同相轴层序解释线 (Seismic Horizon Reflectors)
+    const seismicReflectorPoints: THREE.Vector3[] = []
+    const numWavePts = 24
+    for (let r = 1; r <= 2; r++) {
+      const refY = layer.top - (layer.thickness * r) / 3
+      for (let w = 0; w < numWavePts; w++) {
+        const t1 = w / (numWavePts - 1)
+        const t2 = (w + 1) / (numWavePts - 1)
+        const wx1 = strataCenterX - cutawayW / 2 + t1 * cutawayW
+        const wx2 = strataCenterX - cutawayW / 2 + t2 * cutawayW
+        const wy1 = refY + Math.sin(t1 * Math.PI * 4 + r) * 0.85
+        const wy2 = refY + Math.sin(t2 * Math.PI * 4 + r) * 0.85
+        seismicReflectorPoints.push(
+          new THREE.Vector3(wx1, wy1, strataBackZ + 0.42),
+          new THREE.Vector3(wx2, wy2, strataBackZ + 0.42)
+        )
+      }
+    }
+    const seismicGeo = new THREE.BufferGeometry().setFromPoints(seismicReflectorPoints)
+    const seismicLineMat = new THREE.LineBasicMaterial({
+      color: layer.glow,
+      transparent: true,
+      opacity: 0.48,
+    })
+    const seismicLines = new THREE.LineSegments(seismicGeo, seismicLineMat)
+    layerGroup.add(seismicLines)
 
     // 背壁下表面前缘保留层位底界面科技激光线 (Stratum Bottom Interface Line)
     const backLineGeo = new THREE.BufferGeometry().setFromPoints([
@@ -2921,15 +2948,32 @@ function buildDesertStratumAndWellbore() {
     const westMat = new THREE.MeshStandardMaterial({
       color: layer.color,
       map: layerTexture || undefined,
-      roughness: 0.55,
-      metalness: 0.35,
+      roughness: 0.48,
+      metalness: 0.4,
       transparent: true,
-      opacity: 0.62,
+      opacity: 0.58,
     })
     const westWall = new THREE.Mesh(westGeo, westMat)
     westWall.position.set(strataWestX, layer.top - layer.thickness / 2, strataBackZ + cutawayD / 2)
     westWall.receiveShadow = true
     layerGroup.add(westWall)
+
+    // 西侧壁表面倾向倾角微层理倾斜剖切线 (West Wall Stratum Dip Lines)
+    const westDipPts: THREE.Vector3[] = []
+    for (let d = 1; d <= 2; d++) {
+      const startY = layer.top - (layer.thickness * d) / 3
+      const endY = startY - 2.2
+      westDipPts.push(
+        new THREE.Vector3(strataWestX + 0.42, startY, strataBackZ + 2),
+        new THREE.Vector3(strataWestX + 0.42, endY, strataBackZ + cutawayD - 2)
+      )
+    }
+    const westDipGeo = new THREE.BufferGeometry().setFromPoints(westDipPts)
+    const westDipLines = new THREE.LineSegments(
+      westDipGeo,
+      new THREE.LineBasicMaterial({ color: layer.glow, transparent: true, opacity: 0.45 })
+    )
+    layerGroup.add(westDipLines)
 
     // 西侧壁底界面分割线
     const westLineGeo = new THREE.BufferGeometry().setFromPoints([
@@ -2969,6 +3013,29 @@ function buildDesertStratumAndWellbore() {
 
     group.add(layerGroup)
   })
+
+  // 全息数字化背壁测井标定方格光栅网 (Holographic Seismic Voxel Grid Matrix)
+  const gridPts: THREE.Vector3[] = []
+  // 垂直网格线 (每隔 15m)
+  for (let gx = strataCenterX - cutawayW / 2 + 10; gx < strataCenterX + cutawayW / 2; gx += 15) {
+    gridPts.push(
+      new THREE.Vector3(gx, -0.6, strataBackZ + 0.41),
+      new THREE.Vector3(gx, -70.0, strataBackZ + 0.41)
+    )
+  }
+  // 水平网格线 (每隔 10m)
+  for (let gy = -10; gy >= -65; gy -= 10) {
+    gridPts.push(
+      new THREE.Vector3(strataCenterX - cutawayW / 2, gy, strataBackZ + 0.41),
+      new THREE.Vector3(strataCenterX + cutawayW / 2, gy, strataBackZ + 0.41)
+    )
+  }
+  const gridGeo = new THREE.BufferGeometry().setFromPoints(gridPts)
+  const gridLines = new THREE.LineSegments(
+    gridGeo,
+    new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.18 })
+  )
+  group.add(gridLines)
 
   // 底部微晶科技托架 (Ultra-Thin Translucent Bedrock Base Tray - 摆脱3米死黑厚块压抑感)
   const floorGeo = new THREE.BoxGeometry(cutawayW + 2, 0.45, cutawayD + 2)
