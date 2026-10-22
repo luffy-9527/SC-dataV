@@ -142,7 +142,6 @@ let beaconMesh: THREE.Mesh | null = null
 let flameParticles: THREE.Points | null = null
 let drillSparksParticles: THREE.Points | null = null
 let mudCirculationParticles: THREE.Points | null = null
-let oilReservoirParticles: THREE.Points | null = null
 let shakerScreenMesh: THREE.Mesh | null = null
 let agitatorPaddles: THREE.Mesh[] = []
 let pipelinePulses: THREE.Mesh[] = []
@@ -169,7 +168,6 @@ let producedOilColumnMesh: THREE.Mesh | null = null
 let producedOilBubbles: THREE.Points | null = null
 let perforationJets: THREE.Mesh[] = []
 let gasCapPlane: THREE.Mesh | null = null
-let reservoirMicroStreamlines: THREE.LineSegments | null = null
 let oilReservoirFluidMesh: THREE.Mesh | null = null
 let windTurbineRotors: THREE.Group[] = []
 let perforationMistPoints: THREE.Points | null = null
@@ -358,6 +356,48 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
       { label: '环形防喷器控制压', value: '10.5', unit: 'MPa', status: 'normal' },
       { label: '充氮钢瓶备用总储能', value: '3,200', unit: 'L', status: 'normal' },
       { label: 'BOP 遥控关井响应', value: '0.45', unit: 's', status: 'success' },
+    ],
+  },
+  'mud-system': {
+    id: 'mud-system',
+    name: '深地一号 · 固控泥浆循环净化中心',
+    shortLabel: '泥浆固控',
+    cameraPos: [-32, 14, 24],
+    targetPos: [-44, 4.0, 10],
+    title: '深地一号 · 四级固控泥浆循环净化与F-1600高压注采动力中心',
+    status: '四级固控闭环运行 · 固相去除率99.4%',
+    dynType: 'normal',
+    radar: [96, 94, 98, 92, 95],
+    metrics: [
+      { label: '泥浆循环排量', value: '48.5', unit: 'L/s', status: 'normal' },
+      { label: '泥浆立管泵压', value: '24.2', unit: 'MPa', status: 'normal' },
+      { label: '入井泥浆密度', value: '1.92', unit: 'g/cm³', status: 'normal' },
+      { label: '返出泥浆密度', value: '1.95', unit: 'g/cm³', status: 'normal' },
+      { label: '泥浆循环漏失量', value: '0.00', unit: 'm³/h', status: 'success' },
+      { label: '高频振动筛转速', value: '1,480', unit: 'rpm', status: 'normal' },
+      { label: '固相颗粒去除率', value: '99.4', unit: '%', status: 'success' },
+      { label: '总循环活泥浆量', value: '380.0', unit: 'm³', status: 'normal' },
+    ],
+  },
+  'frac-spread': {
+    id: 'frac-spread',
+    name: '深地一号 · 特种作业车队与高压压裂固井机组',
+    shortLabel: '特种车队',
+    cameraPos: [-36, 16, 88],
+    targetPos: [-55, 3.5, 62],
+    title: '深地一号 · 2500HP高压压裂机组与双机双泵水泥固井车队',
+    status: '高压待命保障中 · 井筒加固就绪',
+    dynType: 'normal',
+    radar: [97, 95, 96, 94, 98],
+    metrics: [
+      { label: '压裂单机输出功率', value: '2,500', unit: 'HP', status: 'normal' },
+      { label: '五缸泵额定排出压', value: '105.0', unit: 'MPa', status: 'normal' },
+      { label: '高压由壬试压保压', value: '140.0', unit: 'MPa', status: 'success' },
+      { label: '固井混浆控制密度', value: '1.92', unit: 'g/cm³', status: 'normal' },
+      { label: '混浆瞬时注入排量', value: '2.2', unit: 'm³/min', status: 'normal' },
+      { label: '电测绞车容绳储备', value: '8,000', unit: 'm', status: 'normal' },
+      { label: '起重机最大起重载荷', value: '75', unit: 't', status: 'normal' },
+      { label: '特种车组完好出勤率', value: '100', unit: '%', status: 'success' },
     ],
   },
   'pump-jack-1': {
@@ -649,6 +689,8 @@ function focusEquipment(id: string) {
       ringScale = 1.45
     } else if (id === 'power-bop') {
       ringScale = 1.35
+    } else if (id === 'frac-spread') {
+      ringScale = 1.55
     } else if (['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(id)) {
       ringScale = 1.35
     } else if (id === 'separator' || id === 'heater') {
@@ -1289,48 +1331,6 @@ function createSkyDomeTexture() {
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   return texture
-}
-
-// 雅丹红层风蚀沉积岩层纹理贴图 (Yardang Stratified Rock Texture)
-function createYardangRockTexture() {
-  const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 512
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    ctx.fillStyle = '#652b19'
-    ctx.fillRect(0, 0, 512, 512)
-
-    // 绘制多级水平风蚀沉积相条带
-    const strataBands = [
-      { y: 0, h: 48, c: '#4a1d12' },
-      { y: 48, h: 62, c: '#7c381f' },
-      { y: 110, h: 36, c: '#9c4c23' },
-      { y: 146, h: 72, c: '#5f2316' },
-      { y: 218, h: 42, c: '#8d4420' },
-      { y: 260, h: 84, c: '#48190f' },
-      { y: 344, h: 52, c: '#a45327' },
-      { y: 396, h: 68, c: '#6c2e1b' },
-      { y: 464, h: 48, c: '#3c140c' },
-    ]
-    strataBands.forEach(b => {
-      ctx.fillStyle = b.c
-      ctx.fillRect(0, b.y, 512, b.h)
-    })
-
-    // 水平风蚀凹凸侵蚀细刻纹与风蚀空隙
-    for (let y = 0; y < 512; y += 4) {
-      const alpha = 0.12 + Math.random() * 0.22
-      ctx.fillStyle = Math.random() > 0.5 ? `rgba(240, 180, 130, ${alpha})` : `rgba(20, 5, 0, ${alpha})`
-      ctx.fillRect(0, y, 512, 2 + Math.random() * 2)
-    }
-  }
-  const tex = new THREE.CanvasTexture(canvas)
-  tex.wrapS = THREE.RepeatWrapping
-  tex.wrapT = THREE.RepeatWrapping
-  tex.repeat.set(3, 4)
-  tex.colorSpace = THREE.SRGBColorSpace
-  return tex
 }
 
 // 大漠地表风成沙细波纹贴图 (Desert Sand Ripple Texture)
@@ -6109,22 +6109,6 @@ function buildIconicSloganBillboards() {
   if (!scene) return
   const sloganGroup = new THREE.Group()
 
-  const whiteSteel = new THREE.MeshStandardMaterial({
-    color: 0xf8fafc,
-    metalness: 0.85,
-    roughness: 0.25,
-  })
-  const darkSteel = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
-    metalness: 0.88,
-    roughness: 0.22,
-  })
-  const bollardYellow = new THREE.MeshStandardMaterial({
-    color: 0xf59e0b,
-    metalness: 0.65,
-    roughness: 0.35,
-  })
-
   // 标语1贴图：进军深地挺民族脊梁 挑战禁区铸大国重器
   const tex1 = createSloganTexture('进军深地挺民族脊梁  挑战禁区铸大国重器', '中国石油塔里木油田 · 万米特深科学探索井')
   const mat1 = new THREE.MeshStandardMaterial({
@@ -7193,7 +7177,6 @@ function buildPowerAndBOPControl() {
   const silverChrome = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.96, roughness: 0.12 })
   const valveRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.75, roughness: 0.25 })
   const bottleRed = new THREE.MeshStandardMaterial({ color: 0xb91c1c, metalness: 0.82, roughness: 0.28 })
-  const gratingMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.4 })
   const ledScreenMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff })
   const glassMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.95, roughness: 0.1, transparent: true, opacity: 0.85 })
 
@@ -7384,8 +7367,6 @@ function buildPowerAndBOPControl() {
 
   // C. 敞开式高压充氮蓄能钢瓶管架 (Open-Frame Tubular Steel Bottle Rack)
   // 彻底告别实心黄色方块！通透立式双排 16 只高压气密蓄能气瓶阵列！
-  const rackLen = 5.2
-  const rackW = 3.2
   const rackH = 2.4
 
   // 四角钢管立柱与连接横梁 (Tubular Frame)
@@ -7664,46 +7645,140 @@ function buildSpecialFleet() {
     [-1.4, 0.72, -4.2], [1.4, 0.72, -4.2],
   ])
 
-  // 上装专业固井作业甲板：左右双三缸柱塞固井泵 (Twin Triplex Cementing Pumps)
-  for (const px of [-1.1, 1.1]) {
-    const pumpBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 2.6), steelDark)
-    pumpBody.position.set(px, 2.4, 0.4)
-    cTruck.add(pumpBody)
+  // 上装专业固井作业甲板：左右双 HT-400 三缸柱塞固井高压泵 (Twin HT-400 Triplex Cementing Pumps)
+  for (const px of [-1.15, 1.15]) {
+    // 动力端加强曲轴箱 (Crankcase Power End)
+    const pumpPowerEnd = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.35, 1.9), steelDark)
+    pumpPowerEnd.position.set(px, 2.35, 1.0)
+    cTruck.add(pumpPowerEnd)
 
-    // 柱塞液力端与镀铬阀盖
-    for (let c = -0.7; c <= 0.7; c += 0.7) {
-      const vCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.22, 12), chromeMat)
-      vCap.position.set(px, 3.2, 0.4 + c)
-      cTruck.add(vCap)
+    // 曲轴箱侧面检修圆盖与机油标尺 (Crankcase Inspection Covers)
+    for (const cz of [0.55, 1.45]) {
+      const cCap = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.08, 12), chromeMat)
+      cCap.rotation.z = Math.PI / 2
+      cCap.position.set(px > 0 ? px + 0.68 : px - 0.68, 2.35, cz)
+      cTruck.add(cCap)
     }
+
+    // 锻钢整体式液力端阀箱 (Forged Steel Fluid End Block)
+    const fluidEnd = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.1, 1.35), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.2 }))
+    fluidEnd.position.set(px, 2.25, -0.45)
+    cTruck.add(fluidEnd)
+
+    // 3 组高压排出阀盖与镀铬紧固螺栓 (3 Plunger Discharge Valve Covers)
+    for (let c = -0.42; c <= 0.42; c += 0.42) {
+      const vCap = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.24, 14), chromeMat)
+      vCap.position.set(px, 2.9, -0.45 + c)
+      cTruck.add(vCap)
+
+      // 柱塞盘根压帽与润滑管线 (Packing Gland Caps)
+      const pGland = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.2, 12), safetyYellow)
+      pGland.position.set(px, 2.35, -0.45 + c)
+      cTruck.add(pGland)
+    }
+
+    // 柱塞泵排出侧安全泄压阀与排空管 (Safety Relief Valve)
+    const reliefValve = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8), valveRed)
+    reliefValve.position.set(px, 3.2, -0.9)
+    cTruck.add(reliefValve)
   }
 
-  // 均质混浆罐组 (Twin Stainless Steel Slurry Mixing Tanks)
+  // 双舱不锈钢连续均质混浆罐组 (Twin Stainless Steel Recirculating Slurry Mixing Tanks)
   for (const tx of [-1.0, 1.0]) {
-    const tub = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 2.2, 16), chromeMat)
+    const tub = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.92, 0.92, 2.2, 24),
+      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 })
+    )
     tub.position.set(tx, 2.8, -2.4)
     cTruck.add(tub)
 
-    // 罐顶搅拌电机
-    const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.6, 10), steelDark)
-    motor.position.set(tx, 4.0, -2.4)
-    cTruck.add(motor)
+    // 罐体外圆周加强环箍 (Reinforcing Hoops)
+    for (const ry of [2.1, 2.8, 3.5]) {
+      const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.94, 0.03, 4, 24), steelDark)
+      hoop.rotation.x = Math.PI / 2
+      hoop.position.set(tx, ry, -2.4)
+      cTruck.add(hoop)
+    }
+
+    // 罐体透明亚克力高精度液位计观测管 (Slurry Level Sight Glass Tube)
+    const sightGlass = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 1.7, 8),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.75 })
+    )
+    sightGlass.position.set(tx > 0 ? tx + 0.96 : tx - 0.96, 2.8, -2.4)
+    cTruck.add(sightGlass)
+
+    // 罐顶大扭矩防爆混浆搅拌电机与行星减速器 (Slurry Agitator Motor & Gearbox)
+    const agitatorGear = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.44, 0.45, 14), steelDark)
+    agitatorGear.position.set(tx, 4.12, -2.4)
+    cTruck.add(agitatorGear)
+
+    const agitatorMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.65, 12), new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.75, roughness: 0.3 }))
+    agitatorMotor.position.set(tx, 4.65, -2.4)
+    cTruck.add(agitatorMotor)
   }
 
-  // 高能喷射混浆漏斗 (RJM Jet Mixer Funnel)
-  const rjmHopper = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.28, 1.2, 14), truckWhite)
-  rjmHopper.position.set(0, 3.0, -3.8)
+  // 混浆罐顶部检修通道飞桥与防跌落护栏 (Overhead Catwalk Platform & Safety Railings)
+  const catwalkPlat = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.1, 1.4), steelDark)
+  catwalkPlat.position.set(0, 3.95, -2.4)
+  cTruck.add(catwalkPlat)
+
+  for (const rz of [-3.05, -1.75]) {
+    const bridgeRail = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.08, 0.08), safetyYellow)
+    bridgeRail.position.set(0, 4.8, rz)
+    cTruck.add(bridgeRail)
+  }
+
+  // 混浆循环管路上放射性/微波在线连续密度计 (Coriolis/Gamma Online Slurry Density Sensor)
+  const densitySensor = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.7, 0.55), safetyYellow)
+  densitySensor.position.set(0, 2.2, -2.4)
+  cTruck.add(densitySensor)
+
+  const densDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.22), new THREE.MeshBasicMaterial({ color: 0x22c55e }))
+  densDisplay.position.set(0, 2.3, -2.12)
+  cTruck.add(densDisplay)
+
+  // 高能射流混浆漏斗总成 (High-Energy RJM Jet Mixer Funnel)
+  const rjmHopper = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.22, 1.35, 16), truckWhite)
+  rjmHopper.position.set(0, 3.1, -4.1)
   cTruck.add(rjmHopper)
 
-  // 车尾高压 Chicksan 活接弯头管汇架与旋塞阀组
-  const manifoldRack = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.9, 0.7), steelDark)
-  manifoldRack.position.set(0, 1.8, -5.5)
+  // 漏斗内十字破包割刀与进水环形喷嘴管汇 (Swirl Jet Nozzle Ring)
+  const jetRing = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.06, 6, 16), chromeMat)
+  jetRing.rotation.x = Math.PI / 2
+  jetRing.position.set(0, 3.6, -4.1)
+  cTruck.add(jetRing)
+
+  // 固井车中央集成司控台与操作工位 (Operator Control Center with Touch Screens)
+  const opCabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.8, 1.2), steelDark)
+  opCabin.position.set(0, 2.6, -0.6)
+  cTruck.add(opCabin)
+
+  for (const sx of [-0.4, 0.4]) {
+    const opScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32), new THREE.MeshBasicMaterial({ color: 0x00f0ff }))
+    opScreen.position.set(sx, 2.8, 0.02)
+    cTruck.add(opScreen)
+  }
+
+  // 车尾高压 Chicksan 活接弯头管汇架与旋塞阀组 (Rear 1502 High-Pressure Manifold Rack)
+  const manifoldRack = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.9, 0.8), steelDark)
+  manifoldRack.position.set(0, 1.8, -5.7)
   cTruck.add(manifoldRack)
 
-  for (const vx of [-1.2, -0.4, 0.4, 1.2]) {
-    const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.6, 10), valveRed)
-    valve.position.set(vx, 2.4, -5.5)
+  for (const vx of [-1.3, -0.78, -0.26, 0.26, 0.78, 1.3]) {
+    // 锻造高压旋塞阀体与红色操作手轮
+    const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.65, 12), valveRed)
+    valve.position.set(vx, 2.4, -5.7)
     cTruck.add(valve)
+
+    const vWheel = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 4, 12), valveRed)
+    vWheel.position.set(vx, 2.75, -5.7)
+    cTruck.add(vWheel)
+
+    // 1502 翼母由壬 (Wing Union Collars)
+    const union = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 10), safetyYellow)
+    union.position.set(vx, 1.95, -5.7)
+    cTruck.add(union)
   }
   fleetGroup.add(cTruck)
 
@@ -7777,34 +7852,186 @@ function buildSpecialFleet() {
     [-1.4, 0.72, -4.4], [1.4, 0.72, -4.4],
   ])
 
-  // 2500HP 重型 V16 柴油机动力舱上装与消音排气
-  const engineCover = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.0, 4.8), truckRed)
-  engineCover.position.set(0, 2.6, 0.2)
+  // 1. 2500HP 重型 V16 柴油机动力舱上装 (2500HP QSK50 Heavy V16 Power Pack)
+  const engineCover = new THREE.Mesh(new THREE.BoxGeometry(3.1, 2.2, 4.8), truckRed)
+  engineCover.position.set(0, 2.7, 0.8)
   fracTruck.add(engineCover)
 
-  for (const ex of [-1.2, 1.2]) {
-    const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 3.4, 12), chromeMat)
-    stack.position.set(ex, 3.8, 2.4)
+  // 动力舱两侧散热百叶窗格栅 (Acoustic Side Intake Louvers)
+  for (const lx of [-1.57, 1.57]) {
+    for (let lz = -1.0; lz <= 2.2; lz += 0.45) {
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.35), steelDark)
+      slat.position.set(lx, 2.7, lz)
+      fracTruck.add(slat)
+    }
+  }
+
+  // 动力舱前部重型水箱散热散热器与双风扇罩 (Dual Radiator Fan Shrouds)
+  const radHousing = new THREE.Mesh(new THREE.BoxGeometry(2.9, 2.1, 0.5), steelDark)
+  radHousing.position.set(0, 2.7, 3.35)
+  fracTruck.add(radHousing)
+
+  for (const fx of [-0.75, 0.75]) {
+    const fanRing = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.06, 6, 20), chromeMat)
+    fanRing.position.set(fx, 2.7, 3.62)
+    fracTruck.add(fanRing)
+  }
+
+  // 舱顶双联唐纳森大型旋风双级空滤器 (Twin Donaldson Cyclone Dual-Stage Air Cleaners)
+  for (const ax of [-0.95, 0.95]) {
+    const airCleaner = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 1.1, 16), chromeMat)
+    airCleaner.position.set(ax, 4.25, 2.2)
+    fracTruck.add(airCleaner)
+
+    const snorkel = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.22, 0.35, 14), steelDark)
+    snorkel.position.set(ax, 4.9, 2.2)
+    fracTruck.add(snorkel)
+  }
+
+  // 废气增压涡轮双高位直通排气管与冲孔隔热消音护套 (Turbo Exhaust Stacks with Heat Shields)
+  for (const ex of [-1.15, 1.15]) {
+    // 镀铬主排气管
+    const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 3.6, 14), chromeMat)
+    stack.position.set(ex, 4.4, 0.5)
     fracTruck.add(stack)
+
+    // 冲孔网格隔热防烫护罩
+    const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 2.2, 14, 1, true), steelDark)
+    shield.position.set(ex, 4.1, 0.5)
+    fracTruck.add(shield)
+
+    // 顶端防雨配重翻板 (Counterbalanced Rain Flapper)
+    const flapper = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 12), steelDark)
+    flapper.rotation.x = 0.35
+    flapper.position.set(ex, 6.22, 0.5)
+    fracTruck.add(flapper)
   }
 
-  // 尾部五缸超高压压裂柱塞泵 (Quintuplex Plunger Pump & Fluid End)
-  const qPump = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.8, 2.4), steelDark)
-  qPump.position.set(0, 2.4, -3.8)
-  fracTruck.add(qPump)
+  // 2. 艾里逊重载液力变速箱总成 (Allison S9800 Heavy Transmission & Driveline)
+  const transBox = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.3, 1.6), steelDark)
+  transBox.position.set(0, 2.2, -1.9)
+  fracTruck.add(transBox)
 
-  // 5 个镀铬锻钢柱塞压盖与大口径排出高压汇管
-  for (let c = -1.2; c <= 1.2; c += 0.6) {
-    const pCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.28, 12), chromeMat)
-    pCap.position.set(c, 3.4, -3.8)
+  const driveShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.4, 12), chromeMat)
+  driveShaft.rotation.x = Math.PI / 2
+  driveShaft.position.set(0, 2.2, -2.8)
+  fracTruck.add(driveShaft)
+
+  // 3. 尾部五缸超高压压裂柱塞泵总成 (Quintuplex Plunger Pump & 140MPa Fluid End)
+  // 动力端齿轮箱与十字头滑道 (Quintuplex Power End Housing)
+  const qPowerEnd = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.7, 1.8), steelDark)
+  qPowerEnd.position.set(0, 2.45, -3.7)
+  fracTruck.add(qPowerEnd)
+
+  // 140MPa 整体锻造超高压合金钢液力端 (Monoblock Forged Stainless Fluid End)
+  const qFluidEnd = new THREE.Mesh(
+    new THREE.BoxGeometry(3.4, 1.35, 1.4),
+    new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.95, roughness: 0.18 })
+  )
+  qFluidEnd.position.set(0, 2.3, -4.9)
+  fracTruck.add(qFluidEnd)
+
+  // 5 个超高压柱塞压盖总成与六角重型高强压帽螺母 (5 Heavy Plunger Stuffing Box Retainers)
+  for (let c = -1.28; c <= 1.28; c += 0.64) {
+    const pCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.32, 14), chromeMat)
+    pCap.position.set(c, 3.05, -4.9)
     fracTruck.add(pCap)
+
+    const pNut = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.16, 6), steelDark)
+    pNut.position.set(c, 3.25, -4.9)
+    fracTruck.add(pNut)
   }
-  const fracIron = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 3.8, 14), chromeMat)
+
+  // 泵头高压 105MPa 充氮球形脉动阻尼器 (High-Pressure Nitrogen Spherical Pulsation Dampener)
+  const dampenerSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.62, 20, 20),
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.22 })
+  )
+  dampenerSphere.position.set(0, 3.75, -4.9)
+  fracTruck.add(dampenerSphere)
+
+  // 阻尼器顶部抗震高压指针数字压力表 (0-140MPa Seismic Pressure Gauge)
+  const dGauge = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 14), chromeMat)
+  dGauge.rotation.x = Math.PI / 2
+  dGauge.position.set(0, 4.45, -4.9)
+  fracTruck.add(dGauge)
+
+  const dFace = new THREE.Mesh(new THREE.CircleGeometry(0.18, 14), new THREE.MeshBasicMaterial({ color: 0xffffff }))
+  dFace.position.set(0, 4.45, -4.85)
+  fracTruck.add(dFace)
+
+  // 车尾 140MPa 高压排出管汇与 Chicksan 活接弯管 (Discharge Treating Iron Manifold)
+  const fracIron = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 3.6, 16), chromeMat)
   fracIron.rotation.z = Math.PI / 2
-  fracIron.position.set(0, 2.4, -5.2)
+  fracIron.position.set(0, 2.3, -5.8)
   fracTruck.add(fracIron)
 
+  for (const fx of [-1.2, 1.2]) {
+    const fracValve = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.65, 10), valveRed)
+    fracValve.position.set(fx, 2.75, -5.8)
+    fracTruck.add(fracValve)
+
+    const fracWheel = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.04, 4, 12), valveRed)
+    fracWheel.position.set(fx, 3.1, -5.8)
+    fracTruck.add(fracWheel)
+  }
+
+  // 下部 8 寸低压大通径吸入汇管与 4 组快装接头 (Low-Pressure Suction Manifold with Camlocks)
+  const suctionHeader = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 3.6, 16), steelDark)
+  suctionHeader.rotation.z = Math.PI / 2
+  suctionHeader.position.set(0, 1.5, -5.8)
+  fracTruck.add(suctionHeader)
+
+  for (const cx of [-1.35, -0.45, 0.45, 1.35]) {
+    const camlock = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.35, 12), safetyYellow)
+    camlock.rotation.x = Math.PI / 2
+    camlock.position.set(cx, 1.5, -6.0)
+    fracTruck.add(camlock)
+  }
+
+  // 4. 侧置防爆司钻控制站 (Side Operator Console & Touchscreen Station)
+  const opStation = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.6, 1.3), steelDark)
+  opStation.position.set(1.72, 2.35, -2.1)
+  fracTruck.add(opStation)
+
+  const opScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.5), new THREE.MeshBasicMaterial({ color: 0x00f0ff }))
+  opScreen.rotation.y = Math.PI / 2
+  opScreen.position.set(2.06, 2.5, -2.1)
+  fracTruck.add(opScreen)
+
+  // 紧急关断 ESD 红色大蘑菇按钮 (Emergency Shutdown Button)
+  const esdButton = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.06, 12), valveRed)
+  esdButton.rotation.z = Math.PI / 2
+  esdButton.position.set(2.06, 2.05, -2.4)
+  fracTruck.add(esdButton)
+
+  // 5. 侧面强制润滑与机油风冷散热总成 (Lube Oil Tank & Radiator Fan Coolers)
+  const lubeTank = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.2, 1.4), steelDark)
+  lubeTank.position.set(-1.72, 2.2, -2.1)
+  fracTruck.add(lubeTank)
+
+  for (const fz of [-2.5, -1.7]) {
+    const fan = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 4, 16), safetyYellow)
+    fan.rotation.y = Math.PI / 2
+    fan.position.set(-2.06, 2.2, fz)
+    fracTruck.add(fan)
+  }
+
+  // 侧边折叠安全检修走台与踢脚板 (Foldable Checkerplate Access Walkway)
+  for (const wx of [-1.85, 1.85]) {
+    const walkPlat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 4.2), steelDark)
+    walkPlat.position.set(wx, 1.5, -2.1)
+    fracTruck.add(walkPlat)
+  }
+
   fleetGroup.add(fracTruck)
+
+  // 3b. 特种作业车队非递归代理碰撞体 (0.01ms 瞬时响应，彻底杜绝深度递归冻结)
+  const fleetCollider = new THREE.Mesh(new THREE.BoxGeometry(45, 8, 32), colliderProxyMat)
+  fleetCollider.position.set(-55, 4, 62)
+  fleetCollider.userData = { deviceKey: 'frac-spread' }
+  fleetGroup.add(fleetCollider)
+  clickableColliders.push(fleetCollider)
 
   // 4. 换钻头检修台 (Bit Service & Inspection Bench)
   // 部署于西翼开阔工具待命区 (X = -36, Z = 22)，地面标高 0.2m 稳固就位，彻底消除半空浮空
@@ -10720,7 +10947,7 @@ function buildTelemetryBadges() {
     { text: '万米深地顶驱钻采总成', value: '钻深: 3,852m · 扭矩: 38.5kN·m', pos: [-15, 32, 12], target: [-15, 18, 0], color: '#00f0ff', deviceKey: 'drilling-rig' },
     { text: '泥浆循环固控中心', value: '流量: 48.5L/s · 泵压24MPa', pos: [-56, 18, 10], target: [-44, 4.0, 10], color: '#38bdf8', deviceKey: 'mud-system' },
     { text: '动力机房与BOP液控', value: '功率: 1850kW · 液压21MPa', pos: [4, 16, 66], target: [4, 3.5, 66], color: '#f59e0b', deviceKey: 'power-bop' },
-    { text: '固井混浆泵车总成', value: '水泥密度: 1.92g/cm³ · 正常', pos: [-44, 18, 80], target: [-44, 4.5, 70], color: '#f59e0b' },
+    { text: '固井混浆与高压压裂', value: '排量: 2.2m³/min · 压裂105MPa', pos: [-44, 18, 80], target: [-55, 3.5, 62], color: '#f59e0b', deviceKey: 'frac-spread' },
     { text: '1# 游梁式抽油机', value: '功图: 游动阀漏失 · 载荷 72.4kN', pos: [42, 28, 38], target: [42, 18, 30], color: '#f59e0b', deviceKey: 'pump-jack-1' },
     { text: '2# 游梁式抽油机', value: '功图: 气锁供液不足 · 充满 51.8%', pos: [42, 28, -30], target: [42, 18, -22], color: '#f59e0b', deviceKey: 'pump-jack-2' },
     { text: '3# 游梁式抽油机', value: '功图: 正常饱满 · 载荷 86.4kN', pos: [42, 30, 4], target: [42, 19.5, 4], color: '#38bdf8', deviceKey: 'pumping-unit' },
