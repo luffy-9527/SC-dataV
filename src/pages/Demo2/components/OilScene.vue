@@ -122,6 +122,7 @@ const stages: ProcessStage[] = [
 const currentStageIndex = ref(6) // 默认进入采集设备核心运行工序 (7. 完井采油)
 const containerRef = ref<HTMLDivElement | null>(null)
 const isAutoRotating = ref(false)
+const isSceneReady = ref(false)
 
 let renderer: THREE.WebGLRenderer | null = null
 let scene: THREE.Scene | null = null
@@ -915,10 +916,6 @@ function onCanvasPointerMove(event: MouseEvent) {
 
 const clock = new THREE.Clock()
 
-function yieldToMain(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, 0))
-}
-
 async function initScene() {
   if (!containerRef.value) return
   const width = containerRef.value.clientWidth || 1920
@@ -957,7 +954,7 @@ async function initScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.shadowMap.autoUpdate = false // 隔帧按需更新阴影贴图，减少 50% 冗余阴影生成开销
+  renderer.shadowMap.autoUpdate = false // 按需更新阴影贴图，杜绝每帧全量重算
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.85
   containerRef.value.appendChild(renderer.domElement)
@@ -971,44 +968,24 @@ async function initScene() {
   controls.target.set(0, 8, 0)
   window.addEventListener('resize', handleResize)
 
-  // --- 分阶段非阻塞装配 (任务切片 < 40ms，彻底消除长任务对键盘/鼠标交互事件的阻塞) ---
-  // 切片 1：基础核心 (全景光照、地面道路基础设施、迎宾红色主标语牌)
+  // --- 完整工业级三维数字孪生场景全要素一次性装配 ---
+  // A. 全景光照与大漠地面基础设施
   setupDesertLighting()
   buildDesertGroundAndInfrastructure()
   buildIconicSloganBillboards()
 
-  const st0 = stages[currentStageIndex.value]
-  if (st0) {
-    camera.position.set(st0.cameraPos[0], st0.cameraPos[1], st0.cameraPos[2])
-    controls.target.set(st0.targetPos[0], st0.targetPos[1], st0.targetPos[2])
-    controls.update()
-  }
-
-  // 立即开始渲染首帧 (确保用户第一时间看到大国重器与大漠宏观地景)
-  renderer.shadowMap.needsUpdate = true
-  tick()
-
-  await yieldToMain()
-  if (!containerRef.value) return
-
-  // 切片 2：钻井核心总成与阶梯地层剖面
+  // B. 钻井核心总成与阶梯地层剖面
   buildDerrickAssembly()
   buildVerticalAccumulatorTanks()
   buildDesertStratumAndWellbore()
 
-  await yieldToMain()
-  if (!containerRef.value) return
-
-  // 切片 3：采油开采设备与集输管网系统
+  // C. 采油开采设备与集输管网系统
   buildPumpingUnit()
   buildMudSystem()
   buildStorageAndPipelines()
   buildPowerAndBOPControl()
 
-  await yieldToMain()
-  if (!containerRef.value) return
-
-  // 切片 4：环境沙丘海、营房阵列、特种车队、标签与附属监控设施
+  // D. 环境沙丘海、营房阵列、特种车队、标签与附属监控设施
   buildDesertDunesAndEnvironment()
   buildModularContainerCamp()
   buildHeavyPipeStorageYards()
@@ -1019,8 +996,25 @@ async function initScene() {
   buildPigScraperStation()
   buildSelectionHalo()
 
+  const st0 = stages[currentStageIndex.value]
+  if (st0) {
+    camera.position.set(st0.cameraPos[0], st0.cameraPos[1], st0.cameraPos[2])
+    controls.target.set(st0.targetPos[0], st0.targetPos[1], st0.targetPos[2])
+    controls.update()
+  }
+
   setWeatherMode(weatherMode.value)
+
+  // 4. GPU 显存着色器预热编译 (Pre-compile all shaders before tick loop starts)
+  renderer.compile(scene, camera)
+
+  // 5. 初始全景阴影贴图单次生成与首帧渲染
   renderer.shadowMap.needsUpdate = true
+  renderer.render(scene, camera)
+
+  // 6. 场景装配完毕，解除遮罩，平滑启动 60FPS 渲染循环
+  isSceneReady.value = true
+  tick()
 }
 
 // -------------------------------------------------------------
@@ -1765,6 +1759,20 @@ function createSloganTexture(slogan: string, subtext: string): THREE.Texture {
 }
 
 
+// 全局共享单例 DRACO / GLTF 加载器 (杜绝多次重复创建 Web Worker 与 WASM 实例导致的 CPU/显存争抢卡顿)
+let sharedDracoLoader: DRACOLoader | null = null
+let sharedGltfLoader: GLTFLoader | null = null
+
+function getSharedGLTFLoader(): GLTFLoader {
+  if (!sharedGltfLoader) {
+    sharedDracoLoader = new DRACOLoader()
+    sharedDracoLoader.setDecoderPath('/draco/')
+    sharedGltfLoader = new GLTFLoader()
+    sharedGltfLoader.setDRACOLoader(sharedDracoLoader)
+  }
+  return sharedGltfLoader
+}
+
 // 通用真车 GLB 异步加载与自适应比例定姿辅助函数
 function loadRealVehicleGLB(
   url: string,
@@ -1775,10 +1783,7 @@ function loadRealVehicleGLB(
   onLoaded?: (car: THREE.Group) => void,
 ) {
   try {
-    const dracoLoader = new DRACOLoader()
-    dracoLoader.setDecoderPath('/draco/')
-    const gltfLoader = new GLTFLoader()
-    gltfLoader.setDRACOLoader(dracoLoader)
+    const gltfLoader = getSharedGLTFLoader()
     gltfLoader.load(
       url,
       (gltf) => {
@@ -2069,7 +2074,7 @@ function buildDesertDunesAndEnvironment() {
 
   // 2. 广袤大漠起伏沙丘地形网格 (1600x1600 超大延展地面，地平线无缝融入天幕)
   const terrainSize = 1600
-  const terrainSegments = 84
+  const terrainSegments = 56
   const terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainSegments, terrainSegments)
   terrainGeo.rotateX(-Math.PI / 2) // 旋转至水平地面，Y 轴为高程
 
@@ -10962,10 +10967,10 @@ function buildTelemetryBadges() {
   clickableBadges = []
 
   badges.forEach(b => {
-    // 提升为 1024x276 超高清分辨率 (4倍超采样)，消除一切模糊与像素块
+    // 采用 512x138 视网膜双倍采样高清纹理，节省 75% 显存与贴图初始化开销，杜绝首屏卡顿
     const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = 276
+    canvas.width = 512
+    canvas.height = 138
     const ctx = canvas.getContext('2d')
     if (ctx) {
       ctx.imageSmoothingEnabled = true
@@ -10974,43 +10979,42 @@ function buildTelemetryBadges() {
       // 科技感半透明深蓝玻璃圆角背景
       ctx.fillStyle = 'rgba(6, 18, 36, 0.94)'
       ctx.beginPath()
-      ctx.roundRect(8, 8, 1008, 260, 24)
+      ctx.roundRect(4, 4, 504, 130, 12)
       ctx.fill()
 
       // 边框发光双色带
       ctx.strokeStyle = b.color
-      ctx.lineWidth = 6
+      ctx.lineWidth = 3
       ctx.stroke()
 
       // 边框内微光描边
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)'
-      ctx.lineWidth = 2
+      ctx.lineWidth = 1
       ctx.beginPath()
-      ctx.roundRect(16, 16, 992, 244, 18)
+      ctx.roundRect(8, 8, 496, 122, 9)
       ctx.stroke()
 
       // 左侧高亮色标条
       ctx.fillStyle = b.color
       ctx.beginPath()
-      ctx.roundRect(24, 24, 18, 228, 9)
+      ctx.roundRect(12, 12, 9, 114, 4)
       ctx.fill()
 
       // 标题文本 (清晰无锯齿大字号)
       ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 54px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif'
-      ctx.fillText(b.text, 68, 106)
+      ctx.font = 'bold 27px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif'
+      ctx.fillText(b.text, 34, 53)
 
       // 遥测数据文本 (等宽高清字体)
       ctx.fillStyle = b.color
-      ctx.font = '600 38px "SF Mono", Monaco, "Cascadia Code", Consolas, monospace'
-      ctx.fillText(b.value, 68, 196)
+      ctx.font = '600 19px "SF Mono", Monaco, "Cascadia Code", Consolas, monospace'
+      ctx.fillText(b.value, 34, 98)
     }
 
     const tex = new THREE.CanvasTexture(canvas)
-    tex.minFilter = THREE.LinearMipmapLinearFilter
+    tex.minFilter = THREE.LinearFilter
     tex.magFilter = THREE.LinearFilter
-    tex.generateMipmaps = true
-    tex.anisotropy = 16
+    tex.generateMipmaps = false
 
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }))
     sprite.position.set(b.pos[0], b.pos[1], b.pos[2])
@@ -11437,9 +11441,9 @@ function tick() {
     travelingBlock.position.y = 8 + 56 * 0.55 + Math.sin(elapsedTime * 0.8) * 4.0
   }
 
-  // 顶驱高压水龙带随动柔性重力自然下垂张弛 (Flexible Catenary Rotary Hose Dynamics - 隔3帧更新节约几何体销毁开销)
+  // 顶驱高压水龙带随动柔性重力自然下垂张弛 (Flexible Catenary Rotary Hose Dynamics - 隔12帧更新节约几何体销毁开销)
   if (rotaryHoseMesh && travelingBlock) {
-    if (tickCount % 3 === 0) {
+    if (tickCount % 12 === 0) {
       const curTopY = travelingBlock.position.y - 2.6
       const standpipeTopY = 8.5 + 37
       const standpipeX = -18 / 2 + 1.2
@@ -11645,8 +11649,8 @@ function tick() {
     if (selectionInnerRing) selectionInnerRing.rotation.z -= 0.018
   }
 
-  // 4. 示功图光标质点与载荷实时计算 (多井多工况)
-  if (selectedEquipment.value && ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment.value)) {
+  // 4. 示功图光标质点与载荷实时计算 (多井多工况，15Hz 限频更新彻底消除 Vue DOM 重绘压力)
+  if (selectedEquipment.value && ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment.value) && tickCount % 4 === 0) {
     let curAngle = crankAngle
     let curUp = isUpStroke
     const curKey = selectedEquipment.value
@@ -11907,7 +11911,7 @@ function tick() {
   }
 
   if (renderer && scene && camera) {
-    if (tickCount % 3 === 0) {
+    if (tickCount % 30 === 0) {
       renderer.shadowMap.needsUpdate = true
     }
     renderer.render(scene, camera)
@@ -11921,11 +11925,11 @@ onMounted(() => {
     containerRef.value.addEventListener('pointermove', onCanvasPointerMove)
   }
 
-  // 释放主线程让首屏关键元素 (h1.main-title, 统计看板, ECharts) 优先完成初次绘制 (LCP 秒降至 0.2s 绿区)
+  // 释放主线程让首屏卡片入场动画与 UI 关键帧流畅启动，随后平滑接入三维全要素装配与 GPU 预编译
   requestAnimationFrame(() => {
     setTimeout(() => {
       initScene()
-    }, 0)
+    }, 60)
   })
 })
 
@@ -11939,6 +11943,9 @@ onBeforeUnmount(() => {
   containerRef.value?.removeEventListener('pointermove', onCanvasPointerMove)
   controls?.dispose()
   renderer?.dispose()
+  sharedDracoLoader?.dispose()
+  sharedDracoLoader = null
+  sharedGltfLoader = null
   if (containerRef.value && renderer?.domElement) {
     containerRef.value.removeChild(renderer.domElement)
   }
@@ -11947,7 +11954,22 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="oil-scene-container">
-    <div ref="containerRef" class="webgl-canvas-box"></div>
+    <div
+      ref="containerRef"
+      class="webgl-canvas-box"
+      :class="{ 'webgl-canvas--ready': isSceneReady }"
+    ></div>
+
+    <!-- 数字化油田全景孪生就绪平滑过渡遮罩 (避免白屏或不完全物体突兀闪烁) -->
+    <transition name="scene-loader-fade">
+      <div v-if="!isSceneReady" class="scene-loader-mask">
+        <div class="loader-core">
+          <div class="loader-spinner"></div>
+          <div class="loader-title">深地一号 · 万米深地全要素数字孪生平台</div>
+          <div class="loader-subtitle">三维网格装配 & GPU 着色器预编译中...</div>
+        </div>
+      </div>
+    </transition>
 
 
     <!-- 底部中央：大漠油田全流程全生命周期数字孪生协同联动舱 -->
@@ -12376,6 +12398,68 @@ onBeforeUnmount(() => {
 .webgl-canvas-box {
   width: 100%;
   height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.webgl-canvas--ready {
+  opacity: 1;
+}
+
+.scene-loader-mask {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(15, 34, 56, 0.94) 0%, rgba(8, 19, 34, 0.98) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.loader-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loader-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(0, 240, 255, 0.18);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: loader-spin 0.9s cubic-bezier(0.4, 0.2, 0.2, 1) infinite;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-title {
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+.loader-subtitle {
+  color: #38bdf8;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+}
+
+.scene-loader-fade-leave-active {
+  transition: opacity 0.5s ease-out;
+}
+
+.scene-loader-fade-leave-to {
+  opacity: 0;
 }
 
 .equipment-quick-nav {
