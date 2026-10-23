@@ -30,8 +30,8 @@ const stages: ProcessStage[] = [
       { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
-    cameraPos: [23.0, 13.5, 96.0],
-    targetPos: [19.0, 1.5, 70.0],
+    cameraPos: [-16, 16.0, 72],
+    targetPos: [-22, 2.0, 44],
   },
   {
     id: 'civil',
@@ -100,8 +100,8 @@ const stages: ProcessStage[] = [
       { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
       { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
-    cameraPos: [-32, 11.0, 82],
-    targetPos: [-48, 3.2, 61],
+    cameraPos: [-24, 18.0, 36],
+    targetPos: [-48, 4.0, 62],
   },
   {
     id: 'completion',
@@ -114,8 +114,8 @@ const stages: ProcessStage[] = [
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
       { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
-    cameraPos: [95, 26, 38],
-    targetPos: [46, 10, 4],
+    cameraPos: [122, 38.0, 36],
+    targetPos: [50, 7.0, 4],
   },
 ]
 
@@ -384,8 +384,8 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
     id: 'frac-spread',
     name: '深地一号 · 特种作业车队与高压压裂固井机组',
     shortLabel: '特种车队',
-    cameraPos: [-32, 11.0, 82],
-    targetPos: [-48, 3.2, 61],
+    cameraPos: [-24, 18.0, 36],
+    targetPos: [-48, 4.0, 62],
     title: '深地一号 · 2500HP高压压裂机组与双机双泵水泥固井车队',
     status: '高压待命保障中 · 井筒加固就绪',
     dynType: 'normal',
@@ -2969,9 +2969,9 @@ function buildDesertGroundAndInfrastructure() {
   })
 
   // 5. 戈壁井位勘定与高精度地质勘测总成 (Stage 1: High-Precision Geological Survey, Datum Monument & Siting Complex)
-  // 部署于东南开阔大漠处 (X = 20, Z = 70)，彻底远离泥浆罐与基台死角，视野浩瀚通透
+  // 部署于主井区前沿开阔场台 (X = -22, Z = 44)，与后续各开采工序形成统一空间坐标系
   const surveyStationGroup = new THREE.Group()
-  surveyStationGroup.position.set(20, 0.2, 70)
+  surveyStationGroup.position.set(-22, 0.2, 44)
 
   // 专属工业材质定义
   const graniteDark = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
@@ -6992,12 +6992,12 @@ function buildIconicSloganBillboards() {
     return bb
   }
 
-  // 左标语牌：前移至主干道西侧最显眼处 (Z=85, X=-34，彻底摆脱水泥车与左侧图表遮挡，放大迎宾)
-  const b1 = createBillboardRig(mat1, 0.32, new THREE.Vector3(-34, 0.2, 85), 1.45)
+  // 左标语牌：外移至戈壁迎宾大道西侧两翼 (Z=92, X=-46，彻底远离任何作业视角遮挡)
+  const b1 = createBillboardRig(mat1, 0.25, new THREE.Vector3(-46, 0.2, 92), 1.45)
   sloganGroup.add(b1)
 
-  // 右标语牌：前移出管拱外至东侧开阔地 (Z=80, X=36，与左牌对称呼应，气魄雄伟)
-  const b2 = createBillboardRig(mat2, -0.32, new THREE.Vector3(36, 0.2, 80), 1.45)
+  // 右标语牌：外移至戈壁迎宾大道东侧两翼 (Z=92, X=46，两翼威严对称，全域视线通透无碍)
+  const b2 = createBillboardRig(mat2, -0.25, new THREE.Vector3(46, 0.2, 92), 1.45)
   sloganGroup.add(b2)
 
   scene.add(sloganGroup)
