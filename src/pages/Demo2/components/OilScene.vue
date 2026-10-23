@@ -30,8 +30,8 @@ const stages: ProcessStage[] = [
       { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
-    cameraPos: [-30, 7, 36],
-    targetPos: [-42, 3.5, 22],
+    cameraPos: [-33, 4.5, 30],
+    targetPos: [-42, 2.2, 22],
   },
   {
     id: 'civil',
@@ -44,8 +44,8 @@ const stages: ProcessStage[] = [
       { label: '猫道坡度水平', value: '18.2°', status: 'normal' },
       { label: '管排架立柱堆存', value: '156 根 (1,480m)', status: 'normal' },
     ],
-    cameraPos: [-2, 12, 48],
-    targetPos: [-18, 4.5, 28],
+    cameraPos: [-2, 11.5, 46],
+    targetPos: [-18, 4.2, 28],
   },
   {
     id: 'derrick',
@@ -58,7 +58,7 @@ const stages: ProcessStage[] = [
       { label: '立管循环压力', value: '24.2 MPa', status: 'normal' },
       { label: '泥浆固相含量', value: '3.8 %', status: 'normal' },
     ],
-    cameraPos: [-66, 9, 24],
+    cameraPos: [-66, 8.5, 24],
     targetPos: [-50, 4.0, 8],
   },
   {
@@ -72,8 +72,8 @@ const stages: ProcessStage[] = [
       { label: '当前进尺钻深', value: '3,852.4 m', status: 'active' },
       { label: '井下随钻倾角', value: '0.82° (优)', status: 'normal' },
     ],
-    cameraPos: [-15, 12.5, 14],
-    targetPos: [-15, 8.2, 0],
+    cameraPos: [-10, 16.5, 10],
+    targetPos: [-15, 12.0, 0],
   },
   {
     id: 'tripping',
@@ -86,8 +86,8 @@ const stages: ProcessStage[] = [
       { label: '起下钻运行速度', value: '0.65 m/s', status: 'normal' },
       { label: 'PDC钻头磨耗', value: '8.5% (完好)', status: 'normal' },
     ],
-    cameraPos: [-8, 32, 16],
-    targetPos: [-15, 26, 0],
+    cameraPos: [-7, 33.5, 12],
+    targetPos: [-16.5, 28.5, -2],
   },
   {
     id: 'casing',
@@ -100,8 +100,8 @@ const stages: ProcessStage[] = [
       { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
       { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
-    cameraPos: [-26, 9, 82],
-    targetPos: [-46, 3.8, 68],
+    cameraPos: [-30, 8.5, 78],
+    targetPos: [-48, 4.0, 60],
   },
   {
     id: 'completion',
@@ -114,8 +114,8 @@ const stages: ProcessStage[] = [
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
       { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
-    cameraPos: [68, 14, 26],
-    targetPos: [42, 6.5, 10],
+    cameraPos: [66, 13.5, 26],
+    targetPos: [42, 6.2, 10],
   },
 ]
 
@@ -2883,16 +2883,411 @@ function buildDesertGroundAndInfrastructure() {
     }
   })
 
-  // 5. 定井标桩与GNSS差分定位站 (Siting Marker)
-  const markerGroup = new THREE.Group()
-  markerGroup.position.set(-42, 0.2, 22)
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 6, 8), new THREE.MeshStandardMaterial({ color: 0xf59e0b }))
-  pole.position.y = 3
-  markerGroup.add(pole)
-  const domeAntenna = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff }))
-  domeAntenna.position.y = 6
-  markerGroup.add(domeAntenna)
-  group.add(markerGroup)
+  // 5. 戈壁井位勘定与高精度地质勘测总成 (Stage 1: High-Precision Geological Survey, Datum Monument & Siting Complex)
+  const surveyStationGroup = new THREE.Group()
+  surveyStationGroup.position.set(-42, 0.2, 22)
+
+  // 专属工业材质定义
+  const graniteDark = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
+  const graniteLight = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.75 })
+  const brassDatum = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.95, roughness: 0.15 })
+  const bronzeDark = new THREE.MeshStandardMaterial({ color: 0x78350f, metalness: 0.9, roughness: 0.3 })
+  const surveyOrange = new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.5, roughness: 0.4 })
+  const surveyWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.6, roughness: 0.35 })
+  const carbonDark = new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.85, roughness: 0.35 })
+  const chromeMat1 = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.12 })
+  const lensCyan = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.95, roughness: 0.05, transparent: true, opacity: 0.9 })
+  const screenGreen = new THREE.MeshBasicMaterial({ color: 0x22c55e })
+  const steelFrame = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.88, roughness: 0.28 })
+  const hazardYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 })
+  const flagRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.6 })
+  const solarBlue = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.92, roughness: 0.18 })
+
+  // -------------------------------------------------------------
+  // A. 永久性井位基准方碑与纯铜靶心水准点 (Survey Datum Monument & Brass Plaque)
+  // -------------------------------------------------------------
+  const monument = new THREE.Group()
+  // 第一层粗凿花岗岩基座
+  const plinth1 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 2.8), graniteDark)
+  plinth1.position.y = 0.175
+  monument.add(plinth1)
+  // 第二层精磨花岗岩基座
+  const plinth2 = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.45, 1.8), graniteLight)
+  plinth2.position.y = 0.575
+  monument.add(plinth2)
+
+  // 顶部中心纯铜大地水准靶心标志盘 (Brass Survey Datum Disc)
+  const brassDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 32), brassDatum)
+  brassDisc.position.y = 0.83
+  monument.add(brassDisc)
+
+  // 靶心同心圆刻度环与十字方位线 (Concentric Rings & Crosshair Markings)
+  for (const r of [0.4, 0.24]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.015, 4, 32), bronzeDark)
+    ring.rotation.x = Math.PI / 2
+    ring.position.y = 0.865
+    monument.add(ring)
+  }
+  const crossX = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.015, 0.03), bronzeDark)
+  crossX.position.y = 0.865
+  monument.add(crossX)
+  const crossZ = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.015, 0.85), bronzeDark)
+  crossZ.position.y = 0.865
+  monument.add(crossZ)
+
+  // 靶心中央不锈钢高精度高程基准针 (Stainless Elevation Benchmark Pin)
+  const datumPin = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 16), chromeMat1)
+  datumPin.position.y = 0.92
+  monument.add(datumPin)
+
+  // 方碑四角不锈钢接地地锚与紧固六角螺母
+  for (const mx of [-0.75, 0.75]) {
+    for (const mz of [-0.75, 0.75]) {
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 8), chromeMat1)
+      bolt.position.set(mx, 0.82, mz)
+      monument.add(bolt)
+    }
+  }
+
+  // 基座侧面井号铭牌 (Well ID Brass Nameplate)
+  const plaque = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.28, 0.04), brassDatum)
+  plaque.position.set(0, 0.58, 0.92)
+  monument.add(plaque)
+
+  surveyStationGroup.add(monument)
+
+  // -------------------------------------------------------------
+  // B. 专业光学电子全站仪与碳纤维三脚架 (Electronic Total Station on Tripod)
+  // -------------------------------------------------------------
+  const totalStation = new THREE.Group()
+  totalStation.position.set(1.9, 0, 1.2)
+  totalStation.rotation.y = -Math.PI / 3.5
+
+  // 碳纤维三脚架三条展开支腿 (3 Splayed Carbon Legs with Foot Shoes)
+  for (let i = 0; i < 3; i++) {
+    const legAng = (i * Math.PI * 2) / 3
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.025, 1.65, 8), carbonDark)
+    leg.position.set(Math.cos(legAng) * 0.42, 0.8, Math.sin(legAng) * 0.42)
+    leg.rotation.z = -Math.sin(legAng) * 0.32
+    leg.rotation.x = Math.cos(legAng) * 0.32
+    totalStation.add(leg)
+
+    // 支腿底部插地脚尖 (Ground Spikes)
+    const shoe = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.16, 8), hazardYellow)
+    shoe.position.set(Math.cos(legAng) * 0.72, 0.08, Math.sin(legAng) * 0.72)
+    shoe.rotation.x = Math.PI
+    totalStation.add(shoe)
+  }
+
+  // 照准部微调基座 (Tribrach with Leveling Thumbscrews)
+  const tribrach = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.14, 12), steelFrame)
+  tribrach.position.y = 1.58
+  totalStation.add(tribrach)
+
+  // 全站仪机身 (Total Station Body in Leica-Orange & Polar-White)
+  const tsBody = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.48, 0.28), surveyOrange)
+  tsBody.position.y = 1.88
+  totalStation.add(tsBody)
+
+  // 双侧防护白罩板
+  for (const sx of [-0.17, 0.17]) {
+    const sidePlate = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.44, 0.26), surveyWhite)
+    sidePlate.position.set(sx, 1.88, 0)
+    totalStation.add(sidePlate)
+  }
+
+  // 光学望远镜物镜筒 (Optical Telescope Barrel & Coated Lens)
+  const telescope = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.46, 16), carbonDark)
+  telescope.rotation.x = Math.PI / 2 + 0.15
+  telescope.position.set(0, 1.94, 0)
+  totalStation.add(telescope)
+
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.075, 16), lensCyan)
+  lens.rotation.x = -Math.PI / 2 - 0.15
+  lens.position.set(0, 1.97, 0.24)
+  totalStation.add(lens)
+
+  // 双面高亮数字液晶读数屏 (Dual LCD Screens)
+  for (const sz of [-0.145, 0.145]) {
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.11), screenGreen)
+    screen.rotation.y = sz > 0 ? 0 : Math.PI
+    screen.position.set(0, 1.82, sz)
+    totalStation.add(screen)
+  }
+
+  // 顶部一体成型搬运提手 (Top Handle)
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.025, 4, 12, Math.PI), carbonDark)
+  handle.rotation.z = Math.PI
+  handle.position.set(0, 2.18, 0)
+  totalStation.add(handle)
+
+  surveyStationGroup.add(totalStation)
+
+  // -------------------------------------------------------------
+  // C. 红白相间全向反射棱镜测杆与双脚架 (Survey Prism Pole with Bipod)
+  // -------------------------------------------------------------
+  const prismPole = new THREE.Group()
+  prismPole.position.set(-1.8, 0, 1.1)
+
+  // 2.5米红白相间伸缩铝合金对中杆
+  for (let s = 0; s < 5; s++) {
+    const section = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.5, 10), s % 2 === 0 ? flagRed : surveyWhite)
+    section.position.y = 0.25 + s * 0.5
+    prismPole.add(section)
+  }
+
+  // 顶部 360° 全向光学玻璃反射棱镜总成 (360-Degree Corner-Cube Prism)
+  const prismHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.22, 12), hazardYellow)
+  prismHousing.position.y = 2.62
+  prismPole.add(prismHousing)
+
+  const prismGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.16, 12), lensCyan)
+  prismGlass.position.y = 2.62
+  prismPole.add(prismGlass)
+
+  // 铝合金支撑双脚架 (Aluminum Bipod Legs)
+  for (const bx of [-0.35, 0.35]) {
+    const bLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.015, 1.4, 6), chromeMat1)
+    bLeg.position.set(bx, 0.65, 0.28)
+    bLeg.rotation.z = -bx * 0.7
+    bLeg.rotation.x = 0.38
+    prismPole.add(bLeg)
+  }
+
+  surveyStationGroup.add(prismPole)
+
+  // -------------------------------------------------------------
+  // D. 大漠 GNSS RTK 太阳能差分基准站 (Solar-Powered Choke-Ring GNSS Base Station)
+  // -------------------------------------------------------------
+  const gnssBase = new THREE.Group()
+  gnssBase.position.set(-1.2, 0, -2.2)
+
+  // 重型三脚铝合金升降桅杆
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 4.4, 12), chromeMat1)
+  mast.position.y = 2.2
+  gnssBase.add(mast)
+
+  // 3 向防倾覆钢丝拉线与地锚桩 (Guy Wires)
+  for (let g = 0; g < 3; g++) {
+    const gAng = (g * Math.PI * 2) / 3
+    const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 3.8, 4), chromeMat1)
+    wire.position.set(Math.cos(gAng) * 1.1, 1.8, Math.sin(gAng) * 1.1)
+    wire.rotation.z = -Math.sin(gAng) * 0.48
+    wire.rotation.x = Math.cos(gAng) * 0.48
+    gnssBase.add(wire)
+  }
+
+  // 顶部专业三维扼流圈天线总成 (3D Choke Ring Antenna: 4 层金属同心环多径抑制槽)
+  const chokeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.08, 32), carbonDark)
+  chokeBase.position.y = 4.42
+  gnssBase.add(chokeBase)
+
+  for (const cr of [0.44, 0.34, 0.24, 0.14]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(cr, 0.024, 4, 28), chromeMat1)
+    ring.rotation.x = Math.PI / 2
+    ring.position.y = 4.47
+    gnssBase.add(ring)
+  }
+
+  // 顶部纯白抗冰雹微波防浪涌蘑菇头天线罩 (Radome)
+  const radome = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), surveyWhite)
+  radome.position.y = 4.47
+  gnssBase.add(radome)
+
+  // 高效单晶硅太阳能电池板 (35° 倾角正南采光)
+  const solarPanel = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.4, 0.04), solarBlue)
+  solarPanel.rotation.x = -Math.PI / 4
+  solarPanel.position.set(0, 2.7, -0.65)
+  gnssBase.add(solarPanel)
+
+  const solarFrame = new THREE.Mesh(new THREE.BoxGeometry(0.96, 1.46, 0.05), chromeMat1)
+  solarFrame.rotation.x = -Math.PI / 4
+  solarFrame.position.set(0, 2.7, -0.66)
+  gnssBase.add(solarFrame)
+
+  // IP67 防爆野外数据记录仪与差分电台箱 (Pelican-Style RTK Transmitter Enclosure)
+  const pelicanCase = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.42, 0.35), surveyOrange)
+  pelicanCase.position.set(0, 1.35, 0.28)
+  gnssBase.add(pelicanCase)
+
+  // 闪烁运行指示灯 (Flashing Status LEDs)
+  const ledPower = new THREE.Mesh(new THREE.CircleGeometry(0.025, 8), screenGreen)
+  ledPower.position.set(-0.12, 1.42, 0.46)
+  gnssBase.add(ledPower)
+
+  const ledData = new THREE.Mesh(new THREE.CircleGeometry(0.025, 8), new THREE.MeshBasicMaterial({ color: 0x00f0ff }))
+  ledData.position.set(0.12, 1.42, 0.46)
+  gnssBase.add(ledData)
+
+  // 高增益全向超短波电台鞭状发射天线 (UHF Whip Antenna)
+  const whipAnt = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 1.6, 8), carbonDark)
+  whipAnt.position.set(0.24, 2.2, 0.28)
+  gnssBase.add(whipAnt)
+
+  surveyStationGroup.add(gnssBase)
+
+  // -------------------------------------------------------------
+  // E. 地基承载力静力触探试验仪 (CPT - Cone Penetrometer Soil Testing Rig)
+  // -------------------------------------------------------------
+  const cptRig = new THREE.Group()
+  cptRig.position.set(2.4, 0, -1.8)
+
+  // 地基固定重型工字钢反力锚架 (Reaction Anchor Base)
+  const cptBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 1.2), steelFrame)
+  cptBase.position.y = 0.09
+  cptRig.add(cptBase)
+
+  // 双立柱液压顶进油缸 (Twin Hydraulic Penetration Cylinders)
+  for (const cx of [-0.55, 0.55]) {
+    const ram = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.1, 12), hazardYellow)
+    ram.position.set(cx, 1.15, 0)
+    cptRig.add(ram)
+
+    const pistonRod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 12), chromeMat1)
+    pistonRod.position.set(cx, 1.25, 0)
+    cptRig.add(pistonRod)
+  }
+
+  // 顶部承载滑移横梁 (Crosshead Beam)
+  const crosshead = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.22, 0.35), steelFrame)
+  crosshead.position.y = 2.15
+  cptRig.add(crosshead)
+
+  // 中央穿透地层的合金静力触探探杆 (Alloy Penetration Probe Rod)
+  const probeRod = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.4, 12), chromeMat1)
+  probeRod.position.y = 1.1
+  cptRig.add(probeRod)
+
+  // 液压动力单元泵组与压力仪表 (Hydraulic Power Pack)
+  const cptHpuBox = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.7, 0.65), steelFrame)
+  cptHpuBox.position.set(0, 0.45, 0.75)
+  cptRig.add(cptHpuBox)
+
+  const cptGauge = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 14), chromeMat1)
+  cptGauge.rotation.x = Math.PI / 2
+  cptGauge.position.set(0, 0.85, 0.75)
+  cptRig.add(cptGauge)
+
+  surveyStationGroup.add(cptRig)
+
+  // -------------------------------------------------------------
+  // F. 地质物探踏勘全地形越野皮卡车 (Geological Survey 4x4 Expedition Vehicle)
+  // -------------------------------------------------------------
+  const surveyTruck = new THREE.Group()
+  surveyTruck.position.set(-7.5, 0, 3.5)
+  surveyTruck.rotation.y = Math.PI / 5.5
+
+  // 越野梯形高间隙大梁底盘 (Off-Road Ladder Frame Chassis)
+  const sChassis = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 5.4), carbonDark)
+  sChassis.position.y = 0.85
+  surveyTruck.add(sChassis)
+
+  // 4条重型大花纹泥地越野轮胎 (Chunky Mud-Terrain Tires & Beadlock Rims)
+  const sTireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.95 })
+  const tireCoords = [
+    [-1.15, 0.62, 1.75], [1.15, 0.62, 1.75],
+    [-1.15, 0.62, -1.75], [1.15, 0.62, -1.75]
+  ]
+  tireCoords.forEach(([tx, ty, tz]) => {
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.44, 16), sTireMat)
+    tire.rotation.z = Math.PI / 2
+    tire.position.set(tx, ty, tz)
+    surveyTruck.add(tire)
+
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.46, 12), chromeMat1)
+    rim.rotation.z = Math.PI / 2
+    rim.position.set(tx, ty, tz)
+    surveyTruck.add(rim)
+  })
+
+  // 双排座驾驶舱与客舱车身 (Dual-Cab Body in Polar White)
+  const sCab = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.45, 2.7), surveyWhite)
+  sCab.position.set(0, 1.75, 0.4)
+  surveyTruck.add(sCab)
+
+  // 倾角前风挡车窗与两侧防反光深色玻璃 (Dark Privacy Glass)
+  const sGlassMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.85 })
+  const sWindshield = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.85), sGlassMat)
+  sWindshield.rotation.x = -0.32
+  sWindshield.position.set(0, 1.95, 1.78)
+  surveyTruck.add(sWindshield)
+
+  // 后部开放式货箱 (Pickup Cargo Bed)
+  const sBed = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.8, 2.1), surveyWhite)
+  sBed.position.set(0, 1.42, -1.95)
+  surveyTruck.add(sBed)
+
+  // 货箱龙门架与备用探伤箱 (Roll Bar & Geological Core Cases)
+  const rollBar = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.05, 4, 12, Math.PI), carbonDark)
+  rollBar.position.set(0, 2.2, -0.98)
+  surveyTruck.add(rollBar)
+
+  const coreBox = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 0.8), surveyOrange)
+  coreBox.position.set(0, 1.4, -1.95)
+  surveyTruck.add(coreBox)
+
+  // 车顶探险行李架与脱困板、备胎 (Roof Rack, Spare Tire & Recovery Gear)
+  const roofRack = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.15, 1.9), carbonDark)
+  roofRack.position.set(0, 2.55, 0.4)
+  surveyTruck.add(roofRack)
+
+  const roofSpare = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 14), sTireMat)
+  roofSpare.position.set(0, 2.8, 0.4)
+  surveyTruck.add(roofSpare)
+
+  // 前重型竞技防撞杠与绞盘 (Bull-Bar Bumper & Recovery Winch)
+  const bullBar = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.55, 0.4), carbonDark)
+  bullBar.position.set(0, 0.85, 2.85)
+  surveyTruck.add(bullBar)
+
+  const winch = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 12), hazardYellow)
+  winch.rotation.z = Math.PI / 2
+  winch.position.set(0, 0.85, 3.08)
+  surveyTruck.add(winch)
+
+  // A柱高位涉水喉 (Snorkel)
+  const snorkel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.4, 8), carbonDark)
+  snorkel.position.set(1.18, 1.95, 1.4)
+  surveyTruck.add(snorkel)
+
+  // 车顶黄色工程旋转警示排灯 (Amber Strobe Light Bar)
+  const strobeBar = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 0.22), hazardYellow)
+  strobeBar.position.set(0, 2.58, 1.2)
+  surveyTruck.add(strobeBar)
+
+  surveyStationGroup.add(surveyTruck)
+
+  // -------------------------------------------------------------
+  // G. 测绘红白标杆与安全隔离飘带 (Survey Boundary Stakes & Warning Flags)
+  // -------------------------------------------------------------
+  const stakeOffsets = [
+    [-4.5, -4.5], [4.5, -4.5], [4.5, 4.5], [-4.5, 4.5]
+  ]
+  stakeOffsets.forEach(([sx, sz]) => {
+    // 测绘花杆桩
+    const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.5, 8), flagRed)
+    stake.position.set(sx, 0.75, sz)
+    surveyStationGroup.add(stake)
+
+    const stakeStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.45, 8), surveyWhite)
+    stakeStripe.position.set(sx, 0.75, sz)
+    surveyStationGroup.add(stakeStripe)
+
+    // 顶部测量三角红旗
+    const flagGeo = new THREE.BufferGeometry()
+    const flagVertices = new Float32Array([
+      0, 1.5, 0,
+      0.55, 1.35, 0.15,
+      0, 1.2, 0
+    ])
+    flagGeo.setAttribute('position', new THREE.BufferAttribute(flagVertices, 3))
+    flagGeo.computeVertexNormals()
+    const flagMesh = new THREE.Mesh(flagGeo, new THREE.MeshStandardMaterial({ color: 0xef4444, side: THREE.DoubleSide }))
+    flagMesh.position.set(sx, 0, sz)
+    surveyStationGroup.add(flagMesh)
+  })
+
+  group.add(surveyStationGroup)
 
   // 6. 现代重型液压动力猫道机 (Hydraulic Power Catwalk Machine with V-Trough & Pipe Skate)
   const catwalkGroup = new THREE.Group()
@@ -6533,6 +6928,84 @@ function buildHeavyPipeStorageYards() {
   const yard4 = createPipeRack(new THREE.Vector3(-3, 0.2, 49), 0)
   yardGroup.add(yard4)
 
+  // 3. 钻前搬装重件运输半挂车总成 (Heavy Lowboy Rig-Up Transport Hauler with Power Skid)
+  const haulerTruck = new THREE.Group()
+  haulerTruck.position.set(7.5, 0.2, 41)
+  haulerTruck.rotation.y = -Math.PI / 1.05
+
+  const haulerCabMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.78, roughness: 0.3 })
+  const haulerTireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.92 })
+  const haulerChrome = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.15 })
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.85 })
+
+  // 6x4 牵引车头底盘与驾驶室
+  const cabFrame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 6.2), skidSteel)
+  cabFrame.position.set(0, 1.0, 5.2)
+  haulerTruck.add(cabFrame)
+
+  const tractorCab = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.5, 2.8), haulerCabMat)
+  tractorCab.position.set(0, 2.45, 6.4)
+  haulerTruck.add(tractorCab)
+
+  const cabWindshield = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.0), glassMat)
+  cabWindshield.position.set(0, 2.7, 7.82)
+  haulerTruck.add(cabWindshield)
+
+  // 镀铬高耸双排气烟囱
+  for (const ex of [-1.1, 1.1]) {
+    const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.4, 12), haulerChrome)
+    stack.position.set(ex, 2.9, 4.8)
+    haulerTruck.add(stack)
+  }
+
+  // 重型多轴超低平板半挂车架 (Heavy Multiaxle Lowboy Deck)
+  const lowboyDeck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.35, 12.5), skidSteel)
+  lowboyDeck.position.set(0, 0.85, -2.5)
+  haulerTruck.add(lowboyDeck)
+
+  // 挂车后三轴高承载工程轮胎组 (12 条重载轮胎)
+  for (let ax = 0; ax < 3; ax++) {
+    const az = -6.2 - ax * 1.45
+    for (const sx of [-1.35, 1.35]) {
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.42, 14), haulerTireMat)
+      tire.rotation.z = Math.PI / 2
+      tire.position.set(sx, 0.55, az)
+      haulerTruck.add(tire)
+    }
+  }
+
+  // 牵引车前单轴与后双轴轮胎
+  for (const [tx, tz] of [[-1.3, 6.4], [1.3, 6.4], [-1.35, 3.8], [1.35, 3.8], [-1.35, 2.4], [1.35, 2.4]]) {
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.44, 14), haulerTireMat)
+    tire.rotation.z = Math.PI / 2
+    tire.position.set(tx, 0.58, tz)
+    haulerTruck.add(tire)
+  }
+
+  // 平板挂车上捆绑运载的钻机重型柴油发电机撬装模块 (Transported Diesel Generator Skid)
+  const cargoSkid = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.8, 7.2), new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 }))
+  cargoSkid.position.set(0, 1.95, -1.8)
+  haulerTruck.add(cargoSkid)
+
+  // 发电机组侧向声学百叶窗与顶部排风帽
+  for (const lx of [-1.42, 1.42]) {
+    const louver = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.1, 4.2), skidSteel)
+    louver.position.set(lx, 2.0, -1.8)
+    haulerTruck.add(louver)
+  }
+
+  // 重型合金捆扎链条与倒链拉紧器 (Load Binder Tie-Down Chains)
+  for (const cz of [-4.5, 0.9]) {
+    for (const cx of [-1.5, 1.5]) {
+      const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.4, 6), haulerChrome)
+      chain.position.set(cx * 0.9, 1.5, cz)
+      chain.rotation.z = cx > 0 ? 0.45 : -0.45
+      haulerTruck.add(chain)
+    }
+  }
+
+  yardGroup.add(haulerTruck)
+
   scene.add(yardGroup)
 }
 
@@ -8627,7 +9100,193 @@ function buildSpecialFleet() {
 
   fleetGroup.add(lTruck)
 
-  scene.add(fleetGroup)
+  // -------------------------------------------------------------
+  // 7. 裸眼井综合测井仪器串专用检测运输架 (Wireline Logging Sonde Toolstring Carrier & Calibration Cart)
+  // -------------------------------------------------------------
+  const sondeGroup = new THREE.Group()
+  sondeGroup.position.set(-50, 0.2, 53)
+  sondeGroup.rotation.y = Math.PI / 1.8
+
+  // 8.5 米高强度钢管结构运输托架 (Heavy Tubular Frame with Rubber Tool Saddles)
+  const carrierBed = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.45, 8.8), steelDark)
+  carrierBed.position.set(0, 0.35, 0)
+  sondeGroup.add(carrierBed)
+
+  for (const bz of [-3.8, -1.9, 0, 1.9, 3.8]) {
+    const saddle = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.9, 16, 1, false, 0, Math.PI), safetyYellow)
+    saddle.rotation.z = Math.PI / 2
+    saddle.position.set(0, 0.6, bz)
+    sondeGroup.add(saddle)
+
+    // 橡胶减震托垫
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.08, 0.2), darkTire)
+    pad.position.set(0, 0.58, bz)
+    sondeGroup.add(pad)
+  }
+
+  // 工业级综合多参数测井仪器组合串 (Multi-Parameter Downhole Logging Toolstring)
+  const sondeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.96, roughness: 0.12 })
+  const brassRingMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.95, roughness: 0.15 })
+
+  // 1) 电缆快速承载接头与双向张力短节 (Cable Head & Tension Sub)
+  const cableHead = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 16), steelDark)
+  cableHead.rotation.x = Math.PI / 2
+  cableHead.position.set(0, 0.76, 3.8)
+  sondeGroup.add(cableHead)
+
+  // 2) 自然伽马测井探头 (Natural Gamma Ray Sonde with Radiation Warning Band)
+  const gammaSonde = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.8, 16), sondeMat)
+  gammaSonde.rotation.x = Math.PI / 2
+  gammaSonde.position.set(0, 0.76, 2.45)
+  sondeGroup.add(gammaSonde)
+
+  const radStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.3, 16), safetyYellow)
+  radStripe.rotation.x = Math.PI / 2
+  radStripe.position.set(0, 0.76, 2.45)
+  sondeGroup.add(radStripe)
+
+  // 3) 补偿中子与微球形聚焦密度探头 (Compensated Neutron-Density Sonde & Skid Pads)
+  const cndSonde = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 16), steelDark)
+  cndSonde.rotation.x = Math.PI / 2
+  cndSonde.position.set(0, 0.76, 0.45)
+  sondeGroup.add(cndSonde)
+
+  for (const py of [-0.14, 0.14]) {
+    const skidPad = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 1.2), chromeMat)
+    skidPad.position.set(py, 0.76, 0.45)
+    sondeGroup.add(skidPad)
+  }
+
+  // 4) 双侧向与高频阵列感应电阻率电极环系 (Dual Laterolog Gold-Plated Electrode Array)
+  const resSonde = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.4, 16), steelDark)
+  resSonde.rotation.x = Math.PI / 2
+  resSonde.position.set(0, 0.76, -1.85)
+  sondeGroup.add(resSonde)
+
+  for (let rz = -2.8; rz <= -0.9; rz += 0.38) {
+    const eRing = new THREE.Mesh(new THREE.CylinderGeometry(0.112, 0.112, 0.08, 16), brassRingMat)
+    eRing.rotation.x = Math.PI / 2
+    eRing.position.set(0, 0.76, rz)
+    sondeGroup.add(eRing)
+  }
+
+  // 5) 四臂电动井径仪 (4-Arm Motorized Caliper with Carbide Contact Tips)
+  const calSonde = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 1.4, 16), sondeMat)
+  calSonde.rotation.x = Math.PI / 2
+  calSonde.position.set(0, 0.76, -3.75)
+  sondeGroup.add(calSonde)
+
+  for (let a = 0; a < 4; a++) {
+    const aAng = (a * Math.PI) / 2
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.45, 0.04), chromeMat)
+    arm.position.set(Math.cos(aAng) * 0.22, 0.76 + Math.sin(aAng) * 0.22, -3.75)
+    arm.rotation.z = aAng
+    sondeGroup.add(arm)
+  }
+
+  // 6) 双级不锈钢弓簧扶正器 (Centralizer Bow Springs)
+  for (const cz of [-2.9, 1.6]) {
+    for (let b = 0; b < 3; b++) {
+      const bAng = (b * Math.PI * 2) / 3
+      const bow = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.02, 4, 12, Math.PI), chromeMat)
+      bow.rotation.z = bAng
+      bow.rotation.y = Math.PI / 2
+      bow.position.set(Math.cos(bAng) * 0.08, 0.76 + Math.sin(bAng) * 0.08, cz)
+      sondeGroup.add(bow)
+    }
+  }
+
+  // 移动式综合测井数字标定车台 (Field Calibration Console & Oscilloscope Display)
+  const calCart = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 0.65), steelDark)
+  calCart.position.set(1.15, 0.55, 1.2)
+  sondeGroup.add(calCart)
+
+  const calScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.4), new THREE.MeshBasicMaterial({ color: 0x00f0ff }))
+  calScreen.position.set(1.15, 0.85, 1.53)
+  sondeGroup.add(calScreen)
+
+  fleetGroup.add(sondeGroup)
+
+  // -------------------------------------------------------------
+  // 8. 高压双塞固井注水泥头总成 (Double-Plug Cementing Head & Manifold Stand)
+  // -------------------------------------------------------------
+  const cmtHeadGroup = new THREE.Group()
+  cmtHeadGroup.position.set(-38, 0.2, 67)
+
+  // 四腿承重固定台架 (Heavy Staging Stand)
+  const chStand = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.15, 1.4), steelDark)
+  chStand.position.y = 0.08
+  cmtHeadGroup.add(chStand)
+
+  for (const legX of [-0.55, 0.55]) {
+    for (const legZ of [-0.55, 0.55]) {
+      const legMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8), safetyYellow)
+      legMesh.position.set(legX, 0.65, legZ)
+      cmtHeadGroup.add(legMesh)
+    }
+  }
+
+  // 70MPa 锻造高强合金钢固井水泥头筒体 (Forged Alloy Cementing Head Body)
+  const headBody = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.35, 2.4, 16), valveRed)
+  headBody.position.y = 2.4
+  cmtHeadGroup.add(headBody)
+
+  // 上下双固井胶塞释放销轴与手轮机构 (Upper & Lower Wiper Plug Release Pins & Wheels)
+  for (const py of [1.85, 2.85]) {
+    const pinShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.75, 10), chromeMat)
+    pinShaft.rotation.z = Math.PI / 2
+    pinShaft.position.set(0.45, py, 0)
+    cmtHeadGroup.add(pinShaft)
+
+    const pinWheel = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.035, 4, 14), chromeMat)
+    pinWheel.rotation.y = Math.PI / 2
+    pinWheel.position.set(0.85, py, 0)
+    cmtHeadGroup.add(pinWheel)
+  }
+
+  // 顶部承载活动高压旋转接头 (Top High-Pressure Cementing Swivel)
+  const swivel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.55, 14), steelDark)
+  swivel.position.y = 3.85
+  cmtHeadGroup.add(swivel)
+
+  // 侧面注水泥管汇接头与 0~70MPa 双针抗震压力表 (Side Inlet Manifold & Dual Pressure Gauges)
+  const sideInlet = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.65, 12), steelDark)
+  sideInlet.rotation.z = Math.PI / 2
+  sideInlet.position.set(-0.48, 2.2, 0)
+  cmtHeadGroup.add(sideInlet)
+
+  const cmtGauge = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.06, 14), chromeMat)
+  cmtGauge.rotation.z = Math.PI / 2
+  cmtGauge.position.set(-0.85, 2.5, 0)
+  cmtHeadGroup.add(cmtGauge)
+
+  const cmtDial = new THREE.Mesh(new THREE.CircleGeometry(0.12, 14), new THREE.MeshBasicMaterial({ color: 0xffffff }))
+  cmtDial.rotation.y = -Math.PI / 2
+  cmtDial.position.set(-0.885, 2.5, 0)
+  cmtHeadGroup.add(cmtDial)
+
+  fleetGroup.add(cmtHeadGroup)
+
+  // -------------------------------------------------------------
+  // 9. 测井高压电缆跨距导向滑轮系统 (Wireline Rigging & Floor Snatch Block)
+  // -------------------------------------------------------------
+  const wirelineSpline = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-55, 5.0, 46.1), // 测井车尾顶部天滑轮
+    new THREE.Vector3(-45, 6.2, 36.0), // 空中悬跨自然弧垂
+    new THREE.Vector3(-32, 8.5, 22.0),
+    new THREE.Vector3(-20, 11.25, 6.0), // 钻台边缘下导向滑轮
+  ])
+  const wirelineMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(wirelineSpline, 32, 0.045, 6, false),
+    new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.95, roughness: 0.25 })
+  )
+  fleetGroup.add(wirelineMesh)
+
+  // 钻台边缘锚固的重型地滑轮 (Drill Floor Wireline Snatch Block)
+  const floorSheave = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.08, 6, 16), safetyYellow)
+  floorSheave.position.set(-20, 11.25, 6.0)
+  floorSheave.rotation.y = Math.PI / 3.5
+  fleetGroup.add(floorSheave)
 }
 
 // -------------------------------------------------------------
@@ -11695,6 +12354,7 @@ function buildPigScraperStation() {
 // -------------------------------------------------------------
 function selectStage(index: number) {
   currentStageIndex.value = index
+  selectedEquipment.value = null // 切换工序时自动折叠单设备HUD弹窗，保证全景视线开阔通透
   const st = stages[index]
   if (!camera || !controls) return
 
