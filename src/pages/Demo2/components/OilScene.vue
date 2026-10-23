@@ -552,6 +552,34 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
   },
 }
 
+// 工序关联合金工业装备映射表 (工序聚焦模式下智能展示最相关的装备，消除底部无序拥挤)
+const isAllEquipmentShown = ref(false)
+
+const stageEquipmentMap: Record<string, string[]> = {
+  siting: ['drilling-rig', 'power-bop'],
+  civil: ['drilling-rig', 'power-bop', 'mud-system'],
+  derrick: ['drilling-rig', 'power-bop', 'mud-system'],
+  drilling: ['drilling-rig', 'power-bop', 'mud-system'],
+  tripping: ['drilling-rig', 'power-bop', 'mud-system'],
+  casing: ['drilling-rig', 'frac-spread'],
+  completion: ['pumping-unit', 'pump-jack-1', 'pump-jack-2', 'xTree', 'separator', 'heater', 'loading-rack', 'long-pipeline'],
+}
+
+const activePresets = computed(() => {
+  if (isAllEquipmentShown.value) {
+    return equipmentPresets
+  }
+  const stageId = stages[currentStageIndex.value]?.id || 'completion'
+  const keys = stageEquipmentMap[stageId] || Object.keys(equipmentPresets)
+  const result: Record<string, EquipmentPreset> = {}
+  keys.forEach((k) => {
+    if (equipmentPresets[k]) {
+      result[k] = equipmentPresets[k]
+    }
+  })
+  return result
+})
+
 function setWeatherMode(mode: 'dusk' | 'noon' | 'sandstorm' | 'night') {
   weatherMode.value = mode
   if (!scene || !mainSunRef) return
@@ -12344,43 +12372,37 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <!-- 工业装备 3D 数字孪生特写快捷导航条 -->
+    <!-- 工业装备 3D 数字孪生特写快捷导航条 (对齐底部工序舱，支持工序关联与全域切换) -->
     <div class="equipment-quick-nav">
-      <div class="nav-title">
-        <span class="nav-icon">🎯</span>
-        <span>装备孪生导航:</span>
+      <div class="nav-left-section">
+        <div class="nav-title">
+          <span class="nav-icon">🎯</span>
+          <span>{{ isAllEquipmentShown ? '全域工业孪生 (12)' : '工序重点装备' }}:</span>
+        </div>
+        <div class="nav-buttons">
+          <button
+            v-for="(item, key) in activePresets"
+            :key="key"
+            class="nav-btn"
+            :class="{ 'nav-btn--active': selectedEquipment === key }"
+            @click="focusEquipment(key as string)"
+          >
+            {{ item.shortLabel }}
+          </button>
+
+          <!-- 全域 12 装备与阶段装备折叠/展开一键切换 -->
+          <button
+            class="nav-btn nav-btn--toggle-all"
+            :class="{ 'nav-btn--toggle-active': isAllEquipmentShown }"
+            @click="isAllEquipmentShown = !isAllEquipmentShown"
+            :title="isAllEquipmentShown ? '收起为当前工序关联核心装备' : '展开全域 12 大工业孪生装备'"
+          >
+            {{ isAllEquipmentShown ? '◀ 当前工序' : '🌐 全域 (12)' }}
+          </button>
+        </div>
       </div>
-      <div class="nav-buttons">
-        <button
-          v-for="(item, key) in equipmentPresets"
-          :key="key"
-          class="nav-btn"
-          :class="{ 'nav-btn--active': selectedEquipment === key }"
-          @click="focusEquipment(key as string)"
-        >
-          {{ item.shortLabel }}
-        </button>
 
-        <span class="nav-divider">|</span>
-
-        <!-- 地下剖面模式切换 -->
-        <button
-          class="nav-btn nav-btn--mode"
-          :class="{ 'nav-btn--mode-active': isUndergroundView }"
-          @click="toggleUndergroundView"
-        >
-          {{ isUndergroundView ? '⛰️ 地表全景' : '🌐 地下油藏剖面' }}
-        </button>
-
-        <!-- 红外热力成像视角 -->
-        <button
-          class="nav-btn nav-btn--thermal"
-          :class="{ 'nav-btn--thermal-active': isThermalMode }"
-          @click="toggleThermalMode"
-        >
-          🔥 {{ isThermalMode ? '常规材质' : '红外热成像' }}
-        </button>
-
+      <div class="nav-right-section">
         <!-- 采油树翼阀交互开关 (仅采油完井工序或选中采油树/抽油机时显示) -->
         <button
           v-if="stages[currentStageIndex].id === 'completion' || ['xTree', 'pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
@@ -12400,19 +12422,43 @@ onBeforeUnmount(() => {
           🎥 机组特写
         </button>
 
+        <span class="nav-divider">|</span>
+
+        <!-- 地下剖面模式切换 -->
+        <button
+          class="nav-btn nav-btn--mode"
+          :class="{ 'nav-btn--mode-active': isUndergroundView }"
+          @click="toggleUndergroundView"
+        >
+          {{ isUndergroundView ? '⛰️ 地表全景' : '🌐 地下剖面' }}
+        </button>
+
+        <!-- 红外热力成像视角 -->
+        <button
+          class="nav-btn nav-btn--thermal"
+          :class="{ 'nav-btn--thermal-active': isThermalMode }"
+          @click="toggleThermalMode"
+        >
+          🔥 {{ isThermalMode ? '常规材质' : '红外热成像' }}
+        </button>
+
         <button
           v-if="selectedEquipment || isUndergroundView"
           class="nav-btn nav-btn--reset"
           @click="resetEquipmentFocus"
         >
-          ✕ 全局视角
+          ✕ 复位全景
         </button>
       </div>
     </div>
 
-    <!-- 采集设备数字孪生全息数据面板 & 示功图 HUD -->
+    <!-- 采集设备数字孪生全息数据面板 & 示功图 HUD (置于顶部下方中央，不遮挡底部导航与中央3D模型) -->
     <Transition name="hud-fade">
-      <div v-if="selectedEquipment && equipmentPresets[selectedEquipment]" class="equipment-hud-card">
+      <div
+        v-if="selectedEquipment && equipmentPresets[selectedEquipment]"
+        class="equipment-hud-card"
+        :class="{ 'equipment-hud-card--pump': ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment) }"
+      >
         <div class="hud-header">
           <div class="hud-title-box">
             <span class="hud-status-pulse" :class="{ 'pulse--warn': equipmentPresets[selectedEquipment].dynType && equipmentPresets[selectedEquipment].dynType !== 'normal' }"></span>
@@ -12714,27 +12760,40 @@ onBeforeUnmount(() => {
 
 .equipment-quick-nav {
   position: absolute;
-  bottom: 146px;
+  bottom: 134px;
   left: 50%;
   transform: translateX(-50%);
+  width: 980px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px;
+  background: linear-gradient(180deg, rgba(14, 30, 52, 0.94) 0%, rgba(8, 20, 36, 0.96) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 240, 255, 0.08);
+  backdrop-filter: blur(14px);
+  z-index: 22;
+}
+
+.nav-left-section {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
-  background: rgba(10, 25, 45, 0.92);
-  border: 1px solid rgba(0, 240, 255, 0.45);
-  border-radius: 20px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7), inset 0 0 12px rgba(0, 240, 255, 0.12);
-  backdrop-filter: blur(12px);
-  z-index: 25;
-  max-width: 96vw;
   overflow-x: auto;
   scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
 }
 
-.equipment-quick-nav::-webkit-scrollbar {
+.nav-left-section::-webkit-scrollbar {
   display: none;
+}
+
+.nav-right-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .nav-title {
@@ -12750,11 +12809,11 @@ onBeforeUnmount(() => {
 .nav-buttons {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .nav-btn {
-  padding: 3px 10px;
+  padding: 3px 9px;
   font-size: 11px;
   color: #cbd5e1;
   background: rgba(255, 255, 255, 0.06);
@@ -12777,6 +12836,26 @@ onBeforeUnmount(() => {
   border-color: #00f0ff;
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
   font-weight: 600;
+}
+
+.nav-btn--toggle-all {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.1);
+  font-weight: 600;
+}
+
+.nav-btn--toggle-all:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.nav-btn--toggle-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
 
 .nav-btn--reset {
@@ -13088,17 +13167,21 @@ onBeforeUnmount(() => {
 
 .equipment-hud-card {
   position: absolute;
-  bottom: 165px;
+  top: 152px;
   left: 50%;
   transform: translateX(-50%);
-  width: 590px;
-  background: linear-gradient(180deg, rgba(10, 28, 50, 0.94) 0%, rgba(6, 18, 34, 0.96) 100%);
-  border: 1px solid rgba(0, 240, 255, 0.45);
-  border-radius: 10px;
-  padding: 12px 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), inset 0 0 24px rgba(0, 240, 255, 0.12);
+  width: 620px;
+  background: linear-gradient(180deg, rgba(10, 28, 50, 0.95) 0%, rgba(6, 18, 34, 0.98) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  border-radius: 8px;
+  padding: 12px 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), inset 0 0 24px rgba(0, 240, 255, 0.12);
   backdrop-filter: blur(16px);
-  z-index: 20;
+  z-index: 30;
+}
+
+.equipment-hud-card--pump {
+  width: 700px;
 }
 
 .hud-header {
@@ -13364,13 +13447,13 @@ onBeforeUnmount(() => {
 
 .hud-fade-enter-active,
 .hud-fade-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hud-fade-enter-from,
 .hud-fade-leave-to {
   opacity: 0;
-  transform: translate(-50%, 15px);
+  transform: translate(-50%, -12px);
 }
 
 .process-lifecycle-dock {
