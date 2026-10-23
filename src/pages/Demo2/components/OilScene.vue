@@ -5368,24 +5368,100 @@ function buildDerrickAssembly() {
     bopGroup.add(uLine)
   }
 
+  // -------------------------------------------------------------
+  // API 16A 10,000psi 超深井重型防喷器组 (Heavy Substructure BOP Stack)
+  // 包含双闸板防喷器（剪切闸板+管道闸板）、手动锁紧手轮、钻井四通、节流压井管线与环形防喷器螺柱群
+  // -------------------------------------------------------------
   const ramH = 1.3
   const ramMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.85, roughness: 0.25 })
   for (let r = 0; r < 2; r++) {
+    const curY = 3.6 + r * 1.8
+    // 锻钢整体式闸板防喷器箱体 (Forged Alloy Ram Body)
     const ramBody = new THREE.Mesh(new THREE.BoxGeometry(4.8, ramH, 3.2), ramMat)
-    ramBody.position.y = 3.6 + r * 1.5
+    ramBody.position.y = curY
     bopGroup.add(ramBody)
 
+    // 箱体端部对焊法兰与六角紧固螺柱群
+    for (const dy of [-ramH / 2, ramH / 2]) {
+      const fRim = new THREE.Mesh(new THREE.CylinderGeometry(1.85, 1.85, 0.16, 20), darkMetal)
+      fRim.position.y = curY + dy
+      bopGroup.add(fRim)
+    }
+
+    // 两侧液压操作油缸与手动锁紧丝杠机构 (Hydraulic Locking Cylinders & Manual Handwheels)
     for (const side of [-1, 1]) {
       const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.8, 16), darkMetal)
       cyl.rotation.z = Math.PI / 2
-      cyl.position.set(side * 3.1, 3.6 + r * 1.5, 0)
+      cyl.position.set(side * 3.1, curY, 0)
       bopGroup.add(cyl)
+
+      // 镀铬镜面手动锁紧推力丝杆 (Chrome Locking Screws)
+      const screwRod = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.85, 10), silverChrome)
+      screwRod.rotation.z = Math.PI / 2
+      screwRod.position.set(side * 4.2, curY, 0)
+      bopGroup.add(screwRod)
+
+      // 应急防爆重型手动锁紧手轮 (Emergency Manual Locking Handwheels)
+      const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.08, 6, 16), yellowSafety)
+      wheel.rotation.y = Math.PI / 2
+      wheel.position.set(side * 4.6, curY, 0)
+      bopGroup.add(wheel)
+
+      // 不锈钢编织铠装高压液控管线接口 (Hydraulic Jumper Ports)
+      const hFitting = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), silverChrome)
+      hFitting.position.set(side * 2.6, curY + 0.65, 0)
+      bopGroup.add(hFitting)
     }
   }
 
-  const annular = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 2.0, 20), steelOrange)
-  annular.position.y = 6.8
+  // 闸板防喷器中间重型钻井四通与节流压井管线 (Drilling Spool with Choke & Kill Lines)
+  const spoolGroup = new THREE.Group()
+  spoolGroup.position.y = 4.5
+
+  const spoolBody = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.9, 20), darkMetal)
+  spoolGroup.add(spoolBody)
+
+  // 节流管线接头 (Choke Line Flange: 西侧向外引出)
+  const chokeLine = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 2.2, 14), petroBlue)
+  chokeLine.rotation.z = Math.PI / 2
+  chokeLine.position.set(-2.0, 0, 0)
+  spoolGroup.add(chokeLine)
+
+  const chokeValve = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.75, 0.55), valveRed)
+  chokeValve.position.set(-2.8, 0, 0)
+  spoolGroup.add(chokeValve)
+
+  // 压井管线接头 (Kill Line Flange: 东侧向外引出)
+  const killLine = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 2.2, 14), petroBlue)
+  killLine.rotation.z = Math.PI / 2
+  killLine.position.set(2.0, 0, 0)
+  spoolGroup.add(killLine)
+
+  const killValve = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.5), valveRed)
+  killValve.position.set(2.8, 0, 0)
+  spoolGroup.add(killValve)
+
+  bopGroup.add(spoolGroup)
+
+  // 环形防喷器 (API 16A Annular Blowout Preventer with Spherical Packing Unit)
+  const annular = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.55, 2.2, 24), steelOrange)
+  annular.position.y = 7.1
   bopGroup.add(annular)
+
+  // 环形防喷器球形顶盖紧固双头螺柱群 (Radially Arranged Bonnet Studs)
+  for (let i = 0; i < 12; i++) {
+    const a = (i * Math.PI * 2) / 12
+    const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.45, 6), silverChrome)
+    stud.position.set(Math.cos(a) * 2.1, 8.25, Math.sin(a) * 2.1)
+    bopGroup.add(stud)
+  }
+
+  // 环形防喷器锻造吊耳 (Forged Lifting Lugs)
+  for (const lx of [-2.4, 2.4]) {
+    const lug = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.06, 6, 12), darkMetal)
+    lug.position.set(lx, 7.8, 0)
+    bopGroup.add(lug)
+  }
 
   // 泥浆伞钟形接头与喇叭口 (Bell Nipple with Mud Return Flowline Outlet Nozzle)
   const bellNippleGroup = new THREE.Group()
@@ -5599,20 +5675,53 @@ function buildDerrickAssembly() {
   rnMast.position.set(0, 3.0, 0)
   roughneck.add(rnMast)
 
+  // 垂直升降镀铬液压油缸与导向滑动块 (Vertical Lift Hydraulic Cylinders)
+  for (const sx of [-0.68, 0.68]) {
+    const liftCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 4.4, 8), darkMetal)
+    liftCyl.position.set(sx, 3.0, 0)
+    roughneck.add(liftCyl)
+
+    const liftRod = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 4.2, 8), silverChrome)
+    liftRod.position.set(sx, 3.2, 0)
+    roughneck.add(liftRod)
+  }
+
   // 折叠液压冲扣卡瓦臂 (收拢在待命位，钻台中部转盘完全畅通通透)
   const rnArm = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 1.4), yellowSafety)
   rnArm.position.set(1.4, 3.4, 0)
   roughneck.add(rnArm)
 
+  // 上部高速旋扣器与下部大扭矩冲扣钳夹持头 (Spinning Wrench & Torque Wrench Jaws)
   const rnJaw = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.2, 8), darkMetal)
   rnJaw.position.set(2.6, 3.4, 0)
   roughneck.add(rnJaw)
+
+  // 钳口内部双对向高摩擦聚氨酯旋扣滚轮 (Spinning Rollers)
+  for (const ry of [-0.28, 0.28]) {
+    for (const rz of [-0.35, 0.35]) {
+      const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.45, 12), castIron)
+      roller.position.set(2.6 + ry, 3.4, rz)
+      roughneck.add(roller)
+    }
+  }
+
+  // 铁钻工动力拖链管束 (Hydraulic Energy Chain Jumper to Track)
+  const rnChainCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 2.2, 0),
+    new THREE.Vector3(-0.6, 1.2, -1.0),
+    new THREE.Vector3(-0.6, 0.2, -2.4),
+  ])
+  const rnChain = new THREE.Mesh(
+    new THREE.TubeGeometry(rnChainCurve, 12, 0.08, 6, false),
+    darkMetal
+  )
+  roughneck.add(rnChain)
   rigGroup.add(roughneck)
 
-  // 钻台小鼠洞管口平齐保护盖 (Flush Drill Floor Mousehole Socket with Safety Latch - 消除突兀立柱)
-  const mousehole = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.12, 16), darkMetal)
-  mousehole.position.set(4.5, floorH + 0.06, 3.2)
-  rigGroup.add(mousehole)
+  // 钻台大鼠洞管口平齐保护盖 (Flush Drill Floor Rathole Socket with Safety Latch)
+  const rathole = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.12, 16), darkMetal)
+  rathole.position.set(4.5, floorH + 0.06, 3.2)
+  rigGroup.add(rathole)
 
   const mouseholeCover = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 16), yellowSafety)
   mouseholeCover.position.set(4.5, floorH + 0.12, 3.2)
@@ -6349,47 +6458,28 @@ function buildDerrickAssembly() {
   travelingBlock.add(topDriveGroup)
   rigGroup.add(travelingBlock)
 
-  // 9. 钻台面自动化液压铁钻工机器人 (Automated Hydraulic Iron Roughneck)
-  const roughneckGroup = new THREE.Group()
-  roughneckGroup.position.set(3.2, floorH, 1.0)
+  // （保留西北侧轨道上的主力精工机械铁钻工 roughneck，清理转盘内侵入的旧版多余模型）
 
-  const irBase = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 1.6), darkMetal)
-  irBase.position.y = 0.175
-  roughneckGroup.add(irBase)
-
-  const irColumn = new THREE.Mesh(new THREE.BoxGeometry(0.65, 2.8, 0.65), derrickBlue)
-  irColumn.position.set(0, 1.55, 0)
-  roughneckGroup.add(irColumn)
-
-  const irArm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 0.55), yellowSafety)
-  irArm.position.set(-0.65, 2.6, -0.4)
-  roughneckGroup.add(irArm)
-
-  const wrenchHead = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.9, 12), darkMetal)
-  wrenchHead.position.set(-1.6, 2.6, -0.8)
-  roughneckGroup.add(wrenchHead)
-
-  const irConsole = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.65, 0.35), darkMetal)
-  irConsole.position.set(0.6, 1.8, 0.4)
-  roughneckGroup.add(irConsole)
-  const eStop = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.08, 8), valveRed)
-  eStop.position.set(0.6, 2.15, 0.4)
-  roughneckGroup.add(eStop)
-
-  rigGroup.add(roughneckGroup)
-
-  // 10. 钻台底座直通地面的高压井口导管柱 (Direct Ground-to-Floor Wellhead Casing Riser)
-  // 直径 1.4m 重型合金导向套管柱，彻底封闭钻台下方通透真空，将开采驱动稳固锚定在大漠地基上！
-  const groundRiser = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.7, 0.75, floorH + 2.75, 20),
+  // 10. 井口方井地下高压导管柱与锚固基座 (Subterranean Well Cellar Conductor & Base Anchor Flange)
+  // 稳固锚定于月池方井地基下方 (Y = -2.75 到 Y = 0)，上承防喷器组套管头，彻底消除在月池内与防喷器组全高重叠穿模！
+  const cellarConductor = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.4, 1.5, 2.75, 24),
     darkMetal
   )
-  groundRiser.position.set(0, (floorH - 2.75) / 2, 0)
-  rigGroup.add(groundRiser)
+  cellarConductor.position.set(0, -2.75 / 2, 0)
+  rigGroup.add(cellarConductor)
 
-  const groundFlange = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.2, 0.6, 20), yellowSafety)
-  groundFlange.position.set(0, 0.3, 0)
-  rigGroup.add(groundFlange)
+  // 方井底部重型承重支撑法兰盘与 12 颗六角地脚螺栓 (Cellar Foundation Anchor Flange & Anchor Studs)
+  const cellarFlange = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 0.28, 24), yellowSafety)
+  cellarFlange.position.set(0, 0.14, 0)
+  rigGroup.add(cellarFlange)
+
+  for (let bi = 0; bi < 12; bi++) {
+    const bAng = (bi * Math.PI * 2) / 12
+    const bStud = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.42, 6), silverChrome)
+    bStud.position.set(Math.cos(bAng) * 1.65, 0.3, Math.sin(bAng) * 1.65)
+    rigGroup.add(bStud)
+  }
 
   // 11. 钻机顶驱与钻台专属高精非递归点击碰撞盒 (Direct Click Collider: 涵盖顶驱滑车、吊卡、转盘与井口，0.01ms 极速响应交互)
   const rigCollider = new THREE.Mesh(
@@ -7801,6 +7891,34 @@ function buildDetailedAllTerrainCrane(pos: THREE.Vector3, rotY: number, parent: 
   a2bChain.position.set(0.35, -0.25, 0.4)
   boomHead.add(a2bChain)
 
+  // 臂尖三杯式旋转数字风速仪与航空障碍红闪警示灯 (Boom Tip Anemometer & Red Strobe)
+  const anemometerMast = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 6), darkChassis)
+  anemometerMast.position.set(-0.35, 0.55, 0.4)
+  boomHead.add(anemometerMast)
+
+  const anemometerHub = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), chromeSteel)
+  anemometerHub.position.set(-0.35, 0.85, 0.4)
+  boomHead.add(anemometerHub)
+
+  for (let c = 0; c < 3; c++) {
+    const cAng = (c * Math.PI * 2) / 3
+    const cArm = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.18, 4), darkChassis)
+    cArm.rotation.z = Math.PI / 2
+    cArm.rotation.y = cAng
+    cArm.position.set(-0.35 + Math.cos(cAng) * 0.09, 0.85, 0.4 + Math.sin(cAng) * 0.09)
+    boomHead.add(cArm)
+
+    const cup = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6, 0, Math.PI), craneYellow)
+    cup.rotation.y = cAng + Math.PI / 2
+    cup.position.set(-0.35 + Math.cos(cAng) * 0.18, 0.85, 0.4 + Math.sin(cAng) * 0.18)
+    boomHead.add(cup)
+  }
+
+  // 臂尖 LED 航空障碍红色爆闪警示灯
+  const tipBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.065, 8, 8), redTailMat)
+  tipBeacon.position.set(0, 0.58, 0.6)
+  boomHead.add(tipBeacon)
+
   boomGroup.add(boomHead)
   turretGroup.add(boomGroup)
   craneGroup.add(turretGroup)
@@ -8627,6 +8745,113 @@ function buildMudSystem() {
   cuttingsPile.position.set(0, 0.45, 5.2)
   shakerGroup.add(cuttingsPile)
   mudGroup.add(shakerGroup)
+
+  // -------------------------------------------------------------
+  // 4b. 二三级固控设备：10" 双联除砂器与 4" 八联微型除泥器组 (Desander & Desilter Hydrocyclones)
+  // 部署于 1# 泥浆罐上方 (X = 5.2, Z = 4.5)，完美衔接振动筛出砂与搅拌均质区
+  // -------------------------------------------------------------
+  const hydroGroup = new THREE.Group()
+  hydroGroup.position.set(5.2, 5.5, 4.5)
+
+  // 支承型钢框架 (Mounting Skid Frame)
+  const hFrame = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.25, 3.4), heavyMetal)
+  hFrame.position.y = 0.12
+  hydroGroup.add(hFrame)
+
+  // 1) 10" 双联大型聚氨酯除砂旋流器 (Twin 10" Desander Hydrocyclone Cones)
+  const desanderFeedPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.8, 12), petroBlue)
+  desanderFeedPipe.rotation.x = Math.PI / 2
+  desanderFeedPipe.position.set(-1.2, 2.4, 0)
+  hydroGroup.add(desanderFeedPipe)
+
+  for (const dz of [-0.75, 0.75]) {
+    const dConeBody = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.8, 16), safetyYellow)
+    dConeBody.position.set(-1.2, 1.8, dz)
+    hydroGroup.add(dConeBody)
+
+    const dConeTaper = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.4, 16), safetyYellow)
+    dConeTaper.rotation.x = Math.PI
+    dConeTaper.position.set(-1.2, 0.7, dz)
+    hydroGroup.add(dConeTaper)
+
+    // 底流排砂嘴 (Underflow Orifice)
+    const dNozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.25, 10), darkSteel)
+    dNozzle.position.set(-1.2, -0.1, dz)
+    hydroGroup.add(dNozzle)
+  }
+
+  // 2) 4" 八联微型高精除泥旋流器排 (Bank of 8 4" Desilter Cones)
+  const desilterFeedPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.8, 12), petroBlue)
+  desilterFeedPipe.rotation.x = Math.PI / 2
+  desilterFeedPipe.position.set(1.2, 2.2, 0)
+  hydroGroup.add(desilterFeedPipe)
+
+  for (let di = 0; di < 8; di++) {
+    const cz = -1.05 + di * 0.3
+    const sConeBody = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.45, 12), petroBlue)
+    sConeBody.position.set(1.2, 1.8, cz)
+    hydroGroup.add(sConeBody)
+
+    const sConeTaper = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 12), petroBlue)
+    sConeTaper.rotation.x = Math.PI
+    sConeTaper.position.set(1.2, 1.15, cz)
+    hydroGroup.add(sConeTaper)
+
+    const sNozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.18, 8), darkSteel)
+    sNozzle.position.set(1.2, 0.6, cz)
+    hydroGroup.add(sNozzle)
+  }
+
+  // 压力表与进料调节阀
+  const hydroGauge = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 14), silverChrome)
+  hydroGauge.position.set(0, 2.6, 1.4)
+  hydroGroup.add(hydroGauge)
+
+  mudGroup.add(hydroGroup)
+
+  // -------------------------------------------------------------
+  // 4c. 射流混浆加药漏斗与加重加料台 (Jet Shearing Mud Hopper & Sack Addition Table)
+  // 部署于 2# 泥浆储备罐末端 (X = -6.5, Z = 14.0)
+  // -------------------------------------------------------------
+  const tankHopperGroup = new THREE.Group()
+  tankHopperGroup.position.set(-6.5, 5.5, 14.0)
+
+  // 割包加料操作台面 (Sack Slitting Table with Grating)
+  const hTable = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.8), gratingMat)
+  hTable.position.set(0, 0.85, 0)
+  tankHopperGroup.add(hTable)
+
+  // 4 根支撑腿
+  for (const hx of [-1.1, 1.1]) {
+    for (const hz of [-0.8, 0.8]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.85, 6), darkSteel)
+      leg.position.set(hx, 0.425, hz)
+      tankHopperGroup.add(leg)
+    }
+  }
+
+  // 倒锥形大容量射流漏斗本体 (Venturi Mud Hopper Funnel)
+  const hopperCone = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.22, 0.9, 16), safetyYellow)
+  hopperCone.position.set(0, 1.4, 0)
+  tankHopperGroup.add(hopperCone)
+
+  // 漏斗顶部防块料安全网格 (Safety Screen)
+  const hScreen = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.04, 1.3), darkSteel)
+  hScreen.position.set(0, 1.86, 0)
+  tankHopperGroup.add(hScreen)
+
+  // 文丘里射流混合喷管 (Venturi Jet Eductor Line)
+  const venturiLine = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.2, 12), petroBlue)
+  venturiLine.rotation.z = Math.PI / 2
+  venturiLine.position.set(0, 0.85, 0)
+  tankHopperGroup.add(venturiLine)
+
+  // 入口蝶阀手柄
+  const hValve = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 6), valveRed)
+  hValve.position.set(0.6, 1.1, 0)
+  tankHopperGroup.add(hValve)
+
+  mudGroup.add(tankHopperGroup)
 
   // -------------------------------------------------------------
   // 5. 水力除砂除泥清洁器机组 (Drilling Mud Cleaner & Hydrocyclone Desander Unit)
@@ -9942,7 +10167,7 @@ function buildSpecialFleet() {
   // 部署于西南专业车队专属泊位 (X = -55, Z = 52)，车头朝北正对井场大门
   const lTruck = new THREE.Group()
   lTruck.position.set(-55, 0.2, 52)
-  lTruck.rotation.y = Math.PI
+  lTruck.rotation.y = 0 // 真实油田倒车入位作业姿态：车尾绞车朝北正对井场大门，彻底杜绝电缆穿透车厢！
 
   // 生成自包含 6x6 重型底盘与驾驶室 (象牙白工程涂装)
   buildTruckChassis(lTruck, 0xf1f5f9, 13.5, 4.6, [
@@ -9966,6 +10191,57 @@ function buildSpecialFleet() {
   labWin.rotation.y = -Math.PI / 2
   labWin.position.set(-1.52, 2.75, 0.2)
   lTruck.add(labWin)
+
+  // 后壁朝向绞车滚筒的司控大视野隔音防爆观察窗 (Rear Winch Operator Observation Bay Window)
+  const rearWinFrame = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.1, 0.08), steelDark)
+  rearWinFrame.position.set(0, 2.75, -1.92)
+  lTruck.add(rearWinFrame)
+
+  const rearWin = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 0.95), cabGlass)
+  rearWin.rotation.y = Math.PI
+  rearWin.position.set(0, 2.75, -1.97)
+  lTruck.add(rearWin)
+
+  // 观察窗防雨刮水器
+  const rearWiper = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.55, 6), steelDark)
+  rearWiper.rotation.z = 0.4
+  rearWiper.position.set(0.15, 2.7, -1.98)
+  lTruck.add(rearWiper)
+
+  // 侧边重型液压支腿司控阀箱 (Outrigger Hydraulic Leveling Control Console)
+  const jackConsole = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.55, 0.85), steelDark)
+  jackConsole.position.set(1.52, 1.25, -2.4)
+  lTruck.add(jackConsole)
+
+  for (const jz of [-0.25, 0, 0.25]) {
+    const jLever = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.25, 6), valveRed)
+    jLever.rotation.z = 0.35
+    jLever.position.set(1.65, 1.35, -2.4 + jz)
+    lTruck.add(jLever)
+  }
+
+  // 车架防爆静电接地卷盘与铜质接地棒 (Static Grounding Reel & Copper Earthing Rod)
+  const groundReel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.18, 12), safetyYellow)
+  groundReel.rotation.z = Math.PI / 2
+  groundReel.position.set(-1.45, 1.15, -1.2)
+  lTruck.add(groundReel)
+
+  const groundCable = new THREE.Mesh(
+    new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-1.45, 1.15, -1.2),
+        new THREE.Vector3(-1.8, 0.5, -1.2),
+        new THREE.Vector3(-2.2, 0.05, -1.2),
+      ]),
+      8, 0.025, 6, false
+    ),
+    new THREE.MeshStandardMaterial({ color: 0x15803d })
+  )
+  lTruck.add(groundCable)
+
+  const earthSpike = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.015, 0.7, 8), new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9 }))
+  earthSpike.position.set(-2.2, 0.2, -1.2)
+  lTruck.add(earthSpike)
 
   // 仪器室车顶双联防爆驻车空调机组 (Dual Rooftop AC Pack)
   const acPack = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.42, 1.2), steelDark)
@@ -10110,9 +10386,10 @@ function buildSpecialFleet() {
   // -------------------------------------------------------------
   // 7. 裸眼井综合测井仪器串专用检测运输架 (Wireline Logging Sonde Toolstring Carrier & Calibration Cart)
   // -------------------------------------------------------------
+  // 规整停泊于测井车东侧并行工位 (X = -46.5, Z = 52)，留出 8.5m 充足安全检修通道，杜绝车身穿模碰撞
   const sondeGroup = new THREE.Group()
-  sondeGroup.position.set(-50, 0.2, 53)
-  sondeGroup.rotation.y = Math.PI / 1.8
+  sondeGroup.position.set(-46.5, 0.2, 52)
+  sondeGroup.rotation.y = 0
 
   // 8.5 米高强度钢管结构运输托架 (Heavy Tubular Frame with Rubber Tool Saddles)
   const carrierBed = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.45, 8.8), steelDark)
@@ -10278,7 +10555,7 @@ function buildSpecialFleet() {
   // 9. 测井高压电缆跨距导向滑轮系统 (Wireline Rigging & Floor Snatch Block)
   // -------------------------------------------------------------
   const wirelineSpline = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-55, 5.0, 46.1), // 测井车尾顶部天滑轮
+    new THREE.Vector3(-55, 3.8, 48.2), // 测井车车尾排绳器与天滑轮导向架
     new THREE.Vector3(-45, 6.2, 36.0), // 空中悬跨自然弧垂
     new THREE.Vector3(-32, 8.5, 22.0),
     new THREE.Vector3(-20, 11.25, 6.0), // 钻台边缘下导向滑轮
@@ -11249,6 +11526,28 @@ function buildPumpingUnit() {
   pitmanArmRight = res3.pitmanRight
   dynamometerLed = res3.led
 
+
+  // 10b. 井口方井钢筋混凝土承重基础基台与地脚锚栓 (Reinforced Concrete Wellhead Cellar Plinth)
+  // 牢固填补 0 ~ 1.25m 离地空隙，彻底消除采油树悬空漂浮感，展现坚实重工业承载质感！
+  const wellPlinth = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.6, 2.9, 1.3, 8),
+    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.82 })
+  )
+  wellPlinth.position.set(18.2, 0.65, 0)
+  pumpGroup.add(wellPlinth)
+
+  // 基础四周黄色安全警示踢脚边框
+  const plinthKerb = new THREE.Mesh(new THREE.CylinderGeometry(2.95, 2.95, 0.16, 8), hazardYellow)
+  plinthKerb.position.set(18.2, 0.08, 0)
+  pumpGroup.add(plinthKerb)
+
+  // 8 颗六角高强地脚固定锚栓
+  for (let bi = 0; bi < 8; bi++) {
+    const bAng = (bi * Math.PI) / 4
+    const anchorStud = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.35, 6), chromeRod)
+    anchorStud.position.set(18.2 + Math.cos(bAng) * 2.3, 1.35, Math.sin(bAng) * 2.3)
+    pumpGroup.add(anchorStud)
+  }
 
   // 11. 井口高压智能采油树 (Multi-Gauge Flanged Smart Christmas Tree)
   const xTree = new THREE.Group()
