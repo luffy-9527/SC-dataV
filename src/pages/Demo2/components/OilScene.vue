@@ -982,6 +982,7 @@ async function initScene() {
   // C. 采油开采设备与集输管网系统
   buildPumpingUnit()
   buildMudSystem()
+  buildMudCirculationLoop()
   buildStorageAndPipelines()
   buildPowerAndBOPControl()
 
@@ -4597,6 +4598,37 @@ function buildDerrickAssembly() {
   annular.position.y = 6.8
   bopGroup.add(annular)
 
+  // 泥浆伞钟形接头与喇叭口 (Bell Nipple with Mud Return Flowline Outlet Nozzle)
+  const bellNippleGroup = new THREE.Group()
+  bellNippleGroup.position.set(0, 7.8, 0)
+
+  // 喇叭口下段防喷器对接法兰
+  const bnFlange = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.3, 0.25, 20), darkMetal)
+  bellNippleGroup.add(bnFlange)
+
+  // 喇叭口大通径主管
+  const bnBody = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.7, 20), steelOrange)
+  bnBody.position.y = 0.4
+  bellNippleGroup.add(bnBody)
+
+  // 喇叭口顶部钻台转盘对接承托扩口
+  const bnFlare = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 1.8, 0.3, 20), yellowSafety)
+  bnFlare.position.y = 0.8
+  bellNippleGroup.add(bnFlare)
+
+  // 喇叭口侧向大通径导流出浆短节 (16" Flowline Outlet Nozzle)
+  const bnOutlet = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 16), darkMetal)
+  bnOutlet.rotation.z = Math.PI / 2
+  bnOutlet.position.set(-1.4, 0.45, 0)
+  bellNippleGroup.add(bnOutlet)
+
+  const bnOutletFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.2, 16), yellowSafety)
+  bnOutletFlange.rotation.z = Math.PI / 2
+  bnOutletFlange.position.set(-2.0, 0.45, 0)
+  bellNippleGroup.add(bnOutletFlange)
+
+  bopGroup.add(bellNippleGroup)
+
   const bopFramePosts = [
     [-4.5, 3.2], [4.5, 3.2],
     [-4.5, -3.2], [4.5, -3.2],
@@ -6515,29 +6547,16 @@ function buildMudSystem() {
   reliefValve.position.set(3.6, 3.6, -3.8)
   pumpSkid.add(reliefValve)
 
-  // G. 泥浆高压输浆地面主管线与防沉降管枕 (Ground High-Pressure Mud Line to Derrick Standpipe)
-  const hpLineCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(3.6, 4.6, 4.0),
-    new THREE.Vector3(3.6, 1.2, 5.0),
-    new THREE.Vector3(14.0, 1.2, 5.0),
-    new THREE.Vector3(26.0, 1.2, 2.0),
-  ])
-  const hpLineMesh = new THREE.Mesh(
-    new THREE.TubeGeometry(hpLineCurve, 16, 0.35, 10, false),
-    heavyMetal
-  )
-  pumpSkid.add(hpLineMesh)
+  // G. F-1600 高压泥浆排出口引出法兰短节与转向弯头
+  const hpDischargeFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 16), darkSteel)
+  hpDischargeFlange.rotation.x = Math.PI / 2
+  hpDischargeFlange.position.set(3.6, 4.6, 4.0)
+  pumpSkid.add(hpDischargeFlange)
 
-  for (const px of [9.0, 18.0]) {
-    const sleeper = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.45, 1.8), darkSteel)
-    sleeper.position.set(px, 0.22, 5.0)
-    pumpSkid.add(sleeper)
+  const hpDischargeElbow = new THREE.Mesh(new THREE.SphereGeometry(0.56, 12, 12), darkSteel)
+  hpDischargeElbow.position.set(3.6, 4.6, 4.0)
+  pumpSkid.add(hpDischargeElbow)
 
-    const sleeperClamp = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 6, 12, Math.PI), safetyYellow)
-    sleeperClamp.rotation.z = Math.PI
-    sleeperClamp.position.set(px, 0.85, 5.0)
-    pumpSkid.add(sleeperClamp)
-  }
   mudGroup.add(pumpSkid)
 
   // -------------------------------------------------------------
@@ -7166,6 +7185,234 @@ function buildMudSystem() {
   clickableColliders.push(mudCollider)
 
   scene.add(mudGroup)
+}
+
+function buildMudCirculationLoop() {
+  if (!scene) return
+  const loopGroup = new THREE.Group()
+
+  // 工业级材质定义
+  const hpPipeMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, metalness: 0.85, roughness: 0.24 }) // 中石油工程海蓝
+  const heavyFlangeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.92, roughness: 0.28 })
+  const yellowSafety = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 })
+  const concreteMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85 })
+  const returnPipeMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.32 }) // 大通径重力返出钢管
+  const silverChrome = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.12 })
+  const ledCyan = new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+  const ledAmber = new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+
+  // -------------------------------------------------------------
+  // 1. 高压泥浆供浆立管主管线 (High-Pressure Mud Supply Discharge Line)
+  // 起点：F-1600 三缸泥浆泵排出口 (-48.4, 4.8, 3.5)
+  // 沿地面防沉降管枕管廊敷设，爬升入井架底座，接入钻台立管汇流排 (-22.8, 11.25, -7.8)
+  // -------------------------------------------------------------
+  const hpCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-48.4, 4.8, 3.5),     // F-1600 泥浆泵高压排出法兰
+    new THREE.Vector3(-48.4, 1.4, 4.5),     // 下降至管枕标高
+    new THREE.Vector3(-44.0, 1.4, 4.5),     // 直线段 1
+    new THREE.Vector3(-37.0, 1.4, 2.0),     // 避开行车通道的斜交段
+    new THREE.Vector3(-30.0, 1.4, -3.8),    // 接近钻机底座管架
+    new THREE.Vector3(-25.2, 1.4, -7.8),    // 井架左后立柱正下方
+    new THREE.Vector3(-25.2, 5.8, -7.8),    // 沿井架立柱爬升垂直段
+    new THREE.Vector3(-24.0, 9.4, -7.8),    // 穿过钻台台面托梁
+    new THREE.Vector3(-22.8, 11.25, -7.8),  // 紧密吻合接入立管汇流排底座
+  ])
+
+  const hpPipeMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(hpCurve, 48, 0.32, 12, false),
+    hpPipeMat
+  )
+  hpPipeMesh.castShadow = true
+  loopGroup.add(hpPipeMesh)
+
+  // 高压法兰接头与加固环 (API 6A Hammer Unions & Flanged Spools)
+  const hpFlangePoints = [
+    new THREE.Vector3(-48.4, 4.8, 3.5),
+    new THREE.Vector3(-48.4, 2.0, 4.5),
+    new THREE.Vector3(-40.5, 1.4, 3.25),
+    new THREE.Vector3(-33.5, 1.4, -0.9),
+    new THREE.Vector3(-25.2, 1.4, -7.8),
+    new THREE.Vector3(-25.2, 7.6, -7.8),
+    new THREE.Vector3(-22.8, 11.25, -7.8),
+  ]
+  hpFlangePoints.forEach((pt) => {
+    const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.24, 16), heavyFlangeMat)
+    flange.position.copy(pt)
+    loopGroup.add(flange)
+    const unionRing = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.08, 6, 12), yellowSafety)
+    unionRing.position.copy(pt)
+    loopGroup.add(unionRing)
+  })
+
+  // 地面防沉降混凝土管枕与安全卡箍 (Ground Pipe Sleepers)
+  const hpSleepers = [
+    { x: -46.0, z: 4.5 },
+    { x: -41.0, z: 3.4 },
+    { x: -36.0, z: 1.5 },
+    { x: -31.0, z: -3.0 },
+    { x: -27.0, z: -6.5 },
+  ]
+  hpSleepers.forEach(({ x, z }) => {
+    const pier = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.6, 2.0), concreteMat)
+    pier.position.set(x, 0.3, z)
+    loopGroup.add(pier)
+
+    const basePlate = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.6), heavyFlangeMat)
+    basePlate.position.set(x, 0.64, z)
+    loopGroup.add(basePlate)
+
+    const uClamp = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.06, 6, 12, Math.PI), yellowSafety)
+    uClamp.rotation.z = Math.PI
+    uClamp.position.set(x, 1.4, z)
+    loopGroup.add(uClamp)
+  })
+
+  // 垂直立柱导向抗震加固横撑 (Substructure Vertical Guide Brackets)
+  for (const vy of [3.2, 6.8]) {
+    const bracket = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 0.8), heavyFlangeMat)
+    bracket.position.set(-25.2, vy, -7.8)
+    loopGroup.add(bracket)
+  }
+
+  // 高压泥浆压力变送器与数字显示表头 (Pressure Transmitter PT-101)
+  const ptBox = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.55, 0.35), heavyFlangeMat)
+  ptBox.position.set(-36.0, 2.2, 1.5)
+  loopGroup.add(ptBox)
+
+  const ptDial = new THREE.Mesh(new THREE.CircleGeometry(0.18, 16), ledCyan)
+  ptDial.position.set(-36.0, 2.2, 1.68)
+  loopGroup.add(ptDial)
+
+  // -------------------------------------------------------------
+  // 2. 井口喇叭口重力返出导流总管 (Wellhead Bell Nipple Gravity Return Flowline)
+  // 起点：防喷器上方喇叭口侧向出浆短节 (-17.0, 11.0, 0.0)
+  // 穿出月池镂空侧面，保持 12° 稳定下坡重力自流，注入振动筛缓冲分配槽 (-38.8, 5.55, 9.3)
+  // -------------------------------------------------------------
+  const returnCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-17.0, 11.0, 0.0),    // Bell Nipple 出口法兰
+    new THREE.Vector3(-22.0, 10.1, 1.8),    // 穿出月池侧壁梁
+    new THREE.Vector3(-26.5, 9.1, 3.6),     // 井台外侧边缘支架
+    new THREE.Vector3(-31.0, 7.8, 5.8),     // 梯形高架管桥支架 1
+    new THREE.Vector3(-35.2, 6.6, 7.8),     // 梯形高架管桥支架 2
+    new THREE.Vector3(-38.0, 5.85, 9.3),    // 抵达振动筛进浆管上方
+    new THREE.Vector3(-38.8, 5.55, 9.3),    // 下弯 45° 注入缓冲分配槽 (Possum Belly)
+  ])
+
+  // 16" 大口径重型返砂导流管 (直径 0.88m)
+  const returnPipeMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(returnCurve, 42, 0.44, 14, false),
+    returnPipeMat
+  )
+  returnPipeMesh.castShadow = true
+  loopGroup.add(returnPipeMesh)
+
+  // 返出管线 API 对焊法兰与补强箍圈
+  const returnFlanges = [
+    new THREE.Vector3(-17.0, 11.0, 0.0),
+    new THREE.Vector3(-22.0, 10.1, 1.8),
+    new THREE.Vector3(-26.5, 9.1, 3.6),
+    new THREE.Vector3(-31.0, 7.8, 5.8),
+    new THREE.Vector3(-35.2, 6.6, 7.8),
+    new THREE.Vector3(-38.8, 5.55, 9.3),
+  ]
+  returnFlanges.forEach((pt) => {
+    const fl = new THREE.Mesh(new THREE.CylinderGeometry(0.64, 0.64, 0.25, 16), heavyFlangeMat)
+    fl.position.copy(pt)
+    loopGroup.add(fl)
+  })
+
+  // 梯形高架钢桁架管桥立柱 (A-Frame Flowline Trestles with Footing)
+  const trestlePoints = [
+    { x: -26.5, y: 9.1, z: 3.6 },
+    { x: -31.0, y: 7.8, z: 5.8 },
+    { x: -35.2, y: 6.6, z: 7.8 },
+  ]
+  trestlePoints.forEach(({ x, y, z }) => {
+    const trestleGroup = new THREE.Group()
+    trestleGroup.position.set(x, 0, z)
+
+    // 混凝土基座
+    const footing = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 2.0), concreteMat)
+    footing.position.y = 0.3
+    trestleGroup.add(footing)
+
+    // 双斜撑 A 字型结构钢支架
+    const legH = y - 0.44
+    for (const sx of [-0.65, 0.65]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, legH, 0.2), heavyFlangeMat)
+      leg.position.set(sx, legH / 2 + 0.3, 0)
+      leg.rotation.z = -sx * 0.08
+      trestleGroup.add(leg)
+    }
+    const topSaddle = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.25, 0.8), heavyFlangeMat)
+    topSaddle.position.y = y - 0.44
+    trestleGroup.add(topSaddle)
+
+    const pipeStrap = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.07, 6, 12, Math.PI), yellowSafety)
+    pipeStrap.rotation.z = Math.PI
+    pipeStrap.position.y = y
+    trestleGroup.add(pipeStrap)
+
+    loopGroup.add(trestleGroup)
+  })
+
+  // 返出泥浆流量计监测箱 (Flow-Show Mud Paddle Sensor Box)
+  const flowShowBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.65, 0.7), heavyFlangeMat)
+  flowShowBox.position.set(-28.5, 9.1, 4.7)
+  loopGroup.add(flowShowBox)
+
+  const fsDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.22), ledAmber)
+  fsDisplay.position.set(-28.5, 9.1, 5.06)
+  loopGroup.add(fsDisplay)
+
+  // 录井泥浆脱气器管嘴与采样导管 (Mud Gas Trap Agitator & Sample Hose)
+  const degasserTrap = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.1, 12), silverChrome)
+  degasserTrap.position.set(-33.0, 7.8, 6.8)
+  loopGroup.add(degasserTrap)
+
+  // -------------------------------------------------------------
+  // 3. 动态流体脉冲颗粒 (High-Speed Supply Pulses & Gravity Return Pulses)
+  // -------------------------------------------------------------
+  const supplyPulseGeom = new THREE.SphereGeometry(0.36, 10, 8)
+  const returnPulseGeom = new THREE.SphereGeometry(0.48, 10, 8)
+
+  // 高压清泥浆：清亮电光蓝 (4 颗高速脉冲球)
+  for (let p = 0; p < 4; p++) {
+    const pulseMesh = new THREE.Mesh(supplyPulseGeom, ledCyan)
+    pulseMesh.userData = {
+      path: hpCurve,
+      progress: p * 0.25,
+      speed: 0.0038,
+      isMud: true,
+    }
+    pipelinePulses.push(pulseMesh)
+    loopGroup.add(pulseMesh)
+  }
+
+  // 返出含砂泥浆：琥珀橙金 (5 颗重力下流脉冲球)
+  for (let p = 0; p < 5; p++) {
+    const pulseMesh = new THREE.Mesh(returnPulseGeom, ledAmber)
+    pulseMesh.userData = {
+      path: returnCurve,
+      progress: p * 0.2,
+      speed: 0.0032,
+      isMud: true,
+    }
+    pipelinePulses.push(pulseMesh)
+    loopGroup.add(pulseMesh)
+  }
+
+  // 闭环管网交互点击代理盒
+  const loopCollider = new THREE.Mesh(
+    new THREE.BoxGeometry(32, 12, 16),
+    colliderProxyMat
+  )
+  loopCollider.position.set(-33, 6.0, 3.5)
+  loopCollider.userData = { deviceKey: 'mud-system' }
+  loopGroup.add(loopCollider)
+  clickableColliders.push(loopCollider)
+
+  scene.add(loopGroup)
 }
 
 function buildPowerAndBOPControl() {
@@ -11864,13 +12111,15 @@ function tick() {
     ;(oilReservoirFluidMesh.material as THREE.MeshStandardMaterial).roughness = 0.16 + Math.sin(elapsedTime * 2.0) * 0.02
   }
 
-  // 集输管线流体动态脉冲 (受生产翼阀与 ESD 联锁开闭控制 - 传统循环与复用向量，零 GC 损耗)
-  const isPipeFlowing = isWellValveOpen.value && !isEsdTriggered.value
+  // 集输管线与钻井泥浆闭环循环动态流体脉冲 (受生产翼阀与 ESD 联锁开闭控制 - 传统循环与复用向量，零 GC 损耗)
+  const isWellFlowing = isWellValveOpen.value && !isEsdTriggered.value
   const pulseCount = pipelinePulses.length
   for (let i = 0; i < pulseCount; i++) {
     const pulse = pipelinePulses[i]
-    if (isPipeFlowing) {
-      pulse.userData.progress = (pulse.userData.progress + 0.003) % 1
+    const isFlowing = pulse.userData.isMud ? !isEsdTriggered.value : isWellFlowing
+    if (isFlowing) {
+      const spd = pulse.userData.speed || 0.003
+      pulse.userData.progress = (pulse.userData.progress + spd) % 1
       const pt = pulse.userData.path.getPointAt(pulse.userData.progress)
       const tangent = pulse.userData.path.getTangentAt(pulse.userData.progress)
       pulse.position.copy(pt)
@@ -12095,11 +12344,11 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <!-- 采集设备 3D 数据孪生特写快捷导航条 -->
-    <div v-if="stages[currentStageIndex].id === 'completion' || selectedEquipment || isUndergroundView" class="equipment-quick-nav">
+    <!-- 工业装备 3D 数字孪生特写快捷导航条 -->
+    <div class="equipment-quick-nav">
       <div class="nav-title">
         <span class="nav-icon">🎯</span>
-        <span>采油区工业孪生:</span>
+        <span>装备孪生导航:</span>
       </div>
       <div class="nav-buttons">
         <button
@@ -12132,8 +12381,9 @@ onBeforeUnmount(() => {
           🔥 {{ isThermalMode ? '常规材质' : '红外热成像' }}
         </button>
 
-        <!-- 采油树翼阀交互开关 -->
+        <!-- 采油树翼阀交互开关 (仅采油完井工序或选中采油树/抽油机时显示) -->
         <button
+          v-if="stages[currentStageIndex].id === 'completion' || ['xTree', 'pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
           class="nav-btn nav-btn--valve"
           :class="{ 'nav-btn--valve-closed': !isWellValveOpen }"
           @click="toggleWellValve"
@@ -12141,9 +12391,9 @@ onBeforeUnmount(() => {
           🚰 {{ isWellValveOpen ? '翼阀: 开启' : '翼阀: 已关断' }}
         </button>
 
-
-        <!-- 一键采油核心机组特写 -->
+        <!-- 一键采油核心机组特写 (仅采油完井工序或选中抽油机时显示) -->
         <button
+          v-if="stages[currentStageIndex].id === 'completion' || ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
           class="nav-btn nav-btn--closeup"
           @click="focusOilHarvestingCloseup"
         >
@@ -12464,19 +12714,27 @@ onBeforeUnmount(() => {
 
 .equipment-quick-nav {
   position: absolute;
-  bottom: 110px;
+  bottom: 146px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 14px;
-  background: rgba(10, 25, 45, 0.88);
-  border: 1px solid rgba(0, 240, 255, 0.35);
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(10, 25, 45, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.45);
   border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  z-index: 15;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7), inset 0 0 12px rgba(0, 240, 255, 0.12);
+  backdrop-filter: blur(12px);
+  z-index: 25;
+  max-width: 96vw;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.equipment-quick-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-title {
