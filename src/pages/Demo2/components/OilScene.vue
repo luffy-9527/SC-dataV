@@ -114,8 +114,8 @@ const stages: ProcessStage[] = [
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
       { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
-    cameraPos: [72, 24.0, 68],
-    targetPos: [42, 7.0, 6],
+    cameraPos: [136, 48.0, 72],
+    targetPos: [46, 8.0, 4],
   },
 ]
 
