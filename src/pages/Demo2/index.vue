@@ -44,7 +44,7 @@ onMounted(() => {
   <AutoFit :design-width="1920" :design-height="1080" background="#0f2238">
     <div class="oil-dashboard-page">
       <!-- 1. 中部 Three.js 石油钻采 3D 核心实景 -->
-      <OilScene :is-zen-mode="isZenMode" />
+      <OilScene :is-zen-mode="isZenMode" @toggle-zen="isZenMode = !isZenMode" />
 
       <!-- 2. 顶部工业科技导航栏 -->
       <Header :is-zen-mode="isZenMode" @toggle-zen="isZenMode = !isZenMode" />

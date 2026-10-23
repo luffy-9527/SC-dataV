@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-const metrics = ref([
+const cumulativeOil = ref(1428.6)
+const flowRate = ref(64.8)
+const drillDepth = ref(3852.4)
+const wellborePressure = ref(28.4)
+const operatingRate = ref(98.5)
+
+let telemetryTimer: number | null = null
+
+const metrics = computed(() => [
   {
     label: '当日累计产油',
-    value: '1,428.6',
+    value: cumulativeOil.value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
     unit: '吨 (t)',
     trend: 'up',
     trendVal: '+5.2%',
@@ -12,7 +20,7 @@ const metrics = ref([
   },
   {
     label: '瞬时产油速率',
-    value: '64.8',
+    value: flowRate.value.toFixed(1),
     unit: 't/h',
     trend: 'up',
     trendVal: '正常流速',
@@ -20,7 +28,7 @@ const metrics = ref([
   },
   {
     label: '当前钻进深度',
-    value: '3,852.4',
+    value: drillDepth.value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
     unit: '米 (m)',
     trend: 'up',
     trendVal: '+18.2m/h',
@@ -28,7 +36,7 @@ const metrics = ref([
   },
   {
     label: '井底环空压力',
-    value: '28.4',
+    value: wellborePressure.value.toFixed(1),
     unit: 'MPa',
     trend: 'down',
     trendVal: '安全余量充足',
@@ -36,19 +44,39 @@ const metrics = ref([
   },
   {
     label: '油田开井运行率',
-    value: '98.5',
+    value: operatingRate.value.toFixed(1),
     unit: '%',
     trend: 'up',
     trendVal: '128 / 130 口',
     sub: '在运机组良好',
   },
 ])
+
+onMounted(() => {
+  telemetryTimer = window.setInterval(() => {
+    // 模拟油田实时数据微幅平滑浮动与采出累计增长
+    cumulativeOil.value = Number((cumulativeOil.value + 0.1).toFixed(1))
+    flowRate.value = Number((64.5 + Math.random() * 0.6).toFixed(1))
+    drillDepth.value = Number((drillDepth.value + 0.02).toFixed(1))
+    wellborePressure.value = Number((28.2 + Math.random() * 0.4).toFixed(1))
+  }, 2400)
+})
+
+onBeforeUnmount(() => {
+  if (telemetryTimer !== null) {
+    clearInterval(telemetryTimer)
+    telemetryTimer = null
+  }
+})
 </script>
 
 <template>
   <div class="stat-metrics">
     <div v-for="item in metrics" :key="item.label" class="metric-card">
-      <div class="metric-label">{{ item.label }}</div>
+      <div class="metric-label">
+        <span class="live-pulse"></span>
+        <span>{{ item.label }}</span>
+      </div>
       <div class="metric-value-wrap">
         <span class="metric-value">{{ item.value }}</span>
         <span class="metric-unit">{{ item.unit }}</span>
@@ -105,10 +133,27 @@ const metrics = ref([
 }
 
 .metric-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   color: #94a3b8;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+}
+
+.live-pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: liveBlink 1.8s infinite ease-in-out;
+}
+
+@keyframes liveBlink {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 .metric-value-wrap {

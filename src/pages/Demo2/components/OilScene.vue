@@ -590,8 +590,86 @@ const props = withDefaults(
   },
 )
 
+const emit = defineEmits<{
+  (e: 'toggleZen'): void
+}>()
+
 const isHudMinimized = ref(false)
 const hudDockSide = ref<'center' | 'right'>('right')
+const isShortcutModalVisible = ref(false)
+
+function cycleWeather() {
+  const modes: ('noon' | 'dusk' | 'sandstorm' | 'night')[] = ['noon', 'dusk', 'sandstorm', 'night']
+  const nextIdx = (modes.indexOf(weatherMode.value) + 1) % modes.length
+  setWeatherMode(modes[nextIdx])
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  const activeEl = document.activeElement
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+    return
+  }
+
+  // 1 ~ 7 工序切换
+  if (e.key >= '1' && e.key <= '7') {
+    const idx = parseInt(e.key, 10) - 1
+    if (idx >= 0 && idx < stages.length) {
+      selectStage(idx)
+      showValveNotice(`⌨️ 快捷跳转工序：【${stages[idx].name}】`)
+    }
+    return
+  }
+
+  // Escape 复位视角与关闭弹窗
+  if (e.key === 'Escape') {
+    if (isShortcutModalVisible.value) {
+      isShortcutModalVisible.value = false
+      return
+    }
+    resetEquipmentFocus()
+    showValveNotice('⌨️ 视角已复位至全景鸟瞰视角')
+    return
+  }
+
+  // 空格键巡检切换
+  if (e.code === 'Space') {
+    e.preventDefault()
+    toggleAutoRotate()
+    showValveNotice(isAutoRotating.value ? '⌨️ 全域三维环视巡检已开启' : '⌨️ 全域三维环视巡检已暂停')
+    return
+  }
+
+  // Z / z 切换沉浸全景视界
+  if (e.key === 'z' || e.key === 'Z') {
+    emit('toggleZen')
+    showValveNotice(props.isZenMode ? '⌨️ 已恢复图表面板' : '⌨️ 已切换至沉浸全景视界')
+    return
+  }
+
+  // W / w 循环切换气象
+  if (e.key === 'w' || e.key === 'W') {
+    cycleWeather()
+    return
+  }
+
+  // U / u 切换地下透视
+  if (e.key === 'u' || e.key === 'U') {
+    toggleUndergroundView()
+    return
+  }
+
+  // H / h 切换红外热成像
+  if (e.key === 'h' || e.key === 'H') {
+    toggleThermalMode()
+    return
+  }
+
+  // ? 或 / 切换快捷键指引面板
+  if (e.key === '?' || e.key === '/') {
+    isShortcutModalVisible.value = !isShortcutModalVisible.value
+    return
+  }
+}
 
 const weatherOptions = [
   { key: 'noon' as const, icon: '☀️', title: '正午烈日强光照' },
@@ -12222,6 +12300,8 @@ onMounted(() => {
     containerRef.value.addEventListener('pointermove', onCanvasPointerMove)
   }
 
+  window.addEventListener('keydown', handleKeydown)
+
   // 释放主线程让首屏卡片入场动画与 UI 关键帧流畅启动，随后平滑接入三维全要素装配与 GPU 预编译
   requestAnimationFrame(() => {
     setTimeout(() => {
@@ -12231,8 +12311,11 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+
   if (animFrameId !== null) {
     cancelAnimationFrame(animFrameId)
+    animFrameId = null
   }
   window.removeEventListener('resize', handleResize)
   containerRef.value?.removeEventListener('pointerdown', onCanvasPointerDown)
@@ -12243,6 +12326,32 @@ onBeforeUnmount(() => {
   sharedDracoLoader?.dispose()
   sharedDracoLoader = null
   sharedGltfLoader = null
+
+  // 深度遍历并释放 WebGL 场景三维几何体与材质显存，彻底防止路由切换引起显存泄露
+  if (scene) {
+    scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh
+        mesh.geometry?.dispose()
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m) => {
+            m.map?.dispose()
+            m.normalMap?.dispose()
+            m.roughnessMap?.dispose()
+            m.metalnessMap?.dispose()
+            m.dispose()
+          })
+        } else if (mesh.material) {
+          mesh.material.map?.dispose()
+          mesh.material.normalMap?.dispose()
+          mesh.material.roughnessMap?.dispose()
+          mesh.material.metalnessMap?.dispose()
+          mesh.material.dispose()
+        }
+      }
+    })
+  }
+
   if (containerRef.value && renderer?.domElement) {
     containerRef.value.removeChild(renderer.domElement)
   }
@@ -12389,6 +12498,15 @@ onBeforeUnmount(() => {
             title="复位至全景工序视角"
           >
             ✕ 复位
+          </button>
+
+          <!-- 快捷键指南 -->
+          <button
+            class="eq-tool-btn"
+            @click="isShortcutModalVisible = !isShortcutModalVisible"
+            title="查看大屏键盘快捷操作指引 (按 ? 也可快速呼出)"
+          >
+            ⌨️ 快捷键
           </button>
         </div>
       </div>
@@ -12688,6 +12806,66 @@ onBeforeUnmount(() => {
                 <span v-if="m.unit" class="m-unit">{{ m.unit }}</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 键盘快捷键交互指引悬浮卡片 -->
+    <Transition name="shortcut-modal-fade">
+      <div v-if="isShortcutModalVisible" class="shortcut-modal-backdrop" @click.self="isShortcutModalVisible = false">
+        <div class="shortcut-modal-card">
+          <div class="shortcut-modal-header">
+            <div class="modal-title-box">
+              <span class="modal-cyber-icon">⌨️</span>
+              <h3 class="modal-title">3D 数字孪生油田 · 键盘快捷操作指引</h3>
+            </div>
+            <button class="modal-close-btn" @click="isShortcutModalVisible = false">✕</button>
+          </div>
+          <div class="shortcut-modal-body">
+            <div class="shortcut-group">
+              <div class="group-title">🎯 钻采工序与全景视界</div>
+              <div class="shortcut-item">
+                <span class="key-badge">1</span> ~ <span class="key-badge">7</span>
+                <span class="key-desc">快捷跳转 7 大工序（1.定井勘测 → 7.完井采油）</span>
+              </div>
+              <div class="shortcut-item">
+                <span class="key-badge">Z</span>
+                <span class="key-desc">开启 / 退出「🌌 沉浸全景视界」</span>
+              </div>
+              <div class="shortcut-item">
+                <span class="key-badge">ESC</span>
+                <span class="key-desc">一键退出设备特写，复位至全景鸟瞰视角</span>
+              </div>
+            </div>
+
+            <div class="shortcut-group">
+              <div class="group-title">🌐 戈壁环境与视效工具</div>
+              <div class="shortcut-item">
+                <span class="key-badge">W</span>
+                <span class="key-desc">循环切换大漠气象（正午 / 暮色 / 沙尘暴 / 极夜）</span>
+              </div>
+              <div class="shortcut-item">
+                <span class="key-badge">U</span>
+                <span class="key-desc">开启 / 关闭地下地质透视与动态油藏流体</span>
+              </div>
+              <div class="shortcut-item">
+                <span class="key-badge">H</span>
+                <span class="key-desc">开启 / 关闭管道与机组红外热成像</span>
+              </div>
+              <div class="shortcut-item">
+                <span class="key-badge">Space</span>
+                <span class="key-desc">启动 / 暂停大漠全域 3D 环绕巡检</span>
+              </div>
+              <div class="shortcut-item">
+                <span class="key-badge">?</span>
+                <span class="key-desc">打开 / 关闭此快捷键操控面板</span>
+              </div>
+            </div>
+          </div>
+          <div class="shortcut-modal-footer">
+            <span class="footer-tip">💡 提示：在展厅汇报或大屏演示时，支持全程无需鼠标，仅靠键盘即可自由运镜！</span>
+            <button class="modal-confirm-btn" @click="isShortcutModalVisible = false">知道了</button>
           </div>
         </div>
       </div>
@@ -13668,5 +13846,163 @@ onBeforeUnmount(() => {
 .eq-tool-btn--reset:hover {
   background: rgba(245, 158, 11, 0.25);
   color: #ffffff;
+}
+
+/* 键盘快捷键交互指引悬浮卡片 */
+.shortcut-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 12, 24, 0.75);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shortcut-modal-card {
+  width: 580px;
+  background: linear-gradient(180deg, rgba(13, 27, 46, 0.98) 0%, rgba(8, 16, 28, 0.99) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), inset 0 0 24px rgba(0, 240, 255, 0.12);
+  padding: 18px 24px;
+}
+
+.shortcut-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-cyber-icon {
+  font-size: 16px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.shortcut-modal-body {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shortcut-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #00e5ff;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+
+.key-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 4px;
+  color: #00f0ff;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.key-desc {
+  color: #94a3b8;
+}
+
+.shortcut-modal-footer {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footer-tip {
+  font-size: 10px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.modal-confirm-btn {
+  padding: 4px 14px;
+  background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
+  border: none;
+  border-radius: 4px;
+  color: #04101e;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.modal-confirm-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+}
+
+.shortcut-modal-fade-enter-active,
+.shortcut-modal-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.shortcut-modal-fade-enter-from,
+.shortcut-modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 </style>
