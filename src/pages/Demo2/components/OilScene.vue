@@ -30,8 +30,8 @@ const stages: ProcessStage[] = [
       { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
-    cameraPos: [-16, 16.0, 72],
-    targetPos: [-22, 2.0, 44],
+    cameraPos: [-15, 14.0, 86],
+    targetPos: [-15, 2.0, 62],
   },
   {
     id: 'civil',
@@ -100,8 +100,8 @@ const stages: ProcessStage[] = [
       { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
       { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
-    cameraPos: [-24, 18.0, 36],
-    targetPos: [-48, 4.0, 62],
+    cameraPos: [-26, 16.0, 88],
+    targetPos: [-50, 4.5, 58],
   },
   {
     id: 'completion',
@@ -114,8 +114,8 @@ const stages: ProcessStage[] = [
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
       { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
-    cameraPos: [122, 38.0, 36],
-    targetPos: [50, 7.0, 4],
+    cameraPos: [72, 24.0, 68],
+    targetPos: [42, 7.0, 6],
   },
 ]
 
@@ -384,8 +384,8 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
     id: 'frac-spread',
     name: '深地一号 · 特种作业车队与高压压裂固井机组',
     shortLabel: '特种车队',
-    cameraPos: [-24, 18.0, 36],
-    targetPos: [-48, 4.0, 62],
+    cameraPos: [-26, 16.0, 88],
+    targetPos: [-50, 4.5, 58],
     title: '深地一号 · 2500HP高压压裂机组与双机双泵水泥固井车队',
     status: '高压待命保障中 · 井筒加固就绪',
     dynType: 'normal',
@@ -2969,9 +2969,9 @@ function buildDesertGroundAndInfrastructure() {
   })
 
   // 5. 戈壁井位勘定与高精度地质勘测总成 (Stage 1: High-Precision Geological Survey, Datum Monument & Siting Complex)
-  // 部署于主井区前沿开阔场台 (X = -22, Z = 44)，与后续各开采工序形成统一空间坐标系
+  // 部署于主井区南侧开阔平坦戈壁 (X = -15, Z = 62)，正对中轴猫道与主井塔，无任何排管架或车辆穿模
   const surveyStationGroup = new THREE.Group()
-  surveyStationGroup.position.set(-22, 0.2, 44)
+  surveyStationGroup.position.set(-15, 0.2, 62)
 
   // 专属工业材质定义
   const graniteDark = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
@@ -7118,6 +7118,9 @@ function buildHeavyPipeStorageYards() {
   const yard2 = createPipeRack(new THREE.Vector3(-27, 0.2, 49), 0)
   yardGroup.add(yard2)
 
+  // 西排管场重型起重吊装车 (Stage 2: 钻前搬装排管作业专属工业级吊车)
+  loadRealVehicleGLB('/models/crane.glb', 16.5, [-38, 0.2, 34], 0, yardGroup)
+
   // 2. 东排管堆场 (East Pipe Yard: 猫道东侧，对称呼应)
   const yard3 = createPipeRack(new THREE.Vector3(-3, 0.2, 34), 0)
   yardGroup.add(yard3)
@@ -8518,73 +8521,9 @@ function buildSpecialFleet() {
   const truckRed = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.7, roughness: 0.3 })
   const truckWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.65, roughness: 0.35 })
 
-  // 1. 重型越野全地面起重机 (Heavy All-Terrain Mobile Crane - 搭载真实高精工业级起重机 3D 资产)
-  // 位于西排管堆场外侧开阔通道 (X = -38, Z = 38)，车身朝北、主吊臂顺畅仰向排管堆场，彻底告别方块玩具感与穿模
-  loadRealVehicleGLB('/models/crane.glb', 16.5, [-38, 0.2, 38], Math.PI / 2, fleetGroup)
-
-  // 1b. 起重机高空主钢丝吊绳、重型双滑轮吊钩与吊装钻杆吊索组 (Crane Hoisting Line, Heavy Hook Block & Pipe Rigging Slings)
-  const craneRiggingGroup = new THREE.Group()
-  craneRiggingGroup.position.set(-27, 0, 38)
-
-  // 高空双股多绕钢丝绳 (Twin Steel Wire Hoisting Lines)
-  const hoistLineMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.15 })
-  for (const lx of [-0.15, 0.15]) {
-    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 8.5, 6), hoistLineMat)
-    line.position.set(lx, 12.25, 0)
-    craneRiggingGroup.add(line)
-  }
-
-  // 工业重型双滑轮起重吊钩箱体 (Heavy Dual-Sheave Crane Hook Block)
-  const hookBlockMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 })
-  const hookBlock = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.4, 0.55), hookBlockMat)
-  hookBlock.position.set(0, 8.0, 0)
-  craneRiggingGroup.add(hookBlock)
-
-  for (const bz of [-0.28, 0.28]) {
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 0.04), steelDark)
-    stripe.position.set(0, 8.0, bz)
-    craneRiggingGroup.add(stripe)
-  }
-
-  // 锻造合金旋转大吊钩与防脱安全舌片 (Forged Alloy Swivel Hook with Safety Latch)
-  const hookCurv = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.14, 10, 20, Math.PI * 1.3), steelDark)
-  hookCurv.rotation.z = Math.PI / 1.15
-  hookCurv.position.set(0.2, 6.9, 0)
-  craneRiggingGroup.add(hookCurv)
-
-  const latch = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.08), valveRed)
-  latch.rotation.z = 0.4
-  latch.position.set(0.12, 7.15, 0)
-  craneRiggingGroup.add(latch)
-
-  // 双肢高强度聚酯吊带 (Twin High-Strength Synthetic Rigging Slings)
-  const slingMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 })
-  for (const sz of [-3.2, 3.2]) {
-    const slingCurve = new THREE.LineCurve3(
-      new THREE.Vector3(0, 6.5, 0),
-      new THREE.Vector3(0, 4.8, sz)
-    )
-    const slingMesh = new THREE.Mesh(new THREE.TubeGeometry(slingCurve, 8, 0.05, 6, false), slingMat)
-    craneRiggingGroup.add(slingMesh)
-  }
-
-  // 吊装悬停在半空中的加重无磁钻铤钻杆 (Suspended Heavy Drill Collar)
-  const liftedPipe = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.26, 0.26, 11.5, 16),
-    new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.92, roughness: 0.2 })
-  )
-  liftedPipe.rotation.x = Math.PI / 2
-  liftedPipe.position.set(0, 4.8, 0)
-  craneRiggingGroup.add(liftedPipe)
-
-  for (const pz of [-5.75, 5.75]) {
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.6, 16), safetyYellow)
-    cap.rotation.x = Math.PI / 2
-    cap.position.set(0, 4.8, pz)
-    craneRiggingGroup.add(cap)
-  }
-
-  fleetGroup.add(craneRiggingGroup)
+  // -------------------------------------------------------------
+  // 特种作业车队核心总成 (Special Operations Fleet: Cementing, Logging & Frac Spread)
+  // -------------------------------------------------------------
 
 
   // 辅助构建：工业级重型特种卡车通用底盘总成 (6x6 / 8x8 Heavy Oilfield Special Truck Chassis & Cab)
