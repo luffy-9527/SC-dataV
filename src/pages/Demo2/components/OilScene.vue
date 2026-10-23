@@ -114,8 +114,8 @@ const stages: ProcessStage[] = [
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
       { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
-    cameraPos: [136, 48.0, 72],
-    targetPos: [46, 8.0, 4],
+    cameraPos: [-4.0, 44.0, 235.0],
+    targetPos: [2.0, 16.0, -35.0],
   },
 ]
 
@@ -1068,7 +1068,7 @@ async function initScene() {
 
   // 2. 摄像机
   camera = new THREE.PerspectiveCamera(40, width / height, 1, 3500)
-  camera.position.set(130, 72, 165)
+  camera.position.set(-4.0, 44.0, 235.0)
 
   // 3. 渲染器 (关闭重度耗损的对数深度缓冲，全面激活 GPU 硬件 Early-Z 剔除，渲染帧率倍增)
   renderer = new THREE.WebGLRenderer({
@@ -1091,7 +1091,7 @@ async function initScene() {
   controls.maxPolarAngle = Math.PI / 2 + 0.16
   controls.minDistance = 3.5
   controls.maxDistance = 650
-  controls.target.set(0, 8, 0)
+  controls.target.set(2.0, 16.0, -35.0)
   window.addEventListener('resize', handleResize)
 
   // --- 完整工业级三维数字孪生场景全要素一次性装配 ---
