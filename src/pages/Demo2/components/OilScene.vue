@@ -100,8 +100,8 @@ const stages: ProcessStage[] = [
       { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
       { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
-    cameraPos: [-22, 34, 95],
-    targetPos: [-42, 10, 48],
+    cameraPos: [-56, 24, 76],
+    targetPos: [-20, 10, 22],
   },
   {
     id: 'completion',
