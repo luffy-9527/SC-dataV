@@ -30,8 +30,8 @@ const stages: ProcessStage[] = [
       { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
-    cameraPos: [-42, 7.5, 38],
-    targetPos: [-42, 2.0, 22],
+    cameraPos: [16.5, 5.2, 83.5],
+    targetPos: [16.5, 1.6, 70.5],
   },
   {
     id: 'civil',
@@ -100,8 +100,8 @@ const stages: ProcessStage[] = [
       { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
       { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
-    cameraPos: [-42, 16, 92],
-    targetPos: [-48, 4.0, 58],
+    cameraPos: [-32, 11.0, 82],
+    targetPos: [-48, 3.2, 61],
   },
   {
     id: 'completion',
@@ -384,8 +384,8 @@ const equipmentPresets: Record<string, EquipmentPreset> = {
     id: 'frac-spread',
     name: '深地一号 · 特种作业车队与高压压裂固井机组',
     shortLabel: '特种车队',
-    cameraPos: [-42, 16, 92],
-    targetPos: [-48, 4.0, 58],
+    cameraPos: [-32, 11.0, 82],
+    targetPos: [-48, 3.2, 61],
     title: '深地一号 · 2500HP高压压裂机组与双机双泵水泥固井车队',
     status: '高压待命保障中 · 井筒加固就绪',
     dynType: 'normal',
@@ -2969,8 +2969,9 @@ function buildDesertGroundAndInfrastructure() {
   })
 
   // 5. 戈壁井位勘定与高精度地质勘测总成 (Stage 1: High-Precision Geological Survey, Datum Monument & Siting Complex)
+  // 部署于东南开阔大漠处 (X = 20, Z = 70)，彻底远离泥浆罐与基台死角，视野浩瀚通透
   const surveyStationGroup = new THREE.Group()
-  surveyStationGroup.position.set(-42, 0.2, 22)
+  surveyStationGroup.position.set(20, 0.2, 70)
 
   // 专属工业材质定义
   const graniteDark = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
@@ -9488,6 +9489,8 @@ function buildSpecialFleet() {
   floorSheave.position.set(-20, 11.25, 6.0)
   floorSheave.rotation.y = Math.PI / 3.5
   fleetGroup.add(floorSheave)
+
+  scene.add(fleetGroup)
 }
 
 // -------------------------------------------------------------
