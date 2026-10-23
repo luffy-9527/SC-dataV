@@ -3268,22 +3268,43 @@ function buildDesertGroundAndInfrastructure() {
   sChassis.position.y = 0.85
   surveyTruck.add(sChassis)
 
-  // 4条重型大花纹泥地越野轮胎 (Chunky Mud-Terrain Tires & Beadlock Rims)
-  const sTireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.95 })
+  // 4条重型大花纹泥地越野轮胎与6孔防脱圈轮毂 (Chunky Mud-Terrain Tires & Beadlock Rims)
+  const sTireMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95 })
+  const sRimMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.92, roughness: 0.22 })
   const tireCoords = [
-    [-1.15, 0.62, 1.75], [1.15, 0.62, 1.75],
-    [-1.15, 0.62, -1.75], [1.15, 0.62, -1.75]
+    [-1.18, 0.62, 1.75], [1.18, 0.62, 1.75],
+    [-1.18, 0.62, -1.75], [1.18, 0.62, -1.75]
   ]
   tireCoords.forEach(([tx, ty, tz]) => {
-    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.44, 16), sTireMat)
+    // 粗花纹越野轮胎
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.64, 0.64, 0.44, 18), sTireMat)
     tire.rotation.z = Math.PI / 2
     tire.position.set(tx, ty, tz)
     surveyTruck.add(tire)
 
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.46, 12), chromeMat1)
+    // 防脱圈轮毂
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.46, 14), sRimMat)
     rim.rotation.z = Math.PI / 2
     rim.position.set(tx, ty, tz)
     surveyTruck.add(rim)
+
+    const rimLip = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.02, 4, 14), chromeMat1)
+    rimLip.rotation.y = Math.PI / 2
+    rimLip.position.set(tx > 0 ? tx + 0.23 : tx - 0.23, ty, tz)
+    surveyTruck.add(rimLip)
+
+    // 中心轮边减速轴盖
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.49, 10), carbonDark)
+    cap.rotation.z = Math.PI / 2
+    cap.position.set(tx, ty, tz)
+    surveyTruck.add(cap)
+
+    // 宽体立体外扩轮眉 (Fender Flares)
+    const flare = new THREE.Mesh(new THREE.CylinderGeometry(0.76, 0.76, 0.48, 14, 1, true, 0, Math.PI), carbonDark)
+    flare.rotation.z = Math.PI / 2
+    flare.rotation.y = Math.PI / 2
+    flare.position.set(tx > 0 ? tx - 0.04 : tx + 0.04, ty + 0.18, tz)
+    surveyTruck.add(flare)
   })
 
   // 双排座驾驶舱与客舱车身 (Dual-Cab Body in Polar White)
@@ -3297,6 +3318,42 @@ function buildDesertGroundAndInfrastructure() {
   sWindshield.rotation.x = -0.32
   sWindshield.position.set(0, 1.95, 1.78)
   surveyTruck.add(sWindshield)
+
+  // 前机盖与黑色六边形进气格栅 (Hood & Hex Front Grille)
+  const sHood = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.25, 1.35), surveyWhite)
+  sHood.position.set(0, 1.38, 2.2)
+  surveyTruck.add(sHood)
+
+  const sGrille = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.45, 0.08), carbonDark)
+  sGrille.position.set(0, 1.15, 2.88)
+  surveyTruck.add(sGrille)
+
+  const sBadge = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.04), chromeMat1)
+  sBadge.position.set(0, 1.15, 2.93)
+  surveyTruck.add(sBadge)
+
+  // 双联投射式 LED 前大灯与琥珀色日行灯 (Projector LED Headlights & DRLs)
+  for (const lx of [-0.85, 0.85]) {
+    const sHeadlight = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.24, 0.06), chromeMat1)
+    sHeadlight.position.set(lx, 1.18, 2.88)
+    surveyTruck.add(sHeadlight)
+
+    const sLens = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), lensCyan)
+    sLens.position.set(lx, 1.18, 2.92)
+    surveyTruck.add(sLens)
+
+    const sDrl = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.04), screenGreen)
+    sDrl.position.set(lx, 1.04, 2.92)
+    surveyTruck.add(sDrl)
+  }
+
+  // 两侧重型管状防撞侧杠踏板 (Rock Sliders / Tubular Running Boards)
+  for (const sx of [-1.15, 1.15]) {
+    const slider = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 8), carbonDark)
+    slider.rotation.x = Math.PI / 2
+    slider.position.set(sx, 0.72, 0.4)
+    surveyTruck.add(slider)
+  }
 
   // 后部开放式货箱 (Pickup Cargo Bed)
   const sBed = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.8, 2.1), surveyWhite)
@@ -3312,6 +3369,13 @@ function buildDesertGroundAndInfrastructure() {
   coreBox.position.set(0, 1.4, -1.95)
   surveyTruck.add(coreBox)
 
+  // 红色备用燃油桶 (Red Jerry Cans)
+  for (const jx of [-0.55, 0.55]) {
+    const jerryCan = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.36), flagRed)
+    jerryCan.position.set(jx, 1.45, -2.6)
+    surveyTruck.add(jerryCan)
+  }
+
   // 车顶探险行李架与脱困板、备胎 (Roof Rack, Spare Tire & Recovery Gear)
   const roofRack = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.15, 1.9), carbonDark)
   roofRack.position.set(0, 2.55, 0.4)
@@ -3320,6 +3384,13 @@ function buildDesertGroundAndInfrastructure() {
   const roofSpare = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 14), sTireMat)
   roofSpare.position.set(0, 2.8, 0.4)
   surveyTruck.add(roofSpare)
+
+  // 橙色高韧性脱困沙板 (Orange Recovery Traction Boards)
+  for (const bx of [-0.65, 0.65]) {
+    const sandBoard = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.05, 1.4), surveyOrange)
+    sandBoard.position.set(bx, 2.65, 0.4)
+    surveyTruck.add(sandBoard)
+  }
 
   // 前重型竞技防撞杠与绞盘 (Bull-Bar Bumper & Recovery Winch)
   const bullBar = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.55, 0.4), carbonDark)
@@ -7006,6 +7077,820 @@ function buildIconicSloganBillboards() {
 // -------------------------------------------------------------
 // 12. 钻具套管排管架与成排管束堆场 (复刻图三入场道两侧钻杆堆场)
 // -------------------------------------------------------------
+// 辅助构建：工业级重型特种卡车通用底盘总成 (6x6 / 8x8 Heavy Oilfield Special Truck Chassis & Cab)
+function buildTruckChassis(
+  parent: THREE.Group,
+  cabColor: number,
+  chassisLen: number,
+  cabZ: number,
+  wheels: number[][]
+) {
+  const cabMaterial = new THREE.MeshStandardMaterial({ color: cabColor, metalness: 0.82, roughness: 0.25 })
+  const chassisMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.92, roughness: 0.25 })
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95, metalness: 0.05 })
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.25 })
+  const chromeMaterial = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.98, roughness: 0.08 })
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, metalness: 0.92, roughness: 0.08, transparent: true, opacity: 0.85 })
+  const darkMeshMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.8, metalness: 0.9 })
+  const hazardOrange = new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+  const redReflector = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 })
+
+  // 1. 承载双大梁纵梁 (Heavy Dual C-Channel Frame Rails)
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, chassisLen), chassisMat)
+  frame.position.set(0, 1.15, 0)
+  parent.add(frame)
+
+  // 底盘多道加强横梁与传动轴系 (Crossmembers & Driveline Shafts)
+  for (let cz = -chassisLen * 0.4; cz <= chassisLen * 0.4; cz += 2.2) {
+    const crossBeam = new THREE.Mesh(new THREE.BoxGeometry(2.58, 0.22, 0.25), chassisMat)
+    crossBeam.position.set(0, 1.25, cz)
+    parent.add(crossBeam)
+  }
+
+  const driveShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, chassisLen - 3.5, 8), chassisMat)
+  driveShaft.rotation.x = Math.PI / 2
+  driveShaft.position.set(0, 0.95, -1.0)
+  parent.add(driveShaft)
+
+  // 2. 承载防滑上装甲板 (Deck Plate with Diamond Plate Normal Map)
+  const truckDeckMat = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    metalness: 0.9,
+    roughness: 0.28,
+    normalMap: getDiamondPlateNormalTexture(),
+  })
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.15, chassisLen - 3.8), truckDeckMat)
+  deck.position.set(0, 1.45, -1.8)
+  parent.add(deck)
+
+  // 甲板两侧重型防坠安全护栏与绑扎导轨 (Side Rub Rails & Tie-down Rings)
+  for (const sx of [-1.62, 1.62]) {
+    const rubRail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, chassisLen - 3.8), chromeMaterial)
+    rubRail.position.set(sx, 1.55, -1.8)
+    parent.add(rubRail)
+  }
+
+  // 3. 现代化平头重卡驾驶室 (Aerodynamic Heavy Cab with Contoured Corners)
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.7, 3.2), cabMaterial)
+  cab.position.set(0, 2.7, cabZ)
+  parent.add(cab)
+
+  // 驾驶室顶部弧形导流罩与前额气动过渡 (Cab Aerodynamic Sun Visor & Brow)
+  const sunVisor = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.25, 0.55), chassisMat)
+  sunVisor.position.set(0, 3.85, cabZ + 1.68)
+  sunVisor.rotation.x = 0.2
+  parent.add(sunVisor)
+
+  // 遮阳板 5 颗琥珀色车顶示廓灯 (5 Amber Cab Marker Lights)
+  for (let i = -2; i <= 2; i++) {
+    const markerLight = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.06), hazardOrange)
+    markerLight.position.set(i * 0.45, 3.92, cabZ + 1.9)
+    parent.add(markerLight)
+  }
+
+  // 驾驶室车顶双音高低调长号镀铬气喇叭 (Dual Chrome Air Horns)
+  for (const hx of [0.75, 0.95]) {
+    const hornTrumpet = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.85, 12), chromeMaterial)
+    hornTrumpet.rotation.x = Math.PI / 2
+    hornTrumpet.position.set(hx, 4.15, cabZ + 0.6)
+    parent.add(hornTrumpet)
+  }
+
+  // 前风挡玻璃 (倾角防反光并带双联黑色雨刮器)
+  const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.15), glassMat)
+  windshield.position.set(0, 3.0, cabZ + 1.62)
+  parent.add(windshield)
+
+  for (const wx of [-0.65, 0.45]) {
+    const wiperArm = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.65, 0.02), chassisMat)
+    wiperArm.rotation.z = -0.35
+    wiperArm.position.set(wx, 2.85, cabZ + 1.64)
+    parent.add(wiperArm)
+  }
+
+  // 重卡前脸立体蜂窝进气格栅与镀铬饰条 (Heavy-Duty Radiator Grille & Louvers)
+  const grilleRecess = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.35, 0.08), darkMeshMat)
+  grilleRecess.position.set(0, 2.05, cabZ + 1.62)
+  parent.add(grilleRecess)
+
+  for (const ly of [-0.42, -0.14, 0.14, 0.42]) {
+    const louver = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 0.06), chromeMaterial)
+    louver.position.set(0, 2.05 + ly, cabZ + 1.66)
+    parent.add(louver)
+  }
+
+  // 中央镀铬重工业品牌盾标 (Brand Crest)
+  const emblem = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.08), chromeMaterial)
+  emblem.position.set(0, 2.05, cabZ + 1.68)
+  parent.add(emblem)
+
+  // 两侧车门观察车窗、镀铬门把手、双柱式重型后视镜与防滑登车阶梯
+  for (const sx of [-1.41, 1.41]) {
+    const sideWindow = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.8), glassMat)
+    sideWindow.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2
+    sideWindow.position.set(sx, 3.0, cabZ + 0.3)
+    parent.add(sideWindow)
+
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.35), chromeMaterial)
+    handle.position.set(sx * 1.02, 2.45, cabZ + 0.1)
+    parent.add(handle)
+
+    const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.28), chassisMat)
+    mirror.position.set(sx * 1.25, 3.05, cabZ + 1.4)
+    parent.add(mirror)
+
+    const spotterMirror = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.08, 12), chromeMaterial)
+    spotterMirror.rotation.z = Math.PI / 2
+    spotterMirror.position.set(sx * 1.25, 2.65, cabZ + 1.4)
+    parent.add(spotterMirror)
+
+    for (const my of [2.8, 3.3]) {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 6), chromeMaterial)
+      arm.rotation.z = sx > 0 ? -Math.PI / 2 : Math.PI / 2
+      arm.position.set(sx * 1.12, my, cabZ + 1.4)
+      parent.add(arm)
+    }
+
+    for (const stepY of [0.95, 1.35]) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 0.75), chromeMaterial)
+      step.position.set(sx * 1.15, stepY, cabZ + 0.3)
+      parent.add(step)
+    }
+  }
+
+  // 重型切角防撞前保险杠与内嵌式防雾灯 (Chiseled Winch Bumper)
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.75, 0.5), chassisMat)
+  bumper.position.set(0, 0.9, cabZ + 1.7)
+  parent.add(bumper)
+
+  const winchFairlead = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.28, 0.18), darkMeshMat)
+  winchFairlead.position.set(0, 0.9, cabZ + 1.98)
+  parent.add(winchFairlead)
+
+  for (const rx of [-1.15, 1.15]) {
+    const shackle = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 12), redReflector)
+    shackle.position.set(rx, 0.65, cabZ + 1.98)
+    parent.add(shackle)
+  }
+
+  for (const lx of [-1.05, 1.05]) {
+    const lampHousing = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.38, 0.12), darkMeshMat)
+    lampHousing.position.set(lx, 1.05, cabZ + 1.92)
+    parent.add(lampHousing)
+
+    for (const dx of [-0.14, 0.14]) {
+      const projector = new THREE.Mesh(new THREE.CircleGeometry(0.11, 14), new THREE.MeshBasicMaterial({ color: 0xffffff }))
+      projector.position.set(lx + dx, 1.08, cabZ + 1.99)
+      parent.add(projector)
+    }
+
+    const turnSignal = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.08), hazardOrange)
+    turnSignal.position.set(lx, 0.92, cabZ + 1.99)
+    parent.add(turnSignal)
+
+    const wireGuard = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.36, 0.02), chromeMaterial)
+    wireGuard.position.set(lx, 1.05, cabZ + 2.01)
+    parent.add(wireGuard)
+
+    const fogLight = new THREE.Mesh(new THREE.CircleGeometry(0.1, 10), hazardOrange)
+    fogLight.position.set(lx, 0.65, cabZ + 1.96)
+    parent.add(fogLight)
+  }
+
+  // 驾驶室顶部高位行车警示旋转频闪探照灯
+  for (const rx of [-0.9, 0, 0.9]) {
+    const beaconBase = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.08, 10), chassisMat)
+    beaconBase.position.set(rx, 4.08, cabZ + 1.2)
+    parent.add(beaconBase)
+
+    const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 12), hazardOrange)
+    beacon.position.set(rx, 4.2, cabZ + 1.2)
+    parent.add(beacon)
+  }
+
+  // 驾驶室背部双高位直通镀铬重型排气管 (带冲孔防烫保护网与防雨斜切口)
+  for (const ex of [-1.2, 1.2]) {
+    const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.8, 16), chromeMaterial)
+    stack.position.set(ex, 3.3, cabZ - 1.65)
+    parent.add(stack)
+
+    const heatShield = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.2, 16, 1, true, 0, Math.PI * 1.4), chromeMaterial)
+    heatShield.rotation.y = ex > 0 ? -Math.PI / 4 : Math.PI / 4
+    heatShield.position.set(ex, 2.8, cabZ - 1.65)
+    parent.add(heatShield)
+  }
+
+  // 底盘两侧大容量铝合金柴油油箱与双回路储气筒 (Fuel & Air Tanks with Straps)
+  for (const fx of [-1.55, 1.55]) {
+    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.2, 16), chromeMaterial)
+    tank.rotation.x = Math.PI / 2
+    tank.position.set(fx, 1.1, cabZ - 2.8)
+    parent.add(tank)
+
+    for (const tz of [-0.7, 0.7]) {
+      const strap = new THREE.Mesh(new THREE.TorusGeometry(0.51, 0.025, 4, 16), chassisMat)
+      strap.rotation.y = Math.PI / 2
+      strap.position.set(fx, 1.1, cabZ - 2.8 + tz)
+      parent.add(strap)
+    }
+
+    const fillerNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.25, 8), redReflector)
+    fillerNeck.position.set(fx > 0 ? fx + 0.42 : fx - 0.42, 1.5, cabZ - 2.8)
+    parent.add(fillerNeck)
+  }
+
+  const battBox = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 1.1), chassisMat)
+  battBox.position.set(1.5, 1.1, cabZ - 4.6)
+  parent.add(battBox)
+
+  // 车轮立体外展半弧形挡泥轮拱与深花纹越野防脱圈轮毂
+  wheels.forEach(([wx, wy, wz]) => {
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.74, 0.74, 0.55, 20), wheelMat)
+    tire.rotation.z = Math.PI / 2
+    tire.position.set(wx, wy, wz)
+    parent.add(tire)
+
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.57, 16), rimMat)
+    rim.rotation.z = Math.PI / 2
+    rim.position.set(wx, wy, wz)
+    parent.add(rim)
+
+    const rimLip = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.024, 4, 16), chromeMaterial)
+    rimLip.rotation.y = Math.PI / 2
+    rimLip.position.set(wx > 0 ? wx + 0.28 : wx - 0.28, wy, wz)
+    parent.add(rimLip)
+
+    const centerHub = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.62, 12), chassisMat)
+    centerHub.rotation.z = Math.PI / 2
+    centerHub.position.set(wx, wy, wz)
+    parent.add(centerHub)
+
+    for (let i = 0; i < 10; i++) {
+      const a = (i * Math.PI * 2) / 10
+      const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.62, 6), chromeMaterial)
+      lug.rotation.z = Math.PI / 2
+      lug.position.set(wx, wy + Math.sin(a) * 0.32, wz + Math.cos(a) * 0.32)
+      parent.add(lug)
+    }
+
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 12), chassisMat)
+    drum.rotation.z = Math.PI / 2
+    drum.position.set(wx > 0 ? wx - 0.2 : wx + 0.2, wy, wz)
+    parent.add(drum)
+
+    const fender = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.6, 16, 1, true, 0, Math.PI), chassisMat)
+    fender.rotation.z = Math.PI / 2
+    fender.rotation.y = Math.PI / 2
+    fender.position.set(wx, wy + 0.2, wz)
+    parent.add(fender)
+  })
+
+  // 车尾重型防撞大梁、倒车防护杠与双联 LED 尾灯组
+  const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.35, 0.25), chassisMat)
+  rearBumper.position.set(0, 0.95, -chassisLen / 2 + 0.2)
+  parent.add(rearBumper)
+
+  for (const rx of [-1.1, 1.1]) {
+    const tailBox = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.22, 0.08), darkMeshMat)
+    tailBox.position.set(rx, 0.95, -chassisLen / 2 + 0.06)
+    parent.add(tailBox)
+
+    const redTail = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.16), redReflector)
+    redTail.rotation.y = Math.PI
+    redTail.position.set(rx - 0.1, 0.95, -chassisLen / 2 + 0.01)
+    parent.add(redTail)
+
+    const amberTurn = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.16), hazardOrange)
+    amberTurn.rotation.y = Math.PI
+    amberTurn.position.set(rx + 0.1, 0.95, -chassisLen / 2 + 0.01)
+    parent.add(amberTurn)
+
+    const mudFlap = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.75, 0.04), darkMeshMat)
+    mudFlap.position.set(rx, 0.6, -chassisLen / 2 + 0.2)
+    parent.add(mudFlap)
+  }
+}
+
+
+
+// -------------------------------------------------------------
+// 高精度 4 轴全地面重型起重机总成 (Hyper-Realistic 75t 4-Axle All-Terrain Mobile Crane)
+// 专为排管堆场卸车吊装作业与钻前搬装打造，彻底杜绝外置模型错乱、悬空脱节与方块玩具感
+// -------------------------------------------------------------
+function buildDetailedAllTerrainCrane(pos: THREE.Vector3, rotY: number, parent: THREE.Group): THREE.Group {
+  const craneGroup = new THREE.Group()
+  craneGroup.position.copy(pos)
+  craneGroup.rotation.y = rotY
+
+  // 材质体系 (高拟真工程机械材质)
+  const craneYellow = new THREE.MeshStandardMaterial({
+    color: 0xf59e0b, // 工业工程金黄 (XCMG / Liebherr Safety Yellow)
+    metalness: 0.72,
+    roughness: 0.35,
+  })
+  const darkChassis = new THREE.MeshStandardMaterial({
+    color: 0x18181b, // 高强度大梁石墨黑
+    metalness: 0.88,
+    roughness: 0.28,
+  })
+  const chromeSteel = new THREE.MeshStandardMaterial({
+    color: 0xf8fafc, // 镜面镀铬高硬度液压活塞杆与销轴
+    metalness: 0.98,
+    roughness: 0.08,
+  })
+  const cabGlass = new THREE.MeshStandardMaterial({
+    color: 0x0284c7, // 隔热防紫外线微透宝石蓝挡风玻璃
+    metalness: 0.92,
+    roughness: 0.12,
+    transparent: true,
+    opacity: 0.82,
+  })
+  const tireRubber = new THREE.MeshStandardMaterial({
+    color: 0x18181b, // 深花纹全地形工程轮胎特种耐磨橡胶
+    roughness: 0.94,
+  })
+  const hazardOrange = new THREE.MeshBasicMaterial({ color: 0xf97316 })
+  const redTailMat = new THREE.MeshBasicMaterial({ color: 0xef4444 })
+  const wireMat = new THREE.MeshStandardMaterial({
+    color: 0x334155, // 淬火高抗拉特种钢丝绳
+    metalness: 0.92,
+    roughness: 0.25,
+  })
+
+  // 1. 8x4 / 8x8 四桥高强度抗扭箱型底盘大梁 (14.6m x 2.8m x 0.75m)
+  const chassisBox = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.75, 14.6), darkChassis)
+  chassisBox.position.set(0, 1.15, 0)
+  craneGroup.add(chassisBox)
+
+  // 大梁上表面防滑铝合金花纹走台板 (Deck Walkways)
+  const deckPlate = new THREE.Mesh(
+    new THREE.BoxGeometry(2.85, 0.1, 14.2),
+    new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.35, normalMap: getDiamondPlateNormalTexture() })
+  )
+  deckPlate.position.set(0, 1.55, 0)
+  craneGroup.add(deckPlate)
+
+  // 底盘两侧工具箱与侧裙防护隔板 (Side Lockers & Skirts)
+  for (const sx of [-1.42, 1.42]) {
+    const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 8.5), darkChassis)
+    skirt.position.set(sx, 1.05, 0)
+    craneGroup.add(skirt)
+
+    // 工具箱锁紧镀铬T型执手
+    for (const tz of [-3.0, -1.0, 1.0, 3.0]) {
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.22), chromeSteel)
+      handle.position.set(sx > 0 ? sx + 0.07 : sx - 0.07, 1.1, tz)
+      craneGroup.add(handle)
+    }
+  }
+
+  // 铝合金大容量柴油油箱与双层紧固抱箍
+  const fuelTank = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 2.4, 16), chromeSteel)
+  fuelTank.rotation.x = Math.PI / 2
+  fuelTank.position.set(-1.45, 1.05, -0.8)
+  craneGroup.add(fuelTank)
+
+  for (const fz of [-0.8, 0.8]) {
+    const strap = new THREE.Mesh(new THREE.TorusGeometry(0.49, 0.025, 4, 16), darkChassis)
+    strap.rotation.y = Math.PI / 2
+    strap.position.set(-1.45, 1.05, -0.8 + fz)
+    craneGroup.add(strap)
+  }
+
+  // 液压油箱与充氮储气筒
+  const hTank = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.7, 1.8), darkChassis)
+  hTank.position.set(1.42, 1.1, -0.8)
+  craneGroup.add(hTank)
+
+  // 4 轴 8 组高承载全地形越野车轮总成 (4 Axles, 8 Chunky Beadlock Wheels)
+  const axleZs = [5.4, 3.6, -3.6, -5.4]
+  axleZs.forEach((az) => {
+    for (const wx of [-1.45, 1.45]) {
+      // 越野轮胎胎体
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.54, 20), tireRubber)
+      tire.rotation.z = Math.PI / 2
+      tire.position.set(wx, 0.72, az)
+      craneGroup.add(tire)
+
+      // 钢制轮毂
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.56, 16), darkChassis)
+      rim.rotation.z = Math.PI / 2
+      rim.position.set(wx, 0.72, az)
+      craneGroup.add(rim)
+
+      // 镀铬外唇防脱圈
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.025, 4, 16), chromeSteel)
+      lip.rotation.y = Math.PI / 2
+      lip.position.set(wx > 0 ? wx + 0.28 : wx - 0.28, 0.72, az)
+      craneGroup.add(lip)
+
+      // 中心轮边行星减速齿轮罩
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.62, 12), darkChassis)
+      hub.rotation.z = Math.PI / 2
+      hub.position.set(wx, 0.72, az)
+      craneGroup.add(hub)
+
+      // 10 颗高精六角螺栓
+      for (let i = 0; i < 10; i++) {
+        const a = (i * Math.PI * 2) / 10
+        const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.62, 6), chromeSteel)
+        lug.rotation.z = Math.PI / 2
+        lug.position.set(wx, 0.72 + Math.sin(a) * 0.3, az + Math.cos(a) * 0.3)
+        craneGroup.add(lug)
+      }
+
+      // 半圆挡泥轮眉
+      const fender = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.58, 16, 1, true, 0, Math.PI), darkChassis)
+      fender.rotation.z = Math.PI / 2
+      fender.rotation.y = Math.PI / 2
+      fender.position.set(wx, 0.92, az)
+      craneGroup.add(fender)
+    }
+  })
+
+  // 2. 底盘前部流线型低位单驾驶室 (Forward-Control Carrier Driving Cab)
+  const cabGroup = new THREE.Group()
+  cabGroup.position.set(0, 1.55, 5.8)
+
+  const cabBody = new THREE.Mesh(new THREE.BoxGeometry(2.7, 1.65, 2.4), craneYellow)
+  cabBody.position.set(0, 0.85, 0)
+  cabGroup.add(cabBody)
+
+  // 倾角全景曲面挡风玻璃 (Front Windshield)
+  const windShield = new THREE.Mesh(new THREE.PlaneGeometry(2.45, 1.15), cabGlass)
+  windShield.position.set(0, 1.15, 1.22)
+  cabGroup.add(windShield)
+
+  // 双刮雨器
+  for (const wx of [-0.55, 0.55]) {
+    const wiper = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.65, 6), darkChassis)
+    wiper.rotation.z = -0.45
+    wiper.position.set(wx, 0.9, 1.24)
+    cabGroup.add(wiper)
+  }
+
+  // 两侧车门观察车窗与把手
+  for (const sx of [-1.36, 1.36]) {
+    const sideWin = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.7), cabGlass)
+    sideWin.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2
+    sideWin.position.set(sx, 1.15, -0.1)
+    cabGroup.add(sideWin)
+
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.22), chromeSteel)
+    handle.position.set(sx > 0 ? sx + 0.02 : sx - 0.02, 0.65, -0.4)
+    cabGroup.add(handle)
+
+    // 西海岸双臂后视镜组
+    const mirrorArm = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.9, 8), darkChassis)
+    mirrorArm.position.set(sx > 0 ? sx + 0.35 : sx - 0.35, 1.25, 0.9)
+    cabGroup.add(mirrorArm)
+
+    const mirrorBox = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.22), chromeSteel)
+    mirrorBox.position.set(sx > 0 ? sx + 0.38 : sx - 0.38, 1.25, 0.9)
+    cabGroup.add(mirrorBox)
+  }
+
+  // 前进气格栅与镀铬品牌条 (Front Grille)
+  const grille = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 0.08), darkChassis)
+  grille.position.set(0, 0.4, 1.23)
+  cabGroup.add(grille)
+
+  const brandBar = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.05), chromeSteel)
+  brandBar.position.set(0, 0.42, 1.28)
+  cabGroup.add(brandBar)
+
+  // 双联投射式 LED 大灯群
+  for (const lx of [-0.95, 0.95]) {
+    const headLight = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.22, 0.06), chromeSteel)
+    headLight.position.set(lx, 0.4, 1.23)
+    cabGroup.add(headLight)
+
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.09, 12), cabGlass)
+    lens.position.set(lx - 0.08, 0.4, 1.27)
+    cabGroup.add(lens)
+
+    const turn = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.16), hazardOrange)
+    turn.position.set(lx + 0.12, 0.4, 1.27)
+    cabGroup.add(turn)
+  }
+
+  // 驾驶室顶部警示频闪旋转灯 (Cab Amber Beacons)
+  for (const bx of [-0.95, 0.95]) {
+    const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.18, 12), hazardOrange)
+    beacon.position.set(bx, 1.75, 0.6)
+    cabGroup.add(beacon)
+  }
+
+  // 前部重型防撞钢制保险杠与拖钩 (Heavy Front Bumper)
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.45, 0.35), darkChassis)
+  bumper.position.set(0, 0.05, 1.35)
+  cabGroup.add(bumper)
+
+  for (const rx of [-0.85, 0.85]) {
+    const dRing = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 12), redTailMat)
+    dRing.position.set(rx, 0.05, 1.55)
+    cabGroup.add(dRing)
+  }
+
+  craneGroup.add(cabGroup)
+
+  // 3. 四组 H 型重型液压双级外伸支腿 (4 Heavy H-Outriggers with Ground Steel Spreader Pads)
+  const outriggerConfigs = [
+    { z: 4.4, name: 'front' },
+    { z: -4.4, name: 'rear' },
+  ]
+  outriggerConfigs.forEach((cfg) => {
+    // 贯通大梁的主支腿箱体 (Cross Beam Box)
+    const outBox = new THREE.Mesh(new THREE.BoxGeometry(2.95, 0.55, 0.85), darkChassis)
+    outBox.position.set(0, 1.2, cfg.z)
+    craneGroup.add(outBox)
+
+    for (const side of [-1, 1]) {
+      // 外伸水平液压伸缩横梁 (Extended Horizontal Beams)
+      const armLen = 1.6
+      const hArm = new THREE.Mesh(new THREE.BoxGeometry(armLen, 0.42, 0.65), craneYellow)
+      hArm.position.set(side * (1.45 + armLen / 2), 1.2, cfg.z)
+      craneGroup.add(hArm)
+
+      // 支腿端部黑黄相间警示反光斜纹 (Hazard Chevron Decal)
+      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.62), darkChassis)
+      chevron.position.set(side * (1.45 + armLen), 1.2, cfg.z)
+      craneGroup.add(chevron)
+
+      // 垂直液压千斤顶支腿油缸套筒 (Vertical Jack Barrel)
+      const jackBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.75, 16), darkChassis)
+      jackBarrel.position.set(side * (1.45 + armLen - 0.2), 0.95, cfg.z)
+      craneGroup.add(jackBarrel)
+
+      // 镜面镀铬垂直伸缩活塞杆 (Chrome Piston Rod)
+      const jackRod = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.75, 16), chromeSteel)
+      jackRod.position.set(side * (1.45 + armLen - 0.2), 0.45, cfg.z)
+      craneGroup.add(jackRod)
+
+      // 地面重型八角形钢质承压支腿接地垫板 (Heavy Octagonal Ground Spreader Pad - 绝对精准平贴沙地 Y=0.06)
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 0.12, 8), darkChassis)
+      pad.position.set(side * (1.45 + armLen - 0.2), 0.06, cfg.z)
+      craneGroup.add(pad)
+
+      const padLip = new THREE.Mesh(new THREE.CylinderGeometry(0.74, 0.74, 0.04, 8), craneYellow)
+      padLip.position.set(side * (1.45 + armLen - 0.2), 0.12, cfg.z)
+      craneGroup.add(padLip)
+    }
+  })
+
+  // 4. 上装 360° 全回转转台总成 (Superstructure Slewing Turntable)
+  const turretGroup = new THREE.Group()
+  turretGroup.position.set(0, 1.62, -0.6)
+
+  // 回转支撑内齿圈与液压回转马达 (Slew Ring Bearing)
+  const slewRing = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.75, 0.28, 32), chromeSteel)
+  slewRing.position.y = 0.14
+  turretGroup.add(slewRing)
+
+  const slewPlate = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.45, 6.2), darkChassis)
+  slewPlate.position.set(0, 0.48, -0.8)
+  turretGroup.add(slewPlate)
+
+  // 转台尾部 16 吨分体铸铁活动平衡重总成 (16t Counterweight Slabs with Hazard Stripes)
+  const cwtMain = new THREE.Mesh(new THREE.BoxGeometry(2.7, 1.35, 1.4), darkChassis)
+  cwtMain.position.set(0, 1.25, -3.2)
+  turretGroup.add(cwtMain)
+
+  // 配重侧面防撞黑黄警戒标识块
+  for (const cz of [-0.45, 0, 0.45]) {
+    const cStripe = new THREE.Mesh(new THREE.BoxGeometry(2.72, 0.22, 0.18), craneYellow)
+    cStripe.position.set(0, 1.25, -3.2 + cz)
+    turretGroup.add(cStripe)
+  }
+
+  // 配重块顶部吊装耳环
+  for (const cx of [-0.9, 0.9]) {
+    const cEye = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.035, 6, 12), chromeSteel)
+    cEye.position.set(cx, 2.05, -3.2)
+    turretGroup.add(cEye)
+  }
+
+  // 双卷扬机构 (主卷扬 + 副卷扬 - Dual Hydraulic Hoisting Winches)
+  for (const wz of [-2.1, -1.2]) {
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.5, 20), darkChassis)
+    drum.rotation.z = Math.PI / 2
+    drum.position.set(0, 1.15, wz)
+    turretGroup.add(drum)
+
+    for (const wx of [-0.8, 0.8]) {
+      const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.1, 20), darkChassis)
+      flange.rotation.z = Math.PI / 2
+      flange.position.set(wx, 1.15, wz)
+      turretGroup.add(flange)
+    }
+
+    // 滚筒缠绕钢丝绳层
+    const wireCore = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 1.45, 20), wireMat)
+    wireCore.rotation.z = Math.PI / 2
+    wireCore.position.set(0, 1.15, wz)
+    turretGroup.add(wireCore)
+  }
+
+  // 5. 左置高视野 20° 俯仰全景吊装操作室 (Panoramic Crane Operator Cab)
+  const opCab = new THREE.Group()
+  opCab.position.set(1.42, 1.65, 0.8)
+  opCab.rotation.x = -0.12 // 略微后仰 7° 完美仰视臂头
+
+  const opBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 2.4), craneYellow)
+  opBody.position.y = 0.9
+  opCab.add(opBody)
+
+  // 全景弧形高透观察窗
+  const opGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 1.4), cabGlass)
+  opGlass.position.set(0, 1.05, 1.22)
+  opCab.add(opGlass)
+
+  const opSideGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.95), cabGlass)
+  opSideGlass.rotation.y = Math.PI / 2
+  opSideGlass.position.set(0.62, 1.1, 0)
+  opCab.add(opSideGlass)
+
+  // 车顶防落物落石安全防护格栅 (FOPS Guard)
+  for (let gy = -0.8; gy <= 0.8; gy += 0.3) {
+    const fopsBar = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.03, 0.04), darkChassis)
+    fopsBar.position.set(0, 1.84, gy)
+    opCab.add(fopsBar)
+  }
+
+  // 操作室内高靠背座椅与力矩限制器 (LMI Display Console)
+  const opSeat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.55), darkChassis)
+  opSeat.position.set(0, 0.6, -0.3)
+  opCab.add(opSeat)
+
+  const lmiScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.25), new THREE.MeshBasicMaterial({ color: 0x00f0ff }))
+  lmiScreen.rotation.x = -0.4
+  lmiScreen.position.set(0.2, 0.85, 0.7)
+  opCab.add(lmiScreen)
+
+  // 臂向高亮度 LED 投光探照灯
+  const floodLight = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 0.22), chromeSteel)
+  floodLight.position.set(-0.65, 1.7, 1.1)
+  opCab.add(floodLight)
+
+  const floodLens = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }))
+  floodLens.position.set(-0.65, 1.7, 1.22)
+  opCab.add(floodLens)
+
+  turretGroup.add(opCab)
+
+  // 6. 大圆弧 U 型截面四节伸缩起重主臂总成 (Telescopic U-Section Boom Assembly)
+  // 主臂朝向西排管堆场 (Angled towards Pipe Yard: Pitch = 28°, Azimuth = +55°)
+  const boomGroup = new THREE.Group()
+  boomGroup.position.set(-0.35, 1.8, 0.4)
+  boomGroup.rotation.y = 0.95 // 偏转朝向排管场方向
+  boomGroup.rotation.x = 0.48 // 抬高 27.5°
+
+  // 粗壮液压变幅油缸总成 (Heavy Luffing Hydraulic Cylinder)
+  const luffBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 3.2, 16), darkChassis)
+  luffBarrel.position.set(0, 0.95, 1.4)
+  luffBarrel.rotation.x = 0.52
+  turretGroup.add(luffBarrel)
+
+  const luffRod = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.8, 16), chromeSteel)
+  luffRod.position.set(0, 2.2, 2.1)
+  luffRod.rotation.x = 0.52
+  turretGroup.add(luffRod)
+
+  // 基本臂 (Base Boom Section: 7.8m)
+  const baseBoom = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.35, 7.8), craneYellow)
+  baseBoom.position.set(0, 0, 3.8)
+  boomGroup.add(baseBoom)
+
+  // 基本臂外侧加强筋板与检修卡槽
+  for (const bx of [-0.6, 0.6]) {
+    const rib = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.8, 7.2), darkChassis)
+    rib.position.set(bx, 0, 3.8)
+    boomGroup.add(rib)
+  }
+
+  // 二节伸缩臂 (2nd Telescopic Section: 7.2m, 伸出 4.8m)
+  const boom2 = new THREE.Mesh(new THREE.BoxGeometry(0.98, 1.15, 7.2), craneYellow)
+  boom2.position.set(0, 0, 8.2)
+  boomGroup.add(boom2)
+
+  // 三节伸缩臂 (3rd Telescopic Section: 6.8m, 伸出 4.5m)
+  const boom3 = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.96, 6.8), craneYellow)
+  boom3.position.set(0, 0, 12.5)
+  boomGroup.add(boom3)
+
+  // 臂头滑轮组支架总成 (Boom Head with 5 Hardened Sheaves)
+  const boomHead = new THREE.Group()
+  boomHead.position.set(0, 0, 15.9)
+
+  const headPlate = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.85, 1.2), darkChassis)
+  boomHead.add(headPlate)
+
+  for (let s = -2; s <= 2; s++) {
+    const sheave = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.08, 20), chromeSteel)
+    sheave.rotation.z = Math.PI / 2
+    sheave.position.set(s * 0.12, 0.2, 0.4)
+    boomHead.add(sheave)
+  }
+
+  // 防过卷过顶限位器重锤 (Anti-Two-Block Limit Switch Weight on Chain)
+  const a2bWeight = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.45, 12), craneYellow)
+  a2bWeight.position.set(0.35, -0.65, 0.4)
+  boomHead.add(a2bWeight)
+
+  const a2bChain = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.65, 6), chromeSteel)
+  a2bChain.position.set(0.35, -0.25, 0.4)
+  boomHead.add(a2bChain)
+
+  boomGroup.add(boomHead)
+  turretGroup.add(boomGroup)
+  craneGroup.add(turretGroup)
+
+  // 7. 重型滑轮起重吊钩组与四腿吊索具 (Heavy Hook Block & 4-Leg Pipe Lifting Rigging)
+  const hookGroup = new THREE.Group()
+  // 吊钩位于起重机局部坐标系下
+  hookGroup.position.set(6.8, 3.2, 2.8)
+
+  // 4 根垂直起重钢丝绳 (4-Part Reeved Wire Lines)
+  for (const lx of [-0.18, 0.18]) {
+    for (const lz of [-0.12, 0.12]) {
+      const line = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 7.2, 6), wireMat)
+      line.position.set(lx, 3.6, lz)
+      hookGroup.add(line)
+    }
+  }
+
+  // 滑轮吊钩本体箱 (Hook Block with Hazard Chevrons)
+  const hookBody = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.85, 0.55), craneYellow)
+  hookBody.position.y = 0
+  hookGroup.add(hookBody)
+
+  for (const sz of [-0.28, 0.28]) {
+    const hStripe = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.22, 0.04), darkChassis)
+    hStripe.position.set(0, 0, sz)
+    hookGroup.add(hStripe)
+  }
+
+  // 锻造高强度重型合金吊钩 (Forged Alloy Safety Hook with Spring Latch)
+  const hookShank = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.55, 12), darkChassis)
+  hookShank.position.y = -0.55
+  hookGroup.add(hookShank)
+
+  const hookCurv = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.1, 10, 16, Math.PI * 1.3), darkChassis)
+  hookCurv.rotation.z = Math.PI / 1.15
+  hookCurv.position.set(0.14, -0.92, 0)
+  hookGroup.add(hookCurv)
+
+  const safetyLatch = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.35, 0.06), chromeSteel)
+  safetyLatch.rotation.z = -0.45
+  safetyLatch.position.set(0.08, -0.82, 0)
+  hookGroup.add(safetyLatch)
+
+  // 四腿吊装索具与吊梁 (4-Leg Wire Rope Slings & Lifting Beam to Pipe Bundle)
+  const masterRing = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.04, 8, 16), chromeSteel)
+  masterRing.position.set(0.12, -1.25, 0)
+  hookGroup.add(masterRing)
+
+  // 吊装扁平扁梁/吊带连接管排
+  for (const py of [-0.8, 0.8]) {
+    const slingLine = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.8, 6), wireMat)
+    slingLine.position.set(py * 0.9, -1.95, 0)
+    slingLine.rotation.z = py > 0 ? -0.42 : 0.42
+    hookGroup.add(slingLine)
+  }
+
+  // 被吊起的成捆套管/钻杆总成 (Lifted Drill Pipe Bundle in Transit)
+  const liftedBundle = new THREE.Group()
+  liftedBundle.position.set(0, -2.8, 0)
+  for (const [px, py] of [[-0.3, -0.15], [0.3, -0.15], [0, 0.25]]) {
+    const pPipe = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.2, 0.2, 7.5, 16),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.22 })
+    )
+    pPipe.rotation.x = Math.PI / 2
+    pPipe.position.set(px, py, 0)
+    liftedBundle.add(pPipe)
+
+    // 亮黄护丝帽
+    const pCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.4, 16), craneYellow)
+    pCap.rotation.x = Math.PI / 2
+    pCap.position.set(px, py, 3.8)
+    liftedBundle.add(pCap)
+  }
+  // 吊装高强尼龙捆扎吊带
+  for (const bz of [-2.2, 2.2]) {
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 0.2), craneYellow)
+    strap.position.set(0, 0.45, bz)
+    liftedBundle.add(strap)
+  }
+  hookGroup.add(liftedBundle)
+
+  craneGroup.add(hookGroup)
+
+  parent.add(craneGroup)
+  return craneGroup
+}
+
+
 function buildHeavyPipeStorageYards() {
   if (!scene) return
   const yardGroup = new THREE.Group()
@@ -7118,8 +8003,8 @@ function buildHeavyPipeStorageYards() {
   const yard2 = createPipeRack(new THREE.Vector3(-27, 0.2, 49), 0)
   yardGroup.add(yard2)
 
-  // 西排管场重型起重吊装车 (Stage 2: 钻前搬装排管作业专属工业级吊车)
-  loadRealVehicleGLB('/models/crane.glb', 16.5, [-38, 0.2, 34], 0, yardGroup)
+  // 西排管场重型起重吊装车 (Stage 2: 钻前搬装排管作业专属工业级吊车 - 彻底告别错乱外置模型与方块感)
+  buildDetailedAllTerrainCrane(new THREE.Vector3(-38, 0.2, 34), 0, yardGroup)
 
   // 2. 东排管堆场 (East Pipe Yard: 猫道东侧，对称呼应)
   const yard3 = createPipeRack(new THREE.Vector3(-3, 0.2, 34), 0)
@@ -7138,25 +8023,12 @@ function buildHeavyPipeStorageYards() {
   const haulerChrome = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.15 })
   const glassMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.85 })
 
-  // 6x4 牵引车头底盘与驾驶室
-  const cabFrame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 6.2), skidSteel)
-  cabFrame.position.set(0, 1.0, 5.2)
-  haulerTruck.add(cabFrame)
-
-  const tractorCab = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.5, 2.8), haulerCabMat)
-  tractorCab.position.set(0, 2.45, 6.4)
-  haulerTruck.add(tractorCab)
-
-  const cabWindshield = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.0), glassMat)
-  cabWindshield.position.set(0, 2.7, 7.82)
-  haulerTruck.add(cabWindshield)
-
-  // 镀铬高耸双排气烟囱
-  for (const ex of [-1.1, 1.1]) {
-    const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3.4, 12), haulerChrome)
-    stack.position.set(ex, 2.9, 4.8)
-    haulerTruck.add(stack)
-  }
+  // 6x4 牵引车头底盘与驾驶室 (采用工业级重型卡车底盘总成)
+  buildTruckChassis(haulerTruck, 0x0284c7, 10.2, 4.4, [
+    [-1.35, 0.72, 4.4], [1.35, 0.72, 4.4],
+    [-1.4, 0.72, -1.8], [1.4, 0.72, -1.8],
+    [-1.4, 0.72, -3.6], [1.4, 0.72, -3.6],
+  ])
 
   // 重型多轴超低平板半挂车架 (Heavy Multiaxle Lowboy Deck)
   const lowboyDeck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.35, 12.5), skidSteel)
@@ -8526,104 +9398,7 @@ function buildSpecialFleet() {
   // -------------------------------------------------------------
 
 
-  // 辅助构建：工业级重型特种卡车通用底盘总成 (6x6 / 8x8 Heavy Oilfield Special Truck Chassis & Cab)
-  function buildTruckChassis(
-    parent: THREE.Group,
-    cabColor: number,
-    chassisLen: number,
-    cabZ: number,
-    wheels: number[][]
-  ) {
-    const cabMaterial = new THREE.MeshStandardMaterial({ color: cabColor, metalness: 0.75, roughness: 0.3 })
-    const chassisMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.3 })
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 })
-    const chromeMaterial = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.1 })
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.85 })
-
-    // 1. 承载双大梁纵梁 (Chassis Frame Rails)
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, chassisLen), chassisMat)
-    frame.position.set(0, 1.15, 0)
-    parent.add(frame)
-
-    // 2. 承载防滑上装甲板 (Deck Plate with Diamond Plate Normal Map)
-    const truckDeckMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      metalness: 0.9,
-      roughness: 0.28,
-      normalMap: getDiamondPlateNormalTexture(),
-    })
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.15, chassisLen - 3.8), truckDeckMat)
-    deck.position.set(0, 1.45, -1.8)
-    parent.add(deck)
-
-    // 3. 现代化平头重卡驾驶室 (Heavy Cab)
-    const cab = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.7, 3.2), cabMaterial)
-    cab.position.set(0, 2.7, cabZ)
-    parent.add(cab)
-
-    // 前风挡玻璃 (倾角防反光)
-    const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.1), glassMat)
-    windshield.position.set(0, 3.0, cabZ + 1.62)
-    parent.add(windshield)
-
-    // 两侧车门观察车窗与后视镜
-    for (const sx of [-1.41, 1.41]) {
-      const sideWindow = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.8), glassMat)
-      sideWindow.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2
-      sideWindow.position.set(sx, 3.0, cabZ + 0.3)
-      parent.add(sideWindow)
-
-      const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.28), chassisMat)
-      mirror.position.set(sx * 1.18, 3.0, cabZ + 1.4)
-      parent.add(mirror)
-    }
-
-    // 重型防撞前保险杠与防爆大灯
-    const bumper = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.75, 0.5), chassisMat)
-    bumper.position.set(0, 0.9, cabZ + 1.7)
-    parent.add(bumper)
-
-    for (const lx of [-1.05, 1.05]) {
-      const headlight = new THREE.Mesh(new THREE.CircleGeometry(0.24, 12), new THREE.MeshBasicMaterial({ color: 0xffedd5 }))
-      headlight.position.set(lx, 0.9, cabZ + 1.96)
-      parent.add(headlight)
-    }
-
-    // 驾驶室顶部高位行车警示探照灯
-    for (const rx of [-0.9, 0, 0.9]) {
-      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), new THREE.MeshBasicMaterial({ color: 0xf59e0b }))
-      beacon.position.set(rx, 4.15, cabZ + 1.2)
-      parent.add(beacon)
-    }
-
-    // 驾驶室背部双高位直通镀铬排气管
-    for (const ex of [-1.2, 1.2]) {
-      const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.6, 12), chromeMaterial)
-      stack.position.set(ex, 3.2, cabZ - 1.65)
-      parent.add(stack)
-    }
-
-    // 底盘两侧大容量柴油油箱与储气筒
-    for (const fx of [-1.55, 1.55]) {
-      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.2, 14), chromeMaterial)
-      tank.rotation.x = Math.PI / 2
-      tank.position.set(fx, 1.1, cabZ - 2.8)
-      parent.add(tank)
-    }
-
-    // 车轮与轮毂
-    wheels.forEach(([wx, wy, wz]) => {
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.55, 16), wheelMat)
-      wheel.rotation.z = Math.PI / 2
-      wheel.position.set(wx, wy, wz)
-      parent.add(wheel)
-
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.58, 12), chromeMaterial)
-      hub.rotation.z = Math.PI / 2
-      hub.position.set(wx, wy, wz)
-      parent.add(hub)
-    })
-  }
+  // （特种卡车通用底盘总成已升级为全局复用组件 buildTruckChassis）
 
   // 2. 双机双泵重型固井水泥混浆车 (Dual-Pump Cementing Truck - 工业级 6x6 重型特种卡车底盘)
   // 位于南侧大道入口区 (X = -44, Z = 70)，车身朝北正对井场大门，威严霸气
@@ -8637,6 +9412,54 @@ function buildSpecialFleet() {
     [-1.4, 0.72, -2.2], [1.4, 0.72, -2.2],
     [-1.4, 0.72, -4.2], [1.4, 0.72, -4.2],
   ])
+
+  // 双台康明斯重型甲板动力柴油机 (Twin Cummins QSK50 High-Horsepower Deck Engines)
+  for (const ex of [-0.95, 0.95]) {
+    const deckEngine = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.25, 2.4), steelDark)
+    deckEngine.position.set(ex, 2.35, 3.1)
+    cTruck.add(deckEngine)
+
+    // 大直径散热水箱圆形风扇罩与不锈钢防护网
+    const fanShroud = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.18, 20), steelDark)
+    fanShroud.position.set(ex, 2.45, 4.35)
+    cTruck.add(fanShroud)
+
+    const fanMesh = new THREE.Mesh(new THREE.CircleGeometry(0.48, 16), chromeMat)
+    fanMesh.position.set(ex, 2.45, 4.45)
+    cTruck.add(fanMesh)
+
+    // 双筒式高效旋流空气预滤清器
+    const airSnorkel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.85, 10), chromeMat)
+    airSnorkel.position.set(ex > 0 ? ex + 0.45 : ex - 0.45, 3.2, 3.5)
+    cTruck.add(airSnorkel)
+
+    const preCleaner = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.35, 12), steelDark)
+    preCleaner.position.set(ex > 0 ? ex + 0.45 : ex - 0.45, 3.7, 3.5)
+    cTruck.add(preCleaner)
+  }
+
+  // 高压活动弯头管汇与旋塞阀组 (High-Pressure Treating Iron Manifold with Chiksan Swivel Joints)
+  const manifoldLine = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 3.2, 12),
+    new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.85, roughness: 0.25 })
+  )
+  manifoldLine.rotation.x = Math.PI / 2
+  manifoldLine.position.set(0, 1.75, -2.2)
+  cTruck.add(manifoldLine)
+
+  for (const mx of [-0.9, 0, 0.9]) {
+    const swivel = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), chromeMat)
+    swivel.position.set(mx, 1.75, -2.2)
+    cTruck.add(swivel)
+
+    const plugValve = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.35, 0.22), valveRed)
+    plugValve.position.set(mx, 2.05, -2.2)
+    cTruck.add(plugValve)
+
+    const vWheel = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 6, 12), chromeMat)
+    vWheel.position.set(mx, 2.25, -2.2)
+    cTruck.add(vWheel)
+  }
 
   // 上装专业固井作业甲板：左右双 HT-400 三缸柱塞固井高压泵 (Twin HT-400 Triplex Cementing Pumps)
   for (const px of [-1.15, 1.15]) {
@@ -9226,19 +10049,61 @@ function buildSpecialFleet() {
 
   lTruck.add(winchGroup)
 
-  // 5. 车尾伸缩式井口天滑轮悬挂吊臂 (Telescopic Sheave Mast Arm & Snatch Block)
-  const sheaveMast = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 4.2, 10), steelDark)
-  sheaveMast.rotation.x = -Math.PI / 3.8
-  sheaveMast.position.set(0, 3.4, -4.6)
-  lTruck.add(sheaveMast)
+  // 5. 车载液压折臂辅助起重吊臂 (Hydraulic Knuckle-Boom Auxiliary Crane - 随车紧凑折叠收纳态，彻底消除穿插杂乱杆件)
+  const knuckleCrane = new THREE.Group()
+  knuckleCrane.position.set(1.15, 1.8, -4.2)
 
-  const sheave = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.09, 8, 16), safetyYellow)
-  sheave.position.set(0, 4.8, -5.9)
-  lTruck.add(sheave)
+  // 回转底座与立柱
+  const kBase = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.65, 14), steelDark)
+  knuckleCrane.add(kBase)
 
-  const sheaveShackle = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.04, 6, 12), chromeMat)
-  sheaveShackle.position.set(0, 4.2, -5.9)
-  lTruck.add(sheaveShackle)
+  const kColumn = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.2, 0.45), safetyYellow)
+  kColumn.position.y = 0.85
+  knuckleCrane.add(kColumn)
+
+  // 主臂横向收纳折叠
+  const kMainBoom = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.38, 2.2), safetyYellow)
+  kMainBoom.rotation.y = Math.PI / 2
+  kMainBoom.position.set(-1.1, 1.35, 0)
+  knuckleCrane.add(kMainBoom)
+
+  // 折臂变幅油缸
+  const kCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.95, 8), steelDark)
+  kCyl.rotation.z = Math.PI / 3.5
+  kCyl.position.set(-0.55, 1.05, 0)
+  knuckleCrane.add(kCyl)
+
+  const kRod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 8), chromeMat)
+  kRod.rotation.z = Math.PI / 3.5
+  kRod.position.set(-0.85, 1.25, 0)
+  knuckleCrane.add(kRod)
+
+  // 二级折叠臂与收纳吊钩
+  const kFoldArm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.28, 1.8), steelDark)
+  kFoldArm.rotation.y = Math.PI / 2
+  kFoldArm.position.set(-1.1, 0.95, 0.15)
+  knuckleCrane.add(kFoldArm)
+
+  const kHook = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 12), chromeMat)
+  kHook.position.set(-2.0, 0.85, 0.15)
+  knuckleCrane.add(kHook)
+
+  lTruck.add(knuckleCrane)
+
+  // 车尾双向液压驻车支腿 (Rear Outrigger Stabilizers for Logging Winch Operation)
+  for (const ox of [-1.45, 1.45]) {
+    const oJack = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.95, 10), steelDark)
+    oJack.position.set(ox, 0.95, -5.8)
+    lTruck.add(oJack)
+
+    const oRod = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 8), chromeMat)
+    oRod.position.set(ox, 0.45, -5.8)
+    lTruck.add(oRod)
+
+    const oPad = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.38, 0.1, 8), steelDark)
+    oPad.position.set(ox, 0.12, -5.8)
+    lTruck.add(oPad)
+  }
 
   fleetGroup.add(lTruck)
 
@@ -10023,6 +10888,21 @@ function buildDetailedPumpJack(config: DetailedPumpJackOptions) {
     cotterPin.position.set(0, 4.2, side > 0 ? 1.0 : -1.0)
     singleCrank.add(cotterPin)
 
+    // 平衡重边缘黑黄反光防撞警示斑马条带 (API RP 11G Hazard Chevron Bands)
+    for (let cAng = -0.55; cAng <= 0.55; cAng += 0.22) {
+      const cStripe = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.18, 2.12), heavySteel)
+      cStripe.position.set(Math.sin(cAng) * 4.6, 3.2 + Math.cos(cAng) * 4.6, side > 0 ? 0.7 : -0.7)
+      cStripe.rotation.z = -cAng
+      singleCrank.add(cStripe)
+    }
+
+    // 偏心平衡重楔形防松胀紧紧固键 (Wedge Locking Keys & Heavy Studs)
+    for (const kx of [-1.1, 1.1]) {
+      const wedgeKey = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.65, 0.4), chromeRod)
+      wedgeKey.position.set(kx, 2.1, side > 0 ? 0.85 : -0.85)
+      singleCrank.add(wedgeKey)
+    }
+
     crank.add(singleCrank)
   }
   root.add(crank)
@@ -10095,9 +10975,21 @@ function buildDetailedPumpJack(config: DetailedPumpJackOptions) {
   fanCowl.position.set(-2.5, 2.0, 0)
   motorGroup.add(fanCowl)
 
-  const jBox = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 1.0), castIron)
+  const jBox = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.95, 1.1), castIron)
   jBox.position.set(0, 3.8, 0)
   motorGroup.add(jBox)
+
+  const jBadge = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.35), hazardYellow)
+  jBadge.position.set(0, 3.8, 0.56)
+  motorGroup.add(jBadge)
+
+  // 集中润滑铜分配器管汇与不锈钢注脂管线 (Centralized Grease Lubrication Lines)
+  for (const ly of [1.6, 2.4]) {
+    const greaseLine = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 3.8, 6), chromeRod)
+    greaseLine.rotation.z = Math.PI / 2
+    greaseLine.position.set(0, ly, 1.75)
+    motorGroup.add(greaseLine)
+  }
 
   const sheaveGroup = new THREE.Group()
   sheaveGroup.position.set(4.6, 2.4, -2.4)
@@ -10154,13 +11046,31 @@ function buildDetailedPumpJack(config: DetailedPumpJackOptions) {
     rodAssembly.add(keeper)
   }
 
-  const rodClamp = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.9, 16), hazardYellow)
-  rodClamp.position.y = 9.8
-  rodAssembly.add(rodClamp)
+  // 双螺栓锻造重型光杆偏卡 (Heavy Dual-Bolt Polished Rod Clamp with Safety Fasteners)
+  const clampBody = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.85, 1.2), hazardYellow)
+  clampBody.position.y = 9.8
+  rodAssembly.add(clampBody)
 
-  const backupClamp = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.45, 1.1), heavySteel)
+  for (const bx of [-0.45, 0.45]) {
+    const cBolt = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8), chromeRod)
+    cBolt.rotation.x = Math.PI / 2
+    cBolt.position.set(bx, 9.8, 0)
+    rodAssembly.add(cBolt)
+
+    const cNut = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.35, 6), heavySteel)
+    cNut.rotation.x = Math.PI / 2
+    cNut.position.set(bx, 9.8, 0.7)
+    rodAssembly.add(cNut)
+  }
+
+  const backupClamp = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.45, 1.2), heavySteel)
   backupClamp.position.y = 10.6
   rodAssembly.add(backupClamp)
+
+  // 光杆镜面防磨不锈钢套管护管 (Polished Rod Stainless Steel Wear Liner)
+  const rodLiner = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 6.5, 16), chromeRod)
+  rodLiner.position.y = 4.2
+  rodAssembly.add(rodLiner)
 
   const dynaSensor = new THREE.Group()
   dynaSensor.position.set(0, 9.15, 0)
