@@ -1089,7 +1089,7 @@ async function initScene() {
   controls.enableDamping = true
   controls.dampingFactor = 0.05
   controls.maxPolarAngle = Math.PI / 2 + 0.16
-  controls.minDistance = 25
+  controls.minDistance = 3.5
   controls.maxDistance = 650
   controls.target.set(0, 8, 0)
   window.addEventListener('resize', handleResize)
@@ -1344,6 +1344,11 @@ function setupDesertLighting() {
       lensMat: lampBoxMat,
     })
   })
+
+  // 8. 真实大漠 PBR 基于图像的高清环境反射贴图 (Image-Based Lighting / Specular Environment Map)
+  const skyEnv = createSkyDomeTexture()
+  skyEnv.mapping = THREE.EquirectangularReflectionMapping
+  scene.environment = skyEnv
 }
 
 // -------------------------------------------------------------
@@ -1563,6 +1568,86 @@ function createStrawCheckerboardTexture(): THREE.Texture {
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 8
   return tex
+}
+
+// 工业级冲压防滑花纹钢板法线贴图 (Industrial Diamond Checker Plate Normal Map)
+let cachedDiamondPlateNormal: THREE.CanvasTexture | null = null
+function getDiamondPlateNormalTexture(): THREE.CanvasTexture {
+  if (cachedDiamondPlateNormal) return cachedDiamondPlateNormal
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    ctx.fillStyle = 'rgb(128, 128, 255)' // 切线空间中性蓝紫色法线
+    ctx.fillRect(0, 0, 512, 512)
+    const step = 32
+    for (let y = 0; y < 512; y += step) {
+      for (let x = 0; x < 512; x += step) {
+        const ox = (y / step) % 2 === 0 ? 0 : step / 2
+        // 45° 倾斜花纹豆
+        ctx.save()
+        ctx.translate(x + ox, y)
+        ctx.rotate(Math.PI / 4)
+        const g1 = ctx.createLinearGradient(-10, -4, 10, 4)
+        g1.addColorStop(0, 'rgb(180, 110, 240)')
+        g1.addColorStop(0.5, 'rgb(128, 128, 255)')
+        g1.addColorStop(1, 'rgb(75, 145, 255)')
+        ctx.fillStyle = g1
+        ctx.beginPath()
+        ctx.ellipse(0, 0, 10, 3.5, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+
+        // -45° 交叉花纹豆
+        ctx.save()
+        ctx.translate(x + ox + step / 2, y)
+        ctx.rotate(-Math.PI / 4)
+        const g2 = ctx.createLinearGradient(-4, -10, 4, 10)
+        g2.addColorStop(0, 'rgb(110, 180, 245)')
+        g2.addColorStop(0.5, 'rgb(128, 128, 255)')
+        g2.addColorStop(1, 'rgb(145, 75, 240)')
+        ctx.fillStyle = g2
+        ctx.beginPath()
+        ctx.ellipse(0, 0, 10, 3.5, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+      }
+    }
+  }
+  cachedDiamondPlateNormal = new THREE.CanvasTexture(canvas)
+  cachedDiamondPlateNormal.wrapS = THREE.RepeatWrapping
+  cachedDiamondPlateNormal.wrapT = THREE.RepeatWrapping
+  cachedDiamondPlateNormal.repeat.set(12, 12)
+  return cachedDiamondPlateNormal
+}
+
+// 重型机械粗糙铸造生铁与焊缝微凹凸法线贴图 (Rough Cast Iron & Weld Seam Normal Map)
+let cachedCastIronNormal: THREE.CanvasTexture | null = null
+function getRoughCastIronNormalTexture(): THREE.CanvasTexture {
+  if (cachedCastIronNormal) return cachedCastIronNormal
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    const imgData = ctx.createImageData(256, 256)
+    const data = imgData.data
+    for (let i = 0; i < data.length; i += 4) {
+      const nx = (Math.random() - 0.5) * 36
+      const ny = (Math.random() - 0.5) * 36
+      data[i] = Math.min(255, Math.max(0, 128 + nx))
+      data[i + 1] = Math.min(255, Math.max(0, 128 + ny))
+      data[i + 2] = 255
+      data[i + 3] = 255
+    }
+    ctx.putImageData(imgData, 0, 0)
+  }
+  cachedCastIronNormal = new THREE.CanvasTexture(canvas)
+  cachedCastIronNormal.wrapS = THREE.RepeatWrapping
+  cachedCastIronNormal.wrapT = THREE.RepeatWrapping
+  cachedCastIronNormal.repeat.set(6, 6)
+  return cachedCastIronNormal
 }
 
 // 万米钻机正面“深地工程”金属铭牌高清贴图 (复刻图三井架主铭牌)
@@ -3258,6 +3343,66 @@ function buildDesertGroundAndInfrastructure() {
   surveyStationGroup.add(surveyTruck)
 
   // -------------------------------------------------------------
+  // F2. 戈壁沙垄双道越野轮胎压痕与地质岩心采样工作台 (Desert Tire Tracks & Core Sampling Bench)
+  // -------------------------------------------------------------
+  // 越野车进场沙地轮胎凹陷压痕 (Tire Tracks in Desert Sand)
+  const trackMat = new THREE.MeshStandardMaterial({
+    color: 0x9a6b3d,
+    roughness: 0.95,
+  })
+  for (const trackX of [-1.15, 1.15]) {
+    const tCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(trackX - 7.5, 0.02, 3.5 - 2.5),
+      new THREE.Vector3(trackX - 10.5, 0.02, -1.0),
+      new THREE.Vector3(trackX - 14.0, 0.02, -6.5),
+      new THREE.Vector3(trackX - 18.0, 0.02, -14.0),
+    ])
+    const trackMesh = new THREE.Mesh(new THREE.TubeGeometry(tCurve, 20, 0.22, 4, false), trackMat)
+    trackMesh.scale.y = 0.15
+    surveyStationGroup.add(trackMesh)
+  }
+
+  // 野外地质岩心采样折叠工作台 (Geological Core Sampling Field Bench)
+  const benchGroup = new THREE.Group()
+  benchGroup.position.set(-3.2, 0, 1.8)
+  const benchTop = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.8), steelFrame)
+  benchTop.position.y = 0.82
+  benchGroup.add(benchTop)
+
+  for (const bx of [-0.7, 0.7]) {
+    for (const bz of [-0.32, 0.32]) {
+      const bLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.8, 8), chromeMat1)
+      bLeg.position.set(bx, 0.4, bz)
+      benchGroup.add(bLeg)
+    }
+  }
+
+  // 岩心托盘与分层圆柱岩心样本 (Drill Core Sample Trays & Cylindrical Cores)
+  const coreTray = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.6), surveyOrange)
+  coreTray.position.set(0, 0.88, 0)
+  benchGroup.add(coreTray)
+
+  // 4 根地层岩心圆柱标本 (砂岩、页岩、砾岩、生油层黑色泥岩)
+  const coreColors = [0xd97706, 0x64748b, 0xa16207, 0x18181b]
+  coreColors.forEach((cc, cIdx) => {
+    const coreCyl = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.045, 1.15, 12),
+      new THREE.MeshStandardMaterial({ color: cc, roughness: 0.85 })
+    )
+    coreCyl.rotation.z = Math.PI / 2
+    coreCyl.position.set(0, 0.95, -0.2 + cIdx * 0.13)
+    benchGroup.add(coreCyl)
+  })
+
+  // 地质放大镜与高精度数显游标卡尺 (Magnifier & Digital Caliper)
+  const magnifier = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 16), brassDatum)
+  magnifier.rotation.x = Math.PI / 2
+  magnifier.position.set(0.45, 0.95, 0.15)
+  benchGroup.add(magnifier)
+
+  surveyStationGroup.add(benchGroup)
+
+  // -------------------------------------------------------------
   // G. 测绘红白标杆与安全隔离飘带 (Survey Boundary Stakes & Warning Flags)
   // -------------------------------------------------------------
   const stakeOffsets = [
@@ -4622,13 +4767,25 @@ function buildDerrickAssembly() {
     rigGroup.add(boxGroup)
   }
 
-  // 钻台跳板平台 (Drill Floor with Moonpool Opening)
-  const floorBase = new THREE.Mesh(new THREE.BoxGeometry(floorW, 0.8, floorW), trussMat)
+  // 钻台跳板平台 (Drill Floor with Moonpool Opening & Diamond Plate Texture)
+  const floorPlateMat = new THREE.MeshStandardMaterial({
+    color: 0x0284c7,
+    metalness: 0.82,
+    roughness: 0.28,
+    normalMap: getDiamondPlateNormalTexture(),
+  })
+  const floorBase = new THREE.Mesh(new THREE.BoxGeometry(floorW, 0.8, floorW), floorPlateMat)
   floorBase.position.y = floorH - 0.4
   rigGroup.add(floorBase)
 
-  // 钻台中心旋转转盘 (Rotary Table)
-  const rotaryTable = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.8, 0.35, 24), darkMetal)
+  // 钻台中心旋转转盘 (Rotary Table with Cast Iron Surface Texture)
+  const castRotaryMat = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    metalness: 0.92,
+    roughness: 0.32,
+    normalMap: getRoughCastIronNormalTexture(),
+  })
+  const rotaryTable = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.8, 0.35, 24), castRotaryMat)
   rotaryTable.position.set(0, floorH + 0.1, 0)
   rigGroup.add(rotaryTable)
 
@@ -4636,8 +4793,25 @@ function buildDerrickAssembly() {
   rotaryCenter.position.set(0, floorH + 0.15, 0)
   rigGroup.add(rotaryCenter)
 
-  // 钻台转盘外围重型防滑工作台面与安全警示踢脚边框 (Rotary Working Deck & Safety Warning Border)
-  const rotaryDeck = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 0.12, 8), darkMetal)
+  // 转盘大方瓦驱动销孔与锁紧销 (Master Bushing Drive Pin Receptacles & Drive Pins)
+  for (const px of [-0.95, 0.95]) {
+    const driveHole = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.15, 0.28), darkMetal)
+    driveHole.position.set(px, floorH + 0.36, 0)
+    rigGroup.add(driveHole)
+
+    const drivePin = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.28, 8), silverChrome)
+    drivePin.position.set(px, floorH + 0.42, 0)
+    rigGroup.add(drivePin)
+  }
+
+  // 钻台转盘外围重型防滑工作台面与安全警示踢脚边框 (Rotary Working Deck with Diamond Plate Normal Map)
+  const rotaryDeckMat = new THREE.MeshStandardMaterial({
+    color: 0x1e293b,
+    metalness: 0.9,
+    roughness: 0.25,
+    normalMap: getDiamondPlateNormalTexture(),
+  })
+  const rotaryDeck = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 0.12, 8), rotaryDeckMat)
   rotaryDeck.position.set(0, floorH + 0.04, 0)
   rotaryDeck.rotation.y = Math.PI / 8
   rigGroup.add(rotaryDeck)
@@ -4646,6 +4820,27 @@ function buildDerrickAssembly() {
   rotaryDeckBorder.position.set(0, floorH + 0.02, 0)
   rotaryDeckBorder.rotation.y = Math.PI / 8
   rigGroup.add(rotaryDeckBorder)
+
+  // 小鼠洞与预备立柱 (Mousehole & Ready Drill Pipe)
+  const mouseholeGroup = new THREE.Group()
+  mouseholeGroup.position.set(-3.6, floorH, 4.2)
+  const mhSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.35, 0.3, 16), yellowSafety)
+  mhSleeve.position.y = 0.15
+  mouseholeGroup.add(mhSleeve)
+
+  const mhPipe = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.12, 8.5, 16),
+    new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.22 })
+  )
+  mhPipe.rotation.z = 0.08
+  mhPipe.position.set(0.3, 4.25, 0)
+  mouseholeGroup.add(mhPipe)
+
+  const mhCap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.4, 16), yellowSafety)
+  mhCap.rotation.z = 0.08
+  mhCap.position.set(0.65, 8.35, 0)
+  mouseholeGroup.add(mhCap)
+  rigGroup.add(mouseholeGroup)
 
   // 钻台工序 5 专用：PDC 金刚石刮刀钻头检修与断扣保养台座 (PDC Bit Breakout & Inspection Stand)
   // 部署于钻台西侧边缘 (X = -7.5, Z = 6.2)，完全避开转盘主通廊，直观展现大国重器金刚石钻头精工细节
@@ -8409,8 +8604,14 @@ function buildSpecialFleet() {
     frame.position.set(0, 1.15, 0)
     parent.add(frame)
 
-    // 2. 承载防滑上装甲板 (Deck Plate)
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.15, chassisLen - 3.8), chassisMat)
+    // 2. 承载防滑上装甲板 (Deck Plate with Diamond Plate Normal Map)
+    const truckDeckMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.9,
+      roughness: 0.28,
+      normalMap: getDiamondPlateNormalTexture(),
+    })
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.15, chassisLen - 3.8), truckDeckMat)
     deck.position.set(0, 1.45, -1.8)
     parent.add(deck)
 
@@ -9330,7 +9531,12 @@ function buildDetailedPumpJack(config: DetailedPumpJackOptions) {
   const heavySteel = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.88, roughness: 0.28 })
   const hazardYellow = new THREE.MeshStandardMaterial({ color: hazColor, metalness: 0.65, roughness: 0.35 })
   const chromeRod = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.96, roughness: 0.08 })
-  const castIron = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.92, roughness: 0.22 })
+  const castIron = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    metalness: 0.92,
+    roughness: 0.32,
+    normalMap: getRoughCastIronNormalTexture(),
+  })
   const cableMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.25 })
   const valveRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.7, roughness: 0.3 })
 
@@ -9385,7 +9591,12 @@ function buildDetailedPumpJack(config: DetailedPumpJackOptions) {
   }
   const skidPlating = new THREE.Mesh(
     new THREE.BoxGeometry(36, 0.2, 7.4),
-    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85, metalness: 0.8 })
+    new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      roughness: 0.65,
+      metalness: 0.85,
+      normalMap: getDiamondPlateNormalTexture(),
+    })
   )
   skidPlating.position.set(-2, 1.25, 0)
   skidGroup.add(skidPlating)
@@ -10160,7 +10371,12 @@ function buildPumpingUnit() {
   const darkSteel = heavySteel
   const hazardYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.65, roughness: 0.35 })
   const chromeRod = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.96, roughness: 0.08 })
-  const castIron = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.92, roughness: 0.22 })
+  const castIron = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    metalness: 0.92,
+    roughness: 0.32,
+    normalMap: getRoughCastIronNormalTexture(),
+  })
   const cableMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.25 })
   const valveRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.7, roughness: 0.3 })
 
