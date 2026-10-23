@@ -21,13 +21,13 @@ interface ProcessStage {
 const stages: ProcessStage[] = [
   {
     id: 'siting',
-    name: '1. 定井勘测',
+    name: '1. 井位勘定',
     shortCode: 'SURVEY',
-    desc: '大漠戈壁高精度GNSS坐标标定、道路地表勘测与地基抗压检测',
+    desc: '大漠戈壁高精度GNSS坐标标定、道路地表踏勘与承压地基抗压检测',
     sensors: ['GNSS定位基站', '土壤抗剪测压计', '地基沉降光纤位移计'],
     telemetry: [
       { label: '靶心坐标偏差', value: '±0.02 m', status: 'normal' },
-      { label: '沙漠地基强度', value: '420 kPa', status: 'normal' },
+      { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
     cameraPos: [-75, 45, 90],
@@ -35,26 +35,26 @@ const stages: ProcessStage[] = [
   },
   {
     id: 'civil',
-    name: '2. 基础搬装',
-    shortCode: 'CIVIL & RIG',
-    desc: '戈壁重型防渗基础浇筑、排管斜坡猫道就位与沙漠越野吊装搬迁',
-    sensors: ['基座应变载荷传感器', '猫道角度倾度计', '起重力矩限制器'],
+    name: '2. 钻前搬装',
+    shortCode: 'RIG-UP',
+    desc: '重型防渗方井与基础浇筑、液压猫道排管架布置就位与模块化钻机越野吊装搬迁',
+    sensors: ['基座应变载荷传感器', '液压猫道角度计', '起重力矩限制器'],
     telemetry: [
       { label: '基台承压载荷', value: '1,920 kN', status: 'normal' },
       { label: '猫道坡度水平', value: '18.2°', status: 'normal' },
-      { label: '管架堆存数量', value: '156 根 (1,480m)', status: 'normal' },
+      { label: '管排架立柱堆存', value: '156 根 (1,480m)', status: 'normal' },
     ],
     cameraPos: [-45, 34, 78],
     targetPos: [-15, 8, 25],
   },
   {
     id: 'derrick',
-    name: '3. 井架泥浆',
+    name: '3. 井架固控',
     shortCode: 'DERRICK & MUD',
-    desc: '四柱交叉格构钻塔就位、三缸泥浆泵房与多级固控净化联调',
-    sensors: ['天车大绳拉力计', '高压管汇压力变送器', '振动筛振频传感'],
+    desc: '四柱交叉格构钻塔立架起升、三缸往复泥浆泵房与五级固控净化系统联动调试',
+    sensors: ['天车大绳拉力计', '高压管汇压力变送器', '五级固控振频传感'],
     telemetry: [
-      { label: '高压泵排量', value: '48.5 L/s', status: 'normal' },
+      { label: '高压泵循环排量', value: '48.5 L/s', status: 'normal' },
       { label: '立管循环压力', value: '24.2 MPa', status: 'normal' },
       { label: '泥浆固相含量', value: '3.8 %', status: 'normal' },
     ],
@@ -63,13 +63,13 @@ const stages: ProcessStage[] = [
   },
   {
     id: 'drilling',
-    name: '4. 钻进作业',
+    name: '4. 钻进工程',
     shortCode: 'DRILLING',
-    desc: '沙漠深井高压泥浆冲洗破岩、转盘高速驱动与MWD随钻实时姿态探测',
-    sensors: ['MWD随钻测井探针', '钻压(WOB)计', '顶驱扭矩传感', '泥浆比重计'],
+    desc: '高压泥浆水力喷射破岩、转盘与顶驱复合驱动破岩、MWD/LWD随钻测斜实时导向',
+    sensors: ['MWD随钻测斜探针', '钻压(WOB)传感器', '顶驱扭矩监测器', '在线泥浆比重计'],
     telemetry: [
-      { label: '机械钻速(ROP)', value: '24.8 m/h', status: 'active' },
-      { label: '实时进尺钻深', value: '3,852.4 m', status: 'active' },
+      { label: '机械钻速 (ROP)', value: '24.8 m/h', status: 'active' },
+      { label: '当前进尺钻深', value: '3,852.4 m', status: 'active' },
       { label: '井下随钻倾角', value: '0.82° (优)', status: 'normal' },
     ],
     cameraPos: [28, 24, 62],
@@ -77,13 +77,13 @@ const stages: ProcessStage[] = [
   },
   {
     id: 'tripping',
-    name: '5. 起下换钻',
+    name: '5. 起下钻作业',
     shortCode: 'TRIPPING',
-    desc: '大钩提放悬重卸扣、二层台立柱排架、金刚石PDC钻头检修更换',
-    sensors: ['大钩悬重负荷传感', '吊卡行程位置开关', '钻头磨耗激光仪'],
+    desc: '大钩提放悬重卸扣、二层台立柱排架整装、金刚石PDC钻头检修更换与防喷演练',
+    sensors: ['大钩悬重负荷传感', '二层台位置监测器', 'PDC钻头磨耗激光仪'],
     telemetry: [
       { label: '大钩提放悬重', value: '1,280 kN', status: 'normal' },
-      { label: '起下钻速度', value: '0.65 m/s', status: 'normal' },
+      { label: '起下钻运行速度', value: '0.65 m/s', status: 'normal' },
       { label: 'PDC钻头磨耗', value: '8.5% (完好)', status: 'normal' },
     ],
     cameraPos: [-10, 38, 42],
@@ -91,35 +91,35 @@ const stages: ProcessStage[] = [
   },
   {
     id: 'casing',
-    name: '6. 电测固井',
-    shortCode: 'CASING & CMT',
-    desc: '微电阻率电测测井、表层/技术套管阶梯下入与注水泥环固井',
-    sensors: ['测井电缆张力计', '水泥车注灰高压流量计', '声幅胶结测井仪'],
+    name: '6. 测井与固井',
+    shortCode: 'LOGGING & CMT',
+    desc: '裸眼井多参数综合地球物理测井、表层/技术/油层套管阶梯下入与注水泥环空固井',
+    sensors: ['测井电缆张力计', '固井高压注灰流量计', '声幅水泥胶结测井仪(CBL)'],
     telemetry: [
-      { label: '固井注水泥压', value: '19.4 MPa', status: 'active' },
-      { label: '水泥浆返出密度', value: '1.92 g/cm³', status: 'normal' },
-      { label: '水泥胶结指数', value: '0.90 (优质)', status: 'normal' },
+      { label: '固井注水泥压力', value: '19.4 MPa', status: 'active' },
+      { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
+      { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
     cameraPos: [-22, 34, 95],
     targetPos: [-42, 10, 48],
   },
   {
     id: 'completion',
-    name: '7. 完井采油',
+    name: '7. 完井投产',
     shortCode: 'COMPLETION',
-    desc: '采油树防喷试压投产、游梁抽油机提捞、沙漠油气集输管网外输',
-    sensors: ['采油树井口油压', '抽油机示功图载荷传感', '管线电磁流量计', '储罐雷达液位'],
+    desc: '油层射孔沟通、高压采油树试压投产、游梁式抽油机有杆排采与沙漠集输管网外输',
+    sensors: ['采油树井口油压', '抽油机示功图传感器', '外输电磁流量计', '储罐雷达液位计'],
     telemetry: [
       { label: '日产原油稳产量', value: '1,428.6 t', status: 'normal' },
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
-      { label: '储罐实时库容', value: '84.5 %', status: 'normal' },
+      { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
     cameraPos: [125, 75, 155],
     targetPos: [0, 8, 0],
   },
 ]
 
-const currentStageIndex = ref(6) // 默认进入采集设备核心运行工序 (7. 完井采油)
+const currentStageIndex = ref(6) // 默认进入采集设备核心运行工序 (7. 完井投产)
 const containerRef = ref<HTMLDivElement | null>(null)
 const isAutoRotating = ref(false)
 const isSceneReady = ref(false)
@@ -12391,7 +12391,7 @@ onBeforeUnmount(() => {
           :title="st.desc"
         >
           <span class="step-num">{{ idx + 1 }}</span>
-          <span class="step-name">{{ st.name }}</span>
+          <span class="step-name">{{ st.name.replace(/^\d+\.\s*/, '') }}</span>
           <span class="step-indicator"></span>
         </button>
       </div>
@@ -12827,7 +12827,7 @@ onBeforeUnmount(() => {
               <div class="group-title">🎯 钻采工序与全景视界</div>
               <div class="shortcut-item">
                 <span class="key-badge">1</span> ~ <span class="key-badge">7</span>
-                <span class="key-desc">快捷跳转 7 大工序（1.定井勘测 → 7.完井采油）</span>
+                <span class="key-desc">快捷跳转 7 大工序（1.井位勘定 → 7.完井投产）</span>
               </div>
               <div class="shortcut-item">
                 <span class="key-badge">Z</span>
