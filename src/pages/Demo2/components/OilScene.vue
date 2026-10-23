@@ -580,6 +580,13 @@ const activePresets = computed(() => {
   return result
 })
 
+const weatherOptions = [
+  { key: 'noon' as const, icon: '☀️', title: '正午烈日强光照' },
+  { key: 'dusk' as const, icon: '🌅', title: '大漠暮色暖晚霞' },
+  { key: 'sandstorm' as const, icon: '🌪️', title: '特大扬沙沙尘暴' },
+  { key: 'night' as const, icon: '🌌', title: '极夜防爆夜视' },
+]
+
 function setWeatherMode(mode: 'dusk' | 'noon' | 'sandstorm' | 'night') {
   weatherMode.value = mode
   if (!scene || !mainSunRef) return
@@ -12249,84 +12256,126 @@ onBeforeUnmount(() => {
     </transition>
 
 
-    <!-- 底部中央：大漠油田全流程全生命周期数字孪生协同联动舱 -->
-    <div class="process-lifecycle-dock">
-      <div class="process-steps-row">
+    <!-- 底部中央：大漠油田全生命周期数字孪生主控集成舱 (统一集成7大工序步进、核心装备孪生与环境交互，告别碎片堆叠) -->
+    <div class="master-control-dock">
+      <!-- 1. 顶层：7大开采工序微型流线步进器 (极简流光，高度仅 30px) -->
+      <div class="dock-stage-stepper">
         <button
           v-for="(st, idx) in stages"
           :key="st.id"
-          class="stage-tab-btn"
-          :class="{ 'stage-tab-btn--active': currentStageIndex === idx }"
+          class="stepper-step"
+          :class="{ 'stepper-step--active': currentStageIndex === idx }"
           @click="selectStage(idx)"
+          :title="st.desc"
         >
-          <div class="tab-index">{{ idx + 1 }}</div>
-          <div class="tab-content">
-            <span class="tab-title">{{ st.name }}</span>
-            <span class="tab-code">{{ st.shortCode }}</span>
-          </div>
-          <div class="tab-indicator"></div>
+          <span class="step-num">{{ idx + 1 }}</span>
+          <span class="step-name">{{ st.name }}</span>
+          <span class="step-indicator"></span>
         </button>
       </div>
 
-      <div class="process-dock-footer">
-        <div class="footer-desc">
-          <span class="desc-badge">工序规程</span>
-          <span class="desc-content">{{ stages[currentStageIndex].desc }}</span>
+      <!-- 2. 底层：当前工序数字孪生装备 + 场景模式工具栏 (高度仅 34px) -->
+      <div class="dock-equipment-toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-label">🎯 {{ isAllEquipmentShown ? '全域孪生' : '重点装备' }}:</span>
+          <div class="toolbar-chips">
+            <button
+              v-for="(item, key) in activePresets"
+              :key="key"
+              class="eq-chip"
+              :class="{ 'eq-chip--active': selectedEquipment === key }"
+              @click="focusEquipment(key as string)"
+            >
+              {{ item.shortLabel }}
+            </button>
+
+            <!-- 12 装备全域/工序一键展开切换 -->
+            <button
+              class="eq-chip eq-chip--toggle"
+              :class="{ 'eq-chip--toggle-active': isAllEquipmentShown }"
+              @click="isAllEquipmentShown = !isAllEquipmentShown"
+              :title="isAllEquipmentShown ? '收起为当前工序核心装备' : '展开全域 12 大数字化工业装备'"
+            >
+              {{ isAllEquipmentShown ? '◀ 本工序' : '🌐 全域(12)' }}
+            </button>
+          </div>
         </div>
 
-        <div class="footer-telemetry-group">
-          <div
-            v-for="item in stages[currentStageIndex].telemetry"
-            :key="item.label"
-            class="telemetry-chip"
-          >
-            <span class="chip-status-dot" :class="`dot--${item.status}`"></span>
-            <span class="chip-label">{{ item.label }}:</span>
-            <span class="chip-value">{{ item.value }}</span>
-          </div>
-
-          <!-- 大漠昼夜气象工况一键切换 -->
-          <div class="dock-weather-group">
-            <button
-              class="dock-weather-btn"
-              :class="{ 'dock-weather-btn--active': weatherMode === 'noon' }"
-              @click="setWeatherMode('noon')"
-              title="正午烈日白金强光照"
-            >
-              ☀️ 正午
-            </button>
-            <button
-              class="dock-weather-btn"
-              :class="{ 'dock-weather-btn--active': weatherMode === 'dusk' }"
-              @click="setWeatherMode('dusk')"
-              title="大漠戈壁暮色暖金晚霞"
-            >
-              🌅 晚霞
-            </button>
-            <button
-              class="dock-weather-btn"
-              :class="{ 'dock-weather-btn--active': weatherMode === 'sandstorm' }"
-              @click="setWeatherMode('sandstorm')"
-              title="特大扬沙沙尘暴能见度衰减"
-            >
-              🌪️ 扬沙
-            </button>
-            <button
-              class="dock-weather-btn"
-              :class="{ 'dock-weather-btn--active': weatherMode === 'night' }"
-              @click="setWeatherMode('night')"
-              title="极夜防爆泛光夜视照明"
-            >
-              🌌 极夜
-            </button>
-          </div>
-
+        <div class="toolbar-right">
+          <!-- 采油树翼阀交互开关 (仅完井工序或选中井口/抽油机时显示) -->
           <button
-            class="dock-rotate-btn"
-            :class="{ 'dock-rotate-btn--active': isAutoRotating }"
-            @click="toggleAutoRotate"
+            v-if="stages[currentStageIndex].id === 'completion' || ['xTree', 'pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
+            class="eq-tool-btn eq-tool-btn--valve"
+            :class="{ 'eq-tool-btn--warn': !isWellValveOpen }"
+            @click="toggleWellValve"
           >
-            🔄 {{ isAutoRotating ? '暂停巡检' : '大漠全域巡检' }}
+            🚰 {{ isWellValveOpen ? '翼阀开' : '翼阀关' }}
+          </button>
+
+          <!-- 一键采油核心机组特写 -->
+          <button
+            v-if="stages[currentStageIndex].id === 'completion' || ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
+            class="eq-tool-btn"
+            @click="focusOilHarvestingCloseup"
+            title="一键聚焦采油核心机组特写视角"
+          >
+            🎥 机组特写
+          </button>
+
+          <!-- 气象极简微型四联气泡 -->
+          <div class="weather-mini-pills">
+            <button
+              v-for="w in weatherOptions"
+              :key="w.key"
+              class="w-mini-btn"
+              :class="{ 'w-mini-btn--active': weatherMode === w.key }"
+              @click="setWeatherMode(w.key)"
+              :title="w.title"
+            >
+              {{ w.icon }}
+            </button>
+          </div>
+
+          <span class="toolbar-divider">|</span>
+
+          <!-- 地下三维油藏剖面模式 -->
+          <button
+            class="eq-tool-btn"
+            :class="{ 'eq-tool-btn--active': isUndergroundView }"
+            @click="toggleUndergroundView"
+            title="切换地下三维地质剖面与砂岩油藏"
+          >
+            {{ isUndergroundView ? '⛰️ 地表' : '🌐 地下' }}
+          </button>
+
+          <!-- 红外热成像模式 -->
+          <button
+            class="eq-tool-btn"
+            :class="{ 'eq-tool-btn--active': isThermalMode }"
+            @click="toggleThermalMode"
+            title="切换红外热力学传感器热成像"
+          >
+            🔥 {{ isThermalMode ? '常规' : '热成像' }}
+          </button>
+
+          <!-- 大漠全域自动巡检 -->
+          <button
+            class="eq-tool-btn"
+            :class="{ 'eq-tool-btn--active': isAutoRotating }"
+            @click="toggleAutoRotate"
+            title="大漠全域三维自动环绕巡检"
+          >
+            {{ isAutoRotating ? '⏸ 暂停' : '🔄 巡检' }}
+          </button>
+
+          <!-- 全局复位视角 -->
+          <button
+            v-if="selectedEquipment || isUndergroundView"
+            class="eq-tool-btn eq-tool-btn--reset"
+            @click="resetEquipmentFocus"
+            title="复位至全景工序视角"
+          >
+            ✕ 复位
           </button>
         </div>
       </div>
@@ -12371,86 +12420,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Transition>
-
-    <!-- 工业装备 3D 数字孪生特写快捷导航条 (对齐底部工序舱，支持工序关联与全域切换) -->
-    <div class="equipment-quick-nav">
-      <div class="nav-left-section">
-        <div class="nav-title">
-          <span class="nav-icon">🎯</span>
-          <span>{{ isAllEquipmentShown ? '全域工业孪生 (12)' : '工序重点装备' }}:</span>
-        </div>
-        <div class="nav-buttons">
-          <button
-            v-for="(item, key) in activePresets"
-            :key="key"
-            class="nav-btn"
-            :class="{ 'nav-btn--active': selectedEquipment === key }"
-            @click="focusEquipment(key as string)"
-          >
-            {{ item.shortLabel }}
-          </button>
-
-          <!-- 全域 12 装备与阶段装备折叠/展开一键切换 -->
-          <button
-            class="nav-btn nav-btn--toggle-all"
-            :class="{ 'nav-btn--toggle-active': isAllEquipmentShown }"
-            @click="isAllEquipmentShown = !isAllEquipmentShown"
-            :title="isAllEquipmentShown ? '收起为当前工序关联核心装备' : '展开全域 12 大工业孪生装备'"
-          >
-            {{ isAllEquipmentShown ? '◀ 当前工序' : '🌐 全域 (12)' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="nav-right-section">
-        <!-- 采油树翼阀交互开关 (仅采油完井工序或选中采油树/抽油机时显示) -->
-        <button
-          v-if="stages[currentStageIndex].id === 'completion' || ['xTree', 'pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
-          class="nav-btn nav-btn--valve"
-          :class="{ 'nav-btn--valve-closed': !isWellValveOpen }"
-          @click="toggleWellValve"
-        >
-          🚰 {{ isWellValveOpen ? '翼阀: 开启' : '翼阀: 已关断' }}
-        </button>
-
-        <!-- 一键采油核心机组特写 (仅采油完井工序或选中抽油机时显示) -->
-        <button
-          v-if="stages[currentStageIndex].id === 'completion' || ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
-          class="nav-btn nav-btn--closeup"
-          @click="focusOilHarvestingCloseup"
-        >
-          🎥 机组特写
-        </button>
-
-        <span class="nav-divider">|</span>
-
-        <!-- 地下剖面模式切换 -->
-        <button
-          class="nav-btn nav-btn--mode"
-          :class="{ 'nav-btn--mode-active': isUndergroundView }"
-          @click="toggleUndergroundView"
-        >
-          {{ isUndergroundView ? '⛰️ 地表全景' : '🌐 地下剖面' }}
-        </button>
-
-        <!-- 红外热力成像视角 -->
-        <button
-          class="nav-btn nav-btn--thermal"
-          :class="{ 'nav-btn--thermal-active': isThermalMode }"
-          @click="toggleThermalMode"
-        >
-          🔥 {{ isThermalMode ? '常规材质' : '红外热成像' }}
-        </button>
-
-        <button
-          v-if="selectedEquipment || isUndergroundView"
-          class="nav-btn nav-btn--reset"
-          @click="resetEquipmentFocus"
-        >
-          ✕ 复位全景
-        </button>
-      </div>
-    </div>
 
     <!-- 采集设备数字孪生全息数据面板 & 示功图 HUD (置于顶部下方中央，不遮挡底部导航与中央3D模型) -->
     <Transition name="hud-fade">
@@ -12756,162 +12725,6 @@ onBeforeUnmount(() => {
 
 .scene-loader-fade-leave-to {
   opacity: 0;
-}
-
-.equipment-quick-nav {
-  position: absolute;
-  bottom: 134px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 980px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 14px;
-  background: linear-gradient(180deg, rgba(14, 30, 52, 0.94) 0%, rgba(8, 20, 36, 0.96) 100%);
-  border: 1px solid rgba(0, 240, 255, 0.35);
-  border-radius: 8px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 240, 255, 0.08);
-  backdrop-filter: blur(14px);
-  z-index: 22;
-}
-
-.nav-left-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.nav-left-section::-webkit-scrollbar {
-  display: none;
-}
-
-.nav-right-section {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.nav-title {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #38bdf8;
-  white-space: nowrap;
-}
-
-.nav-buttons {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.nav-btn {
-  padding: 3px 9px;
-  font-size: 11px;
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.nav-btn:hover {
-  color: #ffffff;
-  background: rgba(0, 240, 255, 0.18);
-  border-color: #00f0ff;
-}
-
-.nav-btn--active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
-  border-color: #00f0ff;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-  font-weight: 600;
-}
-
-.nav-btn--toggle-all {
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.4);
-  background: rgba(56, 189, 248, 0.1);
-  font-weight: 600;
-}
-
-.nav-btn--toggle-all:hover {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: #38bdf8;
-  color: #ffffff;
-}
-
-.nav-btn--toggle-active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
-  border-color: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
-}
-
-.nav-btn--reset {
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.12);
-}
-
-.nav-btn--reset:hover {
-  background: rgba(245, 158, 11, 0.25);
-  border-color: #f59e0b;
-}
-
-.nav-divider {
-  color: rgba(255, 255, 255, 0.2);
-  margin: 0 4px;
-}
-
-.nav-btn--mode {
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.35);
-  background: rgba(56, 189, 248, 0.1);
-}
-
-.nav-btn--mode-active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
-  border-color: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-  font-weight: 600;
-}
-
-.nav-btn--thermal {
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.1);
-}
-
-.nav-btn--thermal-active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
-  border-color: #f59e0b;
-  box-shadow: 0 0 12px rgba(234, 88, 12, 0.6);
-  font-weight: 600;
-}
-
-.nav-btn--valve {
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.1);
-}
-
-.nav-btn--valve-closed {
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.18);
 }
 
 .pulse--warn {
@@ -13456,108 +13269,95 @@ onBeforeUnmount(() => {
   transform: translate(-50%, -12px);
 }
 
-.process-lifecycle-dock {
+.master-control-dock {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   width: 980px;
-  padding: 10px 16px;
+  padding: 8px 14px;
   background: linear-gradient(180deg, rgba(14, 30, 52, 0.94) 0%, rgba(8, 20, 36, 0.96) 100%);
   border: 1px solid rgba(0, 240, 255, 0.4);
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75), inset 0 0 20px rgba(0, 240, 255, 0.1);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75), inset 0 0 20px rgba(0, 240, 255, 0.08);
   border-radius: 8px;
   backdrop-filter: blur(14px);
-  z-index: 18;
-  pointer-events: auto;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
 }
 
-.process-steps-row {
+/* 7大工序高科技微型步进器 */
+.dock-stage-stepper {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
 }
 
-.stage-tab-btn {
+.stepper-step {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 6px;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 4px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   cursor: pointer;
-  text-align: left;
   position: relative;
   overflow: hidden;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
-.stage-tab-btn:hover {
-  background: rgba(0, 240, 255, 0.14);
-  border-color: rgba(0, 240, 255, 0.5);
+.stepper-step:hover {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: rgba(0, 240, 255, 0.4);
 }
 
-.stage-tab-btn--active {
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.28) 0%, rgba(2, 132, 199, 0.4) 100%);
+.stepper-step--active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.22) 0%, rgba(2, 132, 199, 0.35) 100%);
   border-color: #00f0ff;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
 }
 
-.tab-index {
-  flex: 0 0 20px;
-  height: 20px;
+.step-num {
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
-  color: #cbd5e1;
-  font-size: 11px;
+  color: #94a3b8;
+  font-size: 10px;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
-.stage-tab-btn--active .tab-index {
+.stepper-step--active .step-num {
   background: #00f0ff;
   color: #050c18;
-  box-shadow: 0 0 8px #00f0ff;
+  box-shadow: 0 0 6px #00f0ff;
 }
 
-.tab-content {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.tab-title {
+.step-name {
   font-size: 11px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #cbd5e1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.stage-tab-btn--active .tab-title {
+.stepper-step--active .step-name {
   color: #00f0ff;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
 }
 
-.tab-code {
-  font-size: 9px;
-  color: #94a3b8;
-  white-space: nowrap;
-  letter-spacing: 0.5px;
-}
-
-.stage-tab-btn--active .tab-code {
-  color: #38bdf8;
-}
-
-.tab-indicator {
+.step-indicator {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -13566,104 +13366,188 @@ onBeforeUnmount(() => {
   background: transparent;
 }
 
-.stage-tab-btn--active .tab-indicator {
-  background: linear-gradient(90deg, #00f0ff, #f59e0b);
+.stepper-step--active .step-indicator {
+  background: linear-gradient(90deg, #00f0ff, #38bdf8);
 }
 
-.process-dock-footer {
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+/* 底层：装备孪生与场景工具栏 */
+.dock-equipment-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.footer-desc {
+.toolbar-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.toolbar-left::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-label {
   font-size: 11px;
-  color: #cbd5e1;
-  max-width: 440px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.desc-badge {
-  flex: 0 0 auto;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  color: #f59e0b;
   font-weight: 600;
-  font-size: 10px;
-}
-
-.desc-content {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #38bdf8;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.footer-telemetry-group {
+.toolbar-chips {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.telemetry-chip {
-  display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
-  background: rgba(15, 28, 48, 0.75);
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  border-radius: 4px;
-  font-size: 11px;
 }
 
-.chip-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #38bdf8;
-}
-
-.dot--active {
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
-}
-
-.chip-label {
+.eq-chip {
+  padding: 2px 8px;
+  font-size: 10.5px;
   color: #cbd5e1;
-}
-
-.chip-value {
-  color: #00f0ff;
-  font-weight: 600;
-  font-family: monospace;
-}
-
-.dock-rotate-btn {
-  padding: 3px 10px;
-  font-size: 11px;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 
-.dock-rotate-btn:hover,
-.dock-rotate-btn--active {
-  background: rgba(245, 158, 11, 0.32);
-  border-color: #f59e0b;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+.eq-chip:hover {
+  color: #ffffff;
+  background: rgba(0, 240, 255, 0.16);
+  border-color: #00f0ff;
+}
+
+.eq-chip--active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
+  border-color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.45);
+  font-weight: 600;
+}
+
+.eq-chip--toggle {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+  font-weight: 600;
+}
+
+.eq-chip--toggle:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.eq-chip--toggle-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.weather-mini-pills {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 3px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.w-mini-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 11px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  line-height: 1;
+  filter: grayscale(0.5);
+  opacity: 0.7;
+}
+
+.w-mini-btn:hover {
+  opacity: 1;
+  filter: grayscale(0);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.w-mini-btn--active {
+  opacity: 1;
+  filter: grayscale(0);
+  background: rgba(0, 240, 255, 0.22);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+.toolbar-divider {
+  color: rgba(255, 255, 255, 0.18);
+  font-size: 11px;
+  margin: 0 2px;
+}
+
+.eq-tool-btn {
+  padding: 2px 7px;
+  font-size: 10px;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.eq-tool-btn:hover {
+  color: #ffffff;
+  background: rgba(0, 240, 255, 0.15);
+  border-color: #00f0ff;
+}
+
+.eq-tool-btn--active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+  font-weight: 600;
+}
+
+.eq-tool-btn--valve {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.eq-tool-btn--warn {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.eq-tool-btn--reset {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.eq-tool-btn--reset:hover {
+  background: rgba(245, 158, 11, 0.25);
+  color: #ffffff;
 }
 </style>
