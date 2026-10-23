@@ -4814,6 +4814,7 @@ function buildDerrickAssembly() {
   const derrickWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.75, roughness: 0.35 })
   const derrickBlue = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.82, roughness: 0.3 })
   const valveRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.75, roughness: 0.25 })
+  const petroBlue = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.82, roughness: 0.28 }) // 中石油工程海蓝
 
   // 左右两座立式箱型承重桁架 (左箱梁与右箱梁，中间镂空形成井口月池空间)
   for (const side of [-1, 1]) {
