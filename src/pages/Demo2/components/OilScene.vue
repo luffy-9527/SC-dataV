@@ -14424,9 +14424,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- 2. 底层：当前工序数字孪生装备 + 场景模式工具栏 (高度仅 34px) -->
+      <!-- 2. 中层：重点装备数字孪生专栏 (彻底释放横向空间，装备标签绝对不遮挡、不截断) -->
       <div class="dock-equipment-toolbar">
-        <div class="toolbar-left">
+        <div class="equipment-toolbar-main">
           <span class="toolbar-label">🎯 {{ isAllEquipmentShown ? '全域孪生' : '重点装备' }}:</span>
           <div class="toolbar-chips">
             <button
@@ -14451,10 +14451,13 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="toolbar-right">
-          <!-- 采油树翼阀交互开关 (仅完井工序或选中井口/抽油机时显示) -->
+        <!-- 采油树/抽油机装备交互工具 (右置于装备行，逻辑归属清晰且绝对不挤压装备标签) -->
+        <div
+          v-if="stages[currentStageIndex].id === 'completion' || ['xTree', 'pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
+          class="equipment-toolbar-actions"
+        >
+          <!-- 采油树翼阀交互开关 -->
           <button
-            v-if="stages[currentStageIndex].id === 'completion' || ['xTree', 'pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment || '')"
             class="eq-tool-btn eq-tool-btn--valve"
             :class="{ 'eq-tool-btn--warn': !isWellValveOpen }"
             @click="toggleWellValve"
@@ -14471,8 +14474,13 @@ onBeforeUnmount(() => {
           >
             🎥 机组特写
           </button>
+        </div>
+      </div>
 
-          <!-- 气象极简微型四联气泡 -->
+      <!-- 3. 底层：全局环境与场景模式交互底栏 (气象环境与大屏全域模式统一归纳) -->
+      <div class="dock-environment-toolbar">
+        <div class="env-toolbar-left">
+          <span class="env-label">🌤️ 气象环境:</span>
           <div class="weather-mini-pills">
             <button
               v-for="w in weatherOptions"
@@ -14485,9 +14493,9 @@ onBeforeUnmount(() => {
               {{ w.icon }}
             </button>
           </div>
+        </div>
 
-          <span class="toolbar-divider">|</span>
-
+        <div class="env-toolbar-right">
           <!-- 地下三维油藏剖面模式 -->
           <button
             class="eq-tool-btn"
@@ -15594,13 +15602,15 @@ onBeforeUnmount(() => {
   transform: translateX(20px);
 }
 
+/* 底部中央：大漠油田全生命周期数字孪生主控集成舱 */
 .master-control-dock {
   position: absolute;
-  bottom: 16px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
   width: 980px;
-  padding: 10px 16px;
+  max-width: min(980px, calc(100vw - 32px));
+  padding: 8px 14px;
   background: linear-gradient(180deg, rgba(14, 30, 52, 0.95) 0%, rgba(8, 20, 36, 0.98) 100%);
   border: 1px solid rgba(0, 240, 255, 0.45);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), inset 0 0 24px rgba(0, 240, 255, 0.1);
@@ -15609,11 +15619,11 @@ onBeforeUnmount(() => {
   z-index: 20;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
   box-sizing: border-box;
 }
 
-/* 7大工序高科技微型步进器 */
+/* 1. 顶层：7大工序高科技微型步进器 */
 .dock-stage-stepper {
   display: flex;
   gap: 6px;
@@ -15626,8 +15636,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
+  gap: 5px;
+  padding: 6px 4px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
@@ -15649,15 +15659,15 @@ onBeforeUnmount(() => {
 }
 
 .step-num {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
   color: #94a3b8;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -15669,7 +15679,7 @@ onBeforeUnmount(() => {
 }
 
 .step-name {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #e2e8f0;
   white-space: nowrap;
@@ -15688,7 +15698,7 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 2.5px;
+  height: 2px;
   background: transparent;
 }
 
@@ -15696,27 +15706,22 @@ onBeforeUnmount(() => {
   background: linear-gradient(90deg, #00f0ff, #38bdf8);
 }
 
-/* 底层：装备孪生与场景工具栏 */
+/* 2. 中层：重点装备独立专栏 (拥有宽敞独立的横向通道，装备胶囊永不遮挡、不截断) */
 .dock-equipment-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+  padding: 4px 0 2px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.toolbar-left {
+.equipment-toolbar-main {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.toolbar-left::-webkit-scrollbar {
-  display: none;
 }
 
 .toolbar-label {
@@ -15732,10 +15737,34 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 240, 255, 0.45) rgba(0, 0, 0, 0.2);
+  padding: 1px 2px 2px 2px;
+}
+
+.toolbar-chips::-webkit-scrollbar {
+  height: 3px;
+}
+
+.toolbar-chips::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.toolbar-chips::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.4);
+  border-radius: 2px;
+}
+
+.toolbar-chips::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.8);
 }
 
 .eq-chip {
-  padding: 4px 11px;
+  padding: 3.5px 11px;
   font-size: 12px;
   font-weight: 600;
   color: #cbd5e1;
@@ -15745,6 +15774,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .eq-chip:hover {
@@ -15781,11 +15811,38 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
 }
 
-.toolbar-right {
+.equipment-toolbar-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* 3. 底层：全局环境与场景模式交互底栏 */
+.dock-environment-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.env-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.env-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
 }
 
 .weather-mini-pills {
@@ -15803,7 +15860,7 @@ onBeforeUnmount(() => {
   border: none;
   cursor: pointer;
   padding: 2px 5px;
-  font-size: 14px;
+  font-size: 13.5px;
   border-radius: 8px;
   transition: all 0.2s ease;
   line-height: 1;
@@ -15824,14 +15881,15 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 6px rgba(0, 240, 255, 0.45);
 }
 
-.toolbar-divider {
-  color: rgba(255, 255, 255, 0.22);
-  font-size: 13px;
-  margin: 0 4px;
+.env-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .eq-tool-btn {
-  padding: 4px 10px;
+  padding: 3.5px 10px;
   font-size: 11.5px;
   font-weight: 600;
   color: #cbd5e1;
