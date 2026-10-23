@@ -30,8 +30,8 @@ const stages: ProcessStage[] = [
       { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
-    cameraPos: [16.5, 5.2, 83.5],
-    targetPos: [16.5, 1.6, 70.5],
+    cameraPos: [23.0, 13.5, 96.0],
+    targetPos: [19.0, 1.5, 70.0],
   },
   {
     id: 'civil',
@@ -3046,7 +3046,7 @@ function buildDesertGroundAndInfrastructure() {
   // B. 专业光学电子全站仪与碳纤维三脚架 (Electronic Total Station on Tripod)
   // -------------------------------------------------------------
   const totalStation = new THREE.Group()
-  totalStation.position.set(1.9, 0, 1.2)
+  totalStation.position.set(2.2, 0, 1.0)
   totalStation.rotation.y = -Math.PI / 3.5
 
   // 碳纤维三脚架三条展开支腿 (3 Splayed Carbon Legs with Foot Shoes)
@@ -3113,7 +3113,7 @@ function buildDesertGroundAndInfrastructure() {
   // C. 红白相间全向反射棱镜测杆与双脚架 (Survey Prism Pole with Bipod)
   // -------------------------------------------------------------
   const prismPole = new THREE.Group()
-  prismPole.position.set(-1.8, 0, 1.1)
+  prismPole.position.set(-1.6, 0, 1.8)
 
   // 2.5米红白相间伸缩铝合金对中杆
   for (let s = 0; s < 5; s++) {
@@ -3146,7 +3146,7 @@ function buildDesertGroundAndInfrastructure() {
   // D. 大漠 GNSS RTK 太阳能差分基准站 (Solar-Powered Choke-Ring GNSS Base Station)
   // -------------------------------------------------------------
   const gnssBase = new THREE.Group()
-  gnssBase.position.set(-1.2, 0, -2.2)
+  gnssBase.position.set(-0.8, 0, -2.6)
 
   // 重型三脚铝合金升降桅杆
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.08, 4.4, 12), chromeMat1)
@@ -3216,7 +3216,7 @@ function buildDesertGroundAndInfrastructure() {
   // E. 地基承载力静力触探试验仪 (CPT - Cone Penetrometer Soil Testing Rig)
   // -------------------------------------------------------------
   const cptRig = new THREE.Group()
-  cptRig.position.set(2.4, 0, -1.8)
+  cptRig.position.set(2.8, 0, -1.6)
 
   // 地基固定重型工字钢反力锚架 (Reaction Anchor Base)
   const cptBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 1.2), steelFrame)
@@ -3260,8 +3260,8 @@ function buildDesertGroundAndInfrastructure() {
   // F. 地质物探踏勘全地形越野皮卡车 (Geological Survey 4x4 Expedition Vehicle)
   // -------------------------------------------------------------
   const surveyTruck = new THREE.Group()
-  surveyTruck.position.set(-7.5, 0, 3.5)
-  surveyTruck.rotation.y = Math.PI / 5.5
+  surveyTruck.position.set(-6.2, 0, 0.2)
+  surveyTruck.rotation.y = Math.PI / 4.5
 
   // 越野梯形高间隙大梁底盘 (Off-Road Ladder Frame Chassis)
   const sChassis = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 5.4), carbonDark)
@@ -3353,10 +3353,11 @@ function buildDesertGroundAndInfrastructure() {
   })
   for (const trackX of [-1.15, 1.15]) {
     const tCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(trackX - 7.5, 0.02, 3.5 - 2.5),
-      new THREE.Vector3(trackX - 10.5, 0.02, -1.0),
-      new THREE.Vector3(trackX - 14.0, 0.02, -6.5),
-      new THREE.Vector3(trackX - 18.0, 0.02, -14.0),
+      new THREE.Vector3(-5.08 + trackX * 0.766, 0.02, -1.14 + trackX * 0.643),
+      new THREE.Vector3(-7.5 + trackX * 0.766, 0.02, -3.2 + trackX * 0.643),
+      new THREE.Vector3(-11.5 + trackX * 0.766, 0.02, -6.8 + trackX * 0.643),
+      new THREE.Vector3(-16.0 + trackX * 0.766, 0.02, -11.5 + trackX * 0.643),
+      new THREE.Vector3(-21.0 + trackX * 0.766, 0.02, -17.0 + trackX * 0.643),
     ])
     const trackMesh = new THREE.Mesh(new THREE.TubeGeometry(tCurve, 20, 0.22, 4, false), trackMat)
     trackMesh.scale.y = 0.15
@@ -3365,7 +3366,7 @@ function buildDesertGroundAndInfrastructure() {
 
   // 野外地质岩心采样折叠工作台 (Geological Core Sampling Field Bench)
   const benchGroup = new THREE.Group()
-  benchGroup.position.set(-3.2, 0, 1.8)
+  benchGroup.position.set(-2.8, 0, 1.2)
   const benchTop = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.8), steelFrame)
   benchTop.position.y = 0.82
   benchGroup.add(benchTop)
@@ -3407,7 +3408,7 @@ function buildDesertGroundAndInfrastructure() {
   // G. 测绘红白标杆与安全隔离飘带 (Survey Boundary Stakes & Warning Flags)
   // -------------------------------------------------------------
   const stakeOffsets = [
-    [-4.5, -4.5], [4.5, -4.5], [4.5, 4.5], [-4.5, 4.5]
+    [-5.2, -4.2], [4.8, -4.2], [4.8, 4.2], [-5.2, 4.2]
   ]
   stakeOffsets.forEach(([sx, sz]) => {
     // 测绘花杆桩
