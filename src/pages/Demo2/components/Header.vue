@@ -6,6 +6,19 @@ const router = useRouter()
 const currentTime = ref('')
 let timer: number | null = null
 
+const props = withDefaults(
+  defineProps<{
+    isZenMode?: boolean
+  }>(),
+  {
+    isZenMode: false,
+  },
+)
+
+const emit = defineEmits<{
+  (e: 'toggleZen'): void
+}>()
+
 function updateTime() {
   const now = new Date()
   const year = now.getFullYear()
@@ -93,6 +106,17 @@ onBeforeUnmount(() => {
           <span>Demo4 数字人</span>
         </button>
       </div>
+
+      <!-- 沉浸全景视界与图表展开切换按钮 -->
+      <button
+        class="zen-mode-btn"
+        :class="{ 'zen-mode-btn--active': isZenMode }"
+        @click="emit('toggleZen')"
+        :title="isZenMode ? '退出沉浸全景，恢复左右数据图表' : '开启沉浸全景视界，收起左右图表腾出纯净大漠油田视野'"
+      >
+        <span class="zen-btn-icon">{{ isZenMode ? '📊' : '🌌' }}</span>
+        <span class="zen-btn-text">{{ isZenMode ? '图表' : '全景' }}</span>
+      </button>
       <a
         class="github-link"
         href="https://github.com/luffy-9527/SC-dataV"
@@ -282,5 +306,36 @@ onBeforeUnmount(() => {
 .github-link:hover {
   color: #00e5ff;
   transform: scale(1.1);
+}
+
+.zen-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(2, 132, 199, 0.18);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  border-radius: 4px;
+  color: #38bdf8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.zen-mode-btn:hover {
+  background: rgba(0, 240, 255, 0.25);
+  border-color: #00f0ff;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.zen-mode-btn--active {
+  background: linear-gradient(135deg, #0284c7 0%, #00f0ff 100%);
+  border-color: #00f0ff;
+  color: #04101e;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+  font-weight: 700;
 }
 </style>

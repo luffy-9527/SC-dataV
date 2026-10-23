@@ -580,6 +580,19 @@ const activePresets = computed(() => {
   return result
 })
 
+// 全息设备详情卡片吸附与折叠状态 (支持靠右侧抽屉式展示或居中展示，彻底消除视区中心拥挤)
+const props = withDefaults(
+  defineProps<{
+    isZenMode?: boolean
+  }>(),
+  {
+    isZenMode: false,
+  },
+)
+
+const isHudMinimized = ref(false)
+const hudDockSide = ref<'center' | 'right'>('right')
+
 const weatherOptions = [
   { key: 'noon' as const, icon: '☀️', title: '正午烈日强光照' },
   { key: 'dusk' as const, icon: '🌅', title: '大漠暮色暖晚霞' },
@@ -12421,227 +12434,259 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <!-- 采集设备数字孪生全息数据面板 & 示功图 HUD (置于顶部下方中央，不遮挡底部导航与中央3D模型) -->
+    <!-- 采集设备数字孪生全息数据面板 & 示功图 HUD (置于顶部下方，支持靠右侧抽屉式展示或居中展示，彻底消除视区中心拥挤) -->
     <Transition name="hud-fade">
       <div
         v-if="selectedEquipment && equipmentPresets[selectedEquipment]"
         class="equipment-hud-card"
-        :class="{ 'equipment-hud-card--pump': ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment) }"
+        :class="[
+          hudDockSide === 'right'
+            ? (props.isZenMode ? 'equipment-hud-card--dock-right-zen' : 'equipment-hud-card--dock-right')
+            : 'equipment-hud-card--dock-center',
+          {
+            'equipment-hud-card--pump': ['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment),
+            'equipment-hud-card--minimized': isHudMinimized,
+          },
+        ]"
       >
         <div class="hud-header">
           <div class="hud-title-box">
             <span class="hud-status-pulse" :class="{ 'pulse--warn': equipmentPresets[selectedEquipment].dynType && equipmentPresets[selectedEquipment].dynType !== 'normal' }"></span>
             <span class="hud-title">{{ equipmentPresets[selectedEquipment].title }}</span>
           </div>
-          <button class="hud-close-btn" @click="resetEquipmentFocus">✕</button>
+
+          <div class="hud-ctrl-btns">
+            <!-- 靠右侧吸附 / 居中吸附 切换 -->
+            <button
+              class="hud-tool-btn"
+              @click="hudDockSide = hudDockSide === 'center' ? 'right' : 'center'"
+              :title="hudDockSide === 'center' ? '靠右侧吸附 (腾出中央3D模型纯净视界)' : '居中展示'"
+            >
+              {{ hudDockSide === 'center' ? '◨ 靠右' : '◫ 居中' }}
+            </button>
+
+            <!-- 折叠/展开切换 -->
+            <button
+              class="hud-tool-btn"
+              @click="isHudMinimized = !isHudMinimized"
+              :title="isHudMinimized ? '展开遥测参数面板' : '折叠面板'"
+            >
+              {{ isHudMinimized ? '▾ 展开' : '▴ 折叠' }}
+            </button>
+
+            <!-- 关闭 -->
+            <button class="hud-close-btn" @click="resetEquipmentFocus" title="关闭并复位全景视角">✕</button>
+          </div>
         </div>
 
-        <!-- 抽油机多机专属：实时示功图与五维健康雷达图双轮驱动 -->
-        <div v-if="['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment)" class="pump-twins-analysis-row">
-          <div class="dynamometer-section">
-            <div class="dynamometer-header">
-              <span class="section-label">实时光杆示功图 (载荷-位移)</span>
-              <span v-if="equipmentPresets[selectedEquipment].dynType === 'leak'" class="dyn-status dyn--warn">
-                🟠 游动阀漏失
-              </span>
-              <span v-else-if="equipmentPresets[selectedEquipment].dynType === 'gas-lock'" class="dyn-status dyn--warn">
-                🔴 气锁/供液不足
-              </span>
-              <span v-else class="dyn-status">
-                🟢 充满度 91.2%
-              </span>
+        <div v-show="!isHudMinimized" class="hud-body-wrap">
+          <!-- 抽油机多机专属：实时示功图与五维健康雷达图双轮驱动 -->
+          <div v-if="['pumping-unit', 'pump-jack-1', 'pump-jack-2'].includes(selectedEquipment)" class="pump-twins-analysis-row">
+            <div class="dynamometer-section">
+              <div class="dynamometer-header">
+                <span class="section-label">实时光杆示功图 (载荷-位移)</span>
+                <span v-if="equipmentPresets[selectedEquipment].dynType === 'leak'" class="dyn-status dyn--warn">
+                  🟠 游动阀漏失
+                </span>
+                <span v-else-if="equipmentPresets[selectedEquipment].dynType === 'gas-lock'" class="dyn-status dyn--warn">
+                  🔴 气锁/供液不足
+                </span>
+                <span v-else class="dyn-status">
+                  🟢 充满度 91.2%
+                </span>
+              </div>
+              <div class="dynamometer-canvas-box">
+                <svg viewBox="0 0 290 145" class="dynamometer-svg">
+                  <defs>
+                    <linearGradient id="dynGradNormal" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.55" />
+                      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.1" />
+                    </linearGradient>
+                    <linearGradient id="dynGradLeak" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.55" />
+                      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.1" />
+                    </linearGradient>
+                    <linearGradient id="dynGradGas" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.55" />
+                      <stop offset="100%" stop-color="#f87171" stop-opacity="0.1" />
+                    </linearGradient>
+                  </defs>
+                  <!-- 网格背景线 -->
+                  <line x1="45" y1="20" x2="45" y2="125" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
+                  <line x1="105" y1="20" x2="105" y2="125" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
+                  <line x1="165" y1="20" x2="165" y2="125" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
+                  <line x1="225" y1="20" x2="225" y2="125" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
+                  <line x1="265" y1="20" x2="265" y2="125" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
+
+                  <line x1="45" y1="35" x2="265" y2="35" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
+                  <line x1="45" y1="75" x2="265" y2="75" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
+                  <line x1="45" y1="115" x2="265" y2="115" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
+
+                  <!-- 1# 游动阀漏失工况畸变曲线 -->
+                  <path
+                    v-if="equipmentPresets[selectedEquipment].dynType === 'leak'"
+                    d="M 45,110 C 65,95 105,75 165,58 C 220,44 255,42 258,62 C 262,82 245,108 210,118 C 150,122 80,120 45,110 Z"
+                    fill="url(#dynGradLeak)"
+                    stroke="#f59e0b"
+                    stroke-width="2.5"
+                    stroke-linejoin="round"
+                  />
+
+                  <!-- 2# 供液不足/气锁断崖阶梯曲线 -->
+                  <path
+                    v-else-if="equipmentPresets[selectedEquipment].dynType === 'gas-lock'"
+                    d="M 45,115 C 45,62 70,44 120,42 C 185,42 240,42 258,54 C 265,68 250,85 180,85 C 145,115 105,115 45,115 Z"
+                    fill="url(#dynGradGas)"
+                    stroke="#ef4444"
+                    stroke-width="2.5"
+                    stroke-linejoin="round"
+                  />
+
+                  <!-- 3# 正常饱满标准平行多边形曲线 -->
+                  <path
+                    v-else
+                    d="M 45,115 C 45,65 65,48 115,44 C 185,40 235,42 258,54 C 265,62 262,88 248,102 C 220,114 165,116 110,115 C 75,115 48,118 45,115 Z"
+                    fill="url(#dynGradNormal)"
+                    stroke="#38bdf8"
+                    stroke-width="2.5"
+                    stroke-linejoin="round"
+                  />
+
+                  <!-- 坐标轴刻度文字 -->
+                  <text x="40" y="38" fill="#94a3b8" font-size="9" text-anchor="end">86.4kN</text>
+                  <text x="40" y="78" fill="#64748b" font-size="9" text-anchor="end">50kN</text>
+                  <text x="40" y="118" fill="#94a3b8" font-size="9" text-anchor="end">28.2kN</text>
+                  <text x="45" y="137" fill="#94a3b8" font-size="9" text-anchor="middle">0m</text>
+                  <text x="155" y="137" fill="#64748b" font-size="9" text-anchor="middle">冲程 (S)</text>
+                  <text x="265" y="137" fill="#94a3b8" font-size="9" text-anchor="middle">3.8m</text>
+
+                  <!-- 随抽油机冲程实时运动的工作质点与光晕 -->
+                  <circle :cx="dynamometerPoint.x" :cy="dynamometerPoint.y" r="6" fill="rgba(0, 240, 255, 0.35)" />
+                  <circle
+                    :cx="dynamometerPoint.x"
+                    :cy="dynamometerPoint.y"
+                    r="3.4"
+                    :fill="equipmentPresets[selectedEquipment].dynType === 'leak' ? '#f59e0b' : (equipmentPresets[selectedEquipment].dynType === 'gas-lock' ? '#ef4444' : '#00f0ff')"
+                    stroke="#ffffff"
+                    stroke-width="1.5"
+                  />
+                </svg>
+                <div class="dyn-live-badge">
+                  <span>载荷: {{ dynamometerPoint.load }} kN</span>
+                  <span>位移: {{ dynamometerPoint.disp }} m</span>
+                </div>
+              </div>
             </div>
-            <div class="dynamometer-canvas-box">
-              <svg viewBox="0 0 290 145" class="dynamometer-svg">
-                <defs>
-                  <linearGradient id="dynGradNormal" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#0284c7" stop-opacity="0.55" />
-                    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.1" />
-                  </linearGradient>
-                  <linearGradient id="dynGradLeak" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.55" />
-                    <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.1" />
-                  </linearGradient>
-                  <linearGradient id="dynGradGas" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#ef4444" stop-opacity="0.55" />
-                    <stop offset="100%" stop-color="#f87171" stop-opacity="0.1" />
-                  </linearGradient>
-                </defs>
-                <!-- 网格背景线 -->
-                <line x1="45" y1="20" x2="45" y2="125" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
-                <line x1="105" y1="20" x2="105" y2="125" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
-                <line x1="165" y1="20" x2="165" y2="125" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
-                <line x1="225" y1="20" x2="225" y2="125" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
-                <line x1="265" y1="20" x2="265" y2="125" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
 
-                <line x1="45" y1="35" x2="265" y2="35" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
-                <line x1="45" y1="75" x2="265" y2="75" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 2" />
-                <line x1="45" y1="115" x2="265" y2="115" stroke="rgba(255,255,255,0.12)" stroke-dasharray="2 2" />
+            <!-- 右侧：五维健康评估雷达图与故障模拟注入 -->
+            <div class="radar-health-section">
+              <div class="radar-header">
+                <span class="section-label">五维机组健康评估</span>
+                <span
+                  class="health-score-badge"
+                  :class="radarOverallScore >= 80 ? 'score--good' : 'score--warn'"
+                >
+                  {{ radarOverallScore }}分 · {{ radarOverallScore >= 80 ? '优良' : '告警' }}
+                </span>
+              </div>
 
-                <!-- 1# 游动阀漏失工况畸变曲线 -->
-                <path
-                  v-if="equipmentPresets[selectedEquipment].dynType === 'leak'"
-                  d="M 45,110 C 65,95 105,75 165,58 C 220,44 255,42 258,62 C 262,82 245,108 210,118 C 150,122 80,120 45,110 Z"
-                  fill="url(#dynGradLeak)"
-                  stroke="#f59e0b"
-                  stroke-width="2.5"
-                  stroke-linejoin="round"
-                />
+              <div class="radar-svg-container">
+                <svg viewBox="0 0 150 130" class="radar-svg">
+                  <!-- 同心五边形参考底网 (25%, 50%, 75%, 100%) -->
+                  <polygon points="75,53.5 85.9,61.4 81.7,74.4 68.3,74.4 64.1,61.4" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+                  <polygon points="75,42.0 96.9,57.9 88.5,83.7 61.5,83.7 53.1,57.9" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+                  <polygon points="75,30.5 107.8,54.3 95.2,93.1 54.8,93.1 42.2,54.3" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
+                  <polygon points="75,19.0 118.7,50.7 102.0,102.4 48.0,102.4 31.3,50.7" fill="none" stroke="rgba(0, 240, 255, 0.3)" stroke-width="1.2" />
 
-                <!-- 2# 供液不足/气锁断崖阶梯曲线 -->
-                <path
-                  v-else-if="equipmentPresets[selectedEquipment].dynType === 'gas-lock'"
-                  d="M 45,115 C 45,62 70,44 120,42 C 185,42 240,42 258,54 C 265,68 250,85 180,85 C 145,115 105,115 45,115 Z"
-                  fill="url(#dynGradGas)"
-                  stroke="#ef4444"
-                  stroke-width="2.5"
-                  stroke-linejoin="round"
-                />
+                  <!-- 径向轴线 -->
+                  <line x1="75" y1="65" x2="75" y2="19" stroke="rgba(255,255,255,0.15)" />
+                  <line x1="75" y1="65" x2="118.7" y2="50.7" stroke="rgba(255,255,255,0.15)" />
+                  <line x1="75" y1="65" x2="102" y2="102.4" stroke="rgba(255,255,255,0.15)" />
+                  <line x1="75" y1="65" x2="48" y2="102.4" stroke="rgba(255,255,255,0.15)" />
+                  <line x1="75" y1="65" x2="31.3" y2="50.7" stroke="rgba(255,255,255,0.15)" />
 
-                <!-- 3# 正常饱满标准平行多边形曲线 -->
-                <path
-                  v-else
-                  d="M 45,115 C 45,65 65,48 115,44 C 185,40 235,42 258,54 C 265,62 262,88 248,102 C 220,114 165,116 110,115 C 75,115 48,118 45,115 Z"
-                  fill="url(#dynGradNormal)"
-                  stroke="#38bdf8"
-                  stroke-width="2.5"
-                  stroke-linejoin="round"
-                />
+                  <!-- 动态健康区域多边形 (矢量抗锯齿) -->
+                  <polygon
+                    :points="radarPolygonPoints"
+                    :fill="activeFaultInjection ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 240, 255, 0.3)'"
+                    :stroke="activeFaultInjection ? '#ef4444' : '#00f0ff'"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
 
-                <!-- 坐标轴刻度文字 -->
-                <text x="40" y="38" fill="#94a3b8" font-size="9" text-anchor="end">86.4kN</text>
-                <text x="40" y="78" fill="#64748b" font-size="9" text-anchor="end">50kN</text>
-                <text x="40" y="118" fill="#94a3b8" font-size="9" text-anchor="end">28.2kN</text>
-                <text x="45" y="137" fill="#94a3b8" font-size="9" text-anchor="middle">0m</text>
-                <text x="155" y="137" fill="#64748b" font-size="9" text-anchor="middle">冲程 (S)</text>
-                <text x="265" y="137" fill="#94a3b8" font-size="9" text-anchor="middle">3.8m</text>
+                  <!-- 维度文字 -->
+                  <text
+                    v-for="p in radarLabelPoints"
+                    :key="p.name"
+                    :x="p.x"
+                    :y="p.y"
+                    text-anchor="middle"
+                    fill="#94a3b8"
+                    font-size="8.5"
+                  >
+                    {{ p.name }}
+                  </text>
+                </svg>
+              </div>
 
-                <!-- 随抽油机冲程实时运动的工作质点与光晕 -->
-                <circle :cx="dynamometerPoint.x" :cy="dynamometerPoint.y" r="6" fill="rgba(0, 240, 255, 0.35)" />
-                <circle
-                  :cx="dynamometerPoint.x"
-                  :cy="dynamometerPoint.y"
-                  r="3.4"
-                  :fill="equipmentPresets[selectedEquipment].dynType === 'leak' ? '#f59e0b' : (equipmentPresets[selectedEquipment].dynType === 'gas-lock' ? '#ef4444' : '#00f0ff')"
-                  stroke="#ffffff"
-                  stroke-width="1.5"
-                />
-              </svg>
-              <div class="dyn-live-badge">
-                <span>载荷: {{ dynamometerPoint.load }} kN</span>
-                <span>位移: {{ dynamometerPoint.disp }} m</span>
+              <!-- 故障注入模拟演练 -->
+              <div class="fault-inject-bar">
+                <span class="inject-title">故障模拟:</span>
+                <button
+                  class="fault-btn"
+                  :class="{ 'fault-btn--active': activeFaultInjection === 'slip' }"
+                  @click="injectFault('slip')"
+                >
+                  皮带打滑
+                </button>
+                <button
+                  class="fault-btn"
+                  :class="{ 'fault-btn--active': activeFaultInjection === 'vib' }"
+                  @click="injectFault('vib')"
+                >
+                  轴销振动
+                </button>
+                <button
+                  v-if="activeFaultInjection"
+                  class="fault-btn fault-btn--reset"
+                  @click="injectFault(activeFaultInjection)"
+                >
+                  ✕ 恢复
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- 右侧：五维健康评估雷达图与故障模拟注入 -->
-          <div class="radar-health-section">
-            <div class="radar-header">
-              <span class="section-label">五维机组健康评估</span>
-              <span
-                class="health-score-badge"
-                :class="radarOverallScore >= 80 ? 'score--good' : 'score--warn'"
-              >
-                {{ radarOverallScore }}分 · {{ radarOverallScore >= 80 ? '优良' : '告警' }}
-              </span>
-            </div>
-
-            <div class="radar-svg-container">
-              <svg viewBox="0 0 150 130" class="radar-svg">
-                <!-- 同心五边形参考底网 (25%, 50%, 75%, 100%) -->
-                <polygon points="75,53.5 85.9,61.4 81.7,74.4 68.3,74.4 64.1,61.4" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
-                <polygon points="75,42.0 96.9,57.9 88.5,83.7 61.5,83.7 53.1,57.9" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
-                <polygon points="75,30.5 107.8,54.3 95.2,93.1 54.8,93.1 42.2,54.3" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
-                <polygon points="75,19.0 118.7,50.7 102.0,102.4 48.0,102.4 31.3,50.7" fill="none" stroke="rgba(0, 240, 255, 0.3)" stroke-width="1.2" />
-
-                <!-- 径向轴线 -->
-                <line x1="75" y1="65" x2="75" y2="19" stroke="rgba(255,255,255,0.15)" />
-                <line x1="75" y1="65" x2="118.7" y2="50.7" stroke="rgba(255,255,255,0.15)" />
-                <line x1="75" y1="65" x2="102" y2="102.4" stroke="rgba(255,255,255,0.15)" />
-                <line x1="75" y1="65" x2="48" y2="102.4" stroke="rgba(255,255,255,0.15)" />
-                <line x1="75" y1="65" x2="31.3" y2="50.7" stroke="rgba(255,255,255,0.15)" />
-
-                <!-- 动态健康区域多边形 (矢量抗锯齿) -->
-                <polygon
-                  :points="radarPolygonPoints"
-                  :fill="activeFaultInjection ? 'rgba(239, 68, 68, 0.35)' : 'rgba(0, 240, 255, 0.3)'"
-                  :stroke="activeFaultInjection ? '#ef4444' : '#00f0ff'"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                />
-
-                <!-- 维度文字 -->
-                <text
-                  v-for="p in radarLabelPoints"
-                  :key="p.name"
-                  :x="p.x"
-                  :y="p.y"
-                  text-anchor="middle"
-                  fill="#94a3b8"
-                  font-size="8.5"
-                >
-                  {{ p.name }}
-                </text>
-              </svg>
-            </div>
-
-            <!-- 故障注入模拟演练 -->
-            <div class="fault-inject-bar">
-              <span class="inject-title">故障模拟:</span>
-              <button
-                class="fault-btn"
-                :class="{ 'fault-btn--active': activeFaultInjection === 'slip' }"
-                @click="injectFault('slip')"
-              >
-                皮带打滑
-              </button>
-              <button
-                class="fault-btn"
-                :class="{ 'fault-btn--active': activeFaultInjection === 'vib' }"
-                @click="injectFault('vib')"
-              >
-                轴销振动
-              </button>
-              <button
-                v-if="activeFaultInjection"
-                class="fault-btn fault-btn--reset"
-                @click="injectFault(activeFaultInjection)"
-              >
-                ✕ 恢复
-              </button>
-            </div>
+          <!-- 采油树专属控制栏 (ESD 模拟与阀门) -->
+          <div v-if="selectedEquipment === 'xTree'" class="xtree-actions-bar">
+            <button
+              class="action-btn action-btn--danger"
+              :class="{ 'btn--active': isEsdTriggered }"
+              @click="triggerEsdSimulation"
+            >
+              ⚠️ {{ isEsdTriggered ? '复位 ESD 紧急切断' : '模拟超压 / 触发 ESD' }}
+            </button>
+            <button
+              class="action-btn action-btn--valve"
+              :class="{ 'btn--active': !isWellValveOpen }"
+              @click="toggleWellValve"
+            >
+              🚰 {{ isWellValveOpen ? '关断生产主翼阀' : '开启主翼阀' }}
+            </button>
           </div>
-        </div>
 
-        <!-- 采油树专属控制栏 (ESD 模拟与阀门) -->
-        <div v-if="selectedEquipment === 'xTree'" class="xtree-actions-bar">
-          <button
-            class="action-btn action-btn--danger"
-            :class="{ 'btn--active': isEsdTriggered }"
-            @click="triggerEsdSimulation"
-          >
-            ⚠️ {{ isEsdTriggered ? '复位 ESD 紧急切断' : '模拟超压 / 触发 ESD' }}
-          </button>
-          <button
-            class="action-btn action-btn--valve"
-            :class="{ 'btn--active': !isWellValveOpen }"
-            @click="toggleWellValve"
-          >
-            🚰 {{ isWellValveOpen ? '关断生产主翼阀' : '开启主翼阀' }}
-          </button>
-        </div>
-
-        <!-- 设备专项遥测指标九宫格 -->
-        <div class="hud-metrics-grid">
-          <div
-            v-for="m in equipmentPresets[selectedEquipment].metrics"
-            :key="m.label"
-            class="metric-box"
-          >
-            <span class="m-label">{{ m.label }}</span>
-            <div class="m-val-wrap">
-              <span class="m-val" :class="`val--${m.status || 'normal'}`">{{ m.value }}</span>
-              <span v-if="m.unit" class="m-unit">{{ m.unit }}</span>
+          <!-- 设备专项遥测指标九宫格 -->
+          <div class="hud-metrics-grid">
+            <div
+              v-for="m in equipmentPresets[selectedEquipment].metrics"
+              :key="m.label"
+              class="metric-box"
+            >
+              <span class="m-label">{{ m.label }}</span>
+              <div class="m-val-wrap">
+                <span class="m-val" :class="`val--${m.status || 'normal'}`">{{ m.value }}</span>
+                <span v-if="m.unit" class="m-unit">{{ m.unit }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -12980,21 +13025,87 @@ onBeforeUnmount(() => {
 
 .equipment-hud-card {
   position: absolute;
-  top: 152px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 620px;
-  background: linear-gradient(180deg, rgba(10, 28, 50, 0.95) 0%, rgba(6, 18, 34, 0.98) 100%);
+  top: 190px; /* 关键：彻底避开 StatMetrics 底部 (178px)，保留 12px 黄金呼吸间距，消除遮挡 */
+  background: linear-gradient(180deg, rgba(10, 28, 50, 0.96) 0%, rgba(6, 18, 34, 0.98) 100%);
   border: 1px solid rgba(0, 240, 255, 0.5);
   border-radius: 8px;
   padding: 12px 18px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), inset 0 0 24px rgba(0, 240, 255, 0.12);
   backdrop-filter: blur(16px);
   z-index: 30;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
-.equipment-hud-card--pump {
-  width: 700px;
+.equipment-hud-card--dock-center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: 620px;
+}
+
+.equipment-hud-card--dock-center.equipment-hud-card--pump {
+  width: 680px;
+}
+
+/* 靠右侧吸附模式：贴合右侧图表面板左缘，中央 3D 视界完全不受遮挡 */
+.equipment-hud-card--dock-right {
+  left: auto;
+  right: 470px;
+  transform: none;
+  width: 440px;
+}
+
+/* 沉浸全景模式下靠右侧贴边吸附 */
+.equipment-hud-card--dock-right-zen {
+  left: auto;
+  right: 28px;
+  transform: none;
+  width: 440px;
+}
+
+.equipment-hud-card--dock-right.equipment-hud-card--pump,
+.equipment-hud-card--dock-right-zen.equipment-hud-card--pump {
+  width: 480px;
+}
+
+.equipment-hud-card--dock-right .pump-twins-analysis-row,
+.equipment-hud-card--dock-right-zen .pump-twins-analysis-row {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.equipment-hud-card--minimized {
+  padding: 8px 14px;
+}
+
+.equipment-hud-card--minimized .hud-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.hud-ctrl-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-tool-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.hud-tool-btn:hover {
+  color: #ffffff;
+  background: rgba(0, 240, 255, 0.18);
+  border-color: #00f0ff;
 }
 
 .hud-header {
@@ -13263,10 +13374,18 @@ onBeforeUnmount(() => {
   transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.hud-fade-enter-from,
-.hud-fade-leave-to {
+.equipment-hud-card--dock-center.hud-fade-enter-from,
+.equipment-hud-card--dock-center.hud-fade-leave-to {
   opacity: 0;
   transform: translate(-50%, -12px);
+}
+
+.equipment-hud-card--dock-right.hud-fade-enter-from,
+.equipment-hud-card--dock-right.hud-fade-leave-to,
+.equipment-hud-card--dock-right-zen.hud-fade-enter-from,
+.equipment-hud-card--dock-right-zen.hud-fade-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
 }
 
 .master-control-dock {

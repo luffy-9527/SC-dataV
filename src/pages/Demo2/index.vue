@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { gsap } from 'gsap'
 import AutoFit from '@/components/AutoFit.vue'
 import OilScene from './components/OilScene.vue'
@@ -14,6 +14,9 @@ import LeftChart3 from './charts/LeftChart3.vue'
 import RightChart1 from './charts/RightChart1.vue'
 import RightChart2 from './charts/RightChart2.vue'
 import RightChart3 from './charts/RightChart3.vue'
+
+// 沉浸全景视界模式 (收起左右图表，将中央三维油田视界最大化呈现)
+const isZenMode = ref(false)
 
 onMounted(() => {
   // 左右卡片丝滑入场动画
@@ -41,16 +44,16 @@ onMounted(() => {
   <AutoFit :design-width="1920" :design-height="1080" background="#0f2238">
     <div class="oil-dashboard-page">
       <!-- 1. 中部 Three.js 石油钻采 3D 核心实景 -->
-      <OilScene />
+      <OilScene :is-zen-mode="isZenMode" />
 
       <!-- 2. 顶部工业科技导航栏 -->
-      <Header />
+      <Header :is-zen-mode="isZenMode" @toggle-zen="isZenMode = !isZenMode" />
 
       <!-- 3. 顶部居中关键生产指标看板 -->
       <StatMetrics />
 
       <!-- 4. 左侧钻采工程工况面板 -->
-      <aside class="column-panel column-left">
+      <aside class="column-panel column-left" :class="{ 'panel--zen-hidden': isZenMode }">
         <PanelCard
           class="chart-card"
           title="钻进深度与机械钻速趋势"
@@ -83,7 +86,7 @@ onMounted(() => {
       </aside>
 
       <!-- 5. 右侧油田产能与能耗面板 -->
-      <aside class="column-panel column-right">
+      <aside class="column-panel column-right" :class="{ 'panel--zen-hidden': isZenMode }">
         <PanelCard
           class="chart-card"
           title="各作业区块日采油量对比"
@@ -140,14 +143,27 @@ onMounted(() => {
   gap: 16px;
   z-index: 10;
   pointer-events: none;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
 }
 
 .column-left {
   left: 24px;
 }
 
+.column-left.panel--zen-hidden {
+  transform: translateX(-115%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .column-right {
   right: 24px;
+}
+
+.column-right.panel--zen-hidden {
+  transform: translateX(115%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .chart-card {
