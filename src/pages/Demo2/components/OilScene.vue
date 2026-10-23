@@ -30,8 +30,8 @@ const stages: ProcessStage[] = [
       { label: '戈壁地基强度', value: '420 kPa', status: 'normal' },
       { label: '地表沙坡坡度', value: '0.45°', status: 'normal' },
     ],
-    cameraPos: [-75, 45, 90],
-    targetPos: [-15, 6, 0],
+    cameraPos: [0, 58, -98],
+    targetPos: [-15, 6, 10],
   },
   {
     id: 'civil',
@@ -44,8 +44,8 @@ const stages: ProcessStage[] = [
       { label: '猫道坡度水平', value: '18.2°', status: 'normal' },
       { label: '管排架立柱堆存', value: '156 根 (1,480m)', status: 'normal' },
     ],
-    cameraPos: [-45, 34, 78],
-    targetPos: [-15, 8, 25],
+    cameraPos: [18, 16, 52],
+    targetPos: [-16, 6, 26],
   },
   {
     id: 'derrick',
@@ -58,8 +58,8 @@ const stages: ProcessStage[] = [
       { label: '立管循环压力', value: '24.2 MPa', status: 'normal' },
       { label: '泥浆固相含量', value: '3.8 %', status: 'normal' },
     ],
-    cameraPos: [-48, 44, 76],
-    targetPos: [-32, 18, 6],
+    cameraPos: [-78, 16, 16],
+    targetPos: [-46, 5, 8],
   },
   {
     id: 'drilling',
@@ -72,7 +72,7 @@ const stages: ProcessStage[] = [
       { label: '当前进尺钻深', value: '3,852.4 m', status: 'active' },
       { label: '井下随钻倾角', value: '0.82° (优)', status: 'normal' },
     ],
-    cameraPos: [28, 24, 62],
+    cameraPos: [24, 22, 48],
     targetPos: [-15, 10, 0],
   },
   {
@@ -86,8 +86,8 @@ const stages: ProcessStage[] = [
       { label: '起下钻运行速度', value: '0.65 m/s', status: 'normal' },
       { label: 'PDC钻头磨耗', value: '8.5% (完好)', status: 'normal' },
     ],
-    cameraPos: [-10, 38, 42],
-    targetPos: [-15, 22, 0],
+    cameraPos: [-12, 38, 38],
+    targetPos: [-15, 24, 0],
   },
   {
     id: 'casing',
@@ -100,8 +100,8 @@ const stages: ProcessStage[] = [
       { label: '返出水泥浆密度', value: '1.92 g/cm³', status: 'normal' },
       { label: '声幅胶结指数(CBL)', value: '0.90 (优质)', status: 'normal' },
     ],
-    cameraPos: [-56, 24, 76],
-    targetPos: [-20, 10, 22],
+    cameraPos: [-24, 14, 88],
+    targetPos: [-52, 4.5, 64],
   },
   {
     id: 'completion',
@@ -114,7 +114,7 @@ const stages: ProcessStage[] = [
       { label: '抽油机冲程冲次', value: '3.8m / 4.5min⁻¹', status: 'normal' },
       { label: '储罐实时库容率', value: '84.5 %', status: 'normal' },
     ],
-    cameraPos: [125, 75, 155],
+    cameraPos: [118, 70, 145],
     targetPos: [0, 8, 0],
   },
 ]
