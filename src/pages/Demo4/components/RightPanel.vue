@@ -145,22 +145,22 @@ function initIntentChart() {
     },
     legend: {
       orient: 'vertical',
-      right: '6%',
+      right: '4%',
       top: 'middle',
       itemWidth: 8,
       itemHeight: 8,
-      itemGap: 8,
+      itemGap: 5,
       textStyle: {
         color: '#94a3b8',
-        fontSize: 10,
+        fontSize: 9,
       },
     },
     series: [
       {
         name: '意图分类',
         type: 'pie',
-        radius: ['52%', '78%'],
-        center: ['32%', '50%'],
+        radius: ['46%', '72%'],
+        center: ['28%', '50%'],
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 4,
@@ -418,17 +418,17 @@ function handleSliceClick(item: KnowledgeSlice) {
   position: absolute;
   top: 96px;
   right: 24px;
-  bottom: 24px;
+  bottom: 20px;
   width: 360px;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   pointer-events: none;
   box-sizing: border-box;
 }
 
-/* 统一赛博面板科技卡片 */
+/* 统一赛博面板科技卡片（紧凑高精排版，杜绝超出屏幕） */
 .tech-panel-card {
   position: relative;
   pointer-events: auto;
@@ -436,7 +436,7 @@ function handleSliceClick(item: KnowledgeSlice) {
   border: 1px solid rgba(0, 242, 254, 0.22);
   border-radius: 8px;
   backdrop-filter: blur(16px);
-  padding: 12px 14px;
+  padding: 9px 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 242, 254, 0.04);
   transition: border-color 0.25s, box-shadow 0.25s;
   box-sizing: border-box;
@@ -452,10 +452,10 @@ function handleSliceClick(item: KnowledgeSlice) {
   flex-shrink: 0;
 }
 
-/* 卡片 2 图表：弹性填充所有剩余空间 (与左侧雷达图完美呼应，左右平衡，不产生任何空隙！) */
+/* 卡片 2 图表：弹性自适应空间 (最低高度设为 90px，优先保证底部调度舱完全显现) */
 .card-chart {
   flex: 1;
-  min-height: 155px;
+  min-height: 90px;
   display: flex;
   flex-direction: column;
 }
@@ -473,21 +473,21 @@ function handleSliceClick(item: KnowledgeSlice) {
 }
 
 .meta-rate {
-  font-size: 10px;
+  font-size: 9.5px;
   color: #38bdf8;
   font-family: monospace;
   background: rgba(0, 242, 254, 0.1);
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
   border: 1px solid rgba(0, 242, 254, 0.25);
 }
 
-/* 卡片 3：完全根据内容紧凑排列 (flex-shrink: 0 告别大黑洞！) */
+/* 卡片 3：完全根据内容紧凑排列 (flex-shrink: 0，永不溢出) */
 .card-controls {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 
 /* 屏幕四角科技角标饰件 */
@@ -617,16 +617,16 @@ function handleSliceClick(item: KnowledgeSlice) {
 .slice-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 5px;
 }
 
 .slice-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 9px;
-  border-radius: 6px;
+  gap: 6px;
+  padding: 4px 7px;
+  border-radius: 5px;
   background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.07);
   cursor: pointer;
@@ -783,16 +783,18 @@ function handleSliceClick(item: KnowledgeSlice) {
 
 .cam-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6px 3px;
+  gap: 4px;
+  padding: 5px 4px;
+  height: 28px;
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .cam-btn:hover {
@@ -810,11 +812,11 @@ function handleSliceClick(item: KnowledgeSlice) {
 }
 
 .cam-icon {
-  font-size: 12px;
+  font-size: 11px;
 }
 .cam-name {
   font-size: 10px;
-  margin-top: 1px;
+  margin-top: 0;
 }
 .cam-meter {
   font-size: 8px;
@@ -836,8 +838,8 @@ function handleSliceClick(item: KnowledgeSlice) {
 }
 
 .tab-btn {
-  padding: 2px 7px;
-  font-size: 9.5px;
+  padding: 1px 6px;
+  font-size: 9px;
   color: #94a3b8;
   background: transparent;
   border: none;
@@ -860,7 +862,7 @@ function handleSliceClick(item: KnowledgeSlice) {
 .actions-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  gap: 4px;
 }
 
 .action-btn {
@@ -868,15 +870,17 @@ function handleSliceClick(item: KnowledgeSlice) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 6px 2px;
-  font-size: 10px;
+  gap: 2px;
+  padding: 3px 2px;
+  height: 26px;
+  font-size: 9.5px;
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .action-btn:hover {
