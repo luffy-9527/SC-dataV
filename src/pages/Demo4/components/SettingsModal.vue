@@ -308,6 +308,7 @@ function applyPreset(preset: VoicePreset) {
 }
 
 let previewUtterance: SpeechSynthesisUtterance | null = null
+let previewAudio: HTMLAudioElement | null = null
 
 function handlePreviewVoice() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
@@ -337,6 +338,22 @@ function handlePreviewVoice() {
 
   // 等待 35ms 确保 iOS WebKit / Chrome cancel 彻底就绪
   setTimeout(() => {
+    const hasChineseVoice = props.voices.some((v) => {
+      const l = v.lang.toLowerCase()
+      return l.includes('zh') || l.includes('cmn')
+    })
+
+    if (!hasChineseVoice && !isJa) {
+      // 在小米/夸克等国产浏览器中，直接使用云端高兼容 TTS 试听
+      const audio = new Audio(`/api/tts?text=${encodeURIComponent(sampleText)}&spd=5`)
+      previewAudio = audio
+      audio.onplay = () => { isTestingVoice.value = true }
+      audio.onended = () => { isTestingVoice.value = false; previewAudio = null }
+      audio.onerror = () => { isTestingVoice.value = false; previewAudio = null }
+      audio.play().catch(() => { isTestingVoice.value = false })
+      return
+    }
+
     const utterance = new SpeechSynthesisUtterance(sampleText)
     previewUtterance = utterance
 
@@ -382,6 +399,11 @@ function handlePreviewVoice() {
 
 function stopPreviewVoice() {
   previewUtterance = null
+  if (previewAudio) {
+    previewAudio.pause()
+    previewAudio.currentTime = 0
+    previewAudio = null
+  }
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel()

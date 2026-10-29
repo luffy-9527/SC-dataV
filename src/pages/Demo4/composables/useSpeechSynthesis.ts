@@ -425,6 +425,82 @@ export function useSpeechSynthesis() {
     return null
   }
 
+  // 云端通用高保真 TTS 流播报（专为小米自带浏览器、夸克、微信等国产系统WebView定制）
+  async function speakCloudTts(
+    cleanText: string,
+    options?: {
+      onStart?: () => void
+      onEnd?: () => void
+      suppressChirp?: boolean
+    },
+  ) {
+    unlockAudio()
+
+    if (options?.suppressChirp !== true) {
+      audioEngine.playHoloChirp()
+    }
+
+    const sessionId = ++currentSpeechSessionId
+    const sentences = splitIntoSentences(cleanText)
+    let currentIndex = 0
+    let hasStarted = false
+
+    async function playNext() {
+      if (sessionId !== currentSpeechSessionId) return
+
+      if (currentIndex >= sentences.length) {
+        isSpeaking.value = false
+        options?.onEnd?.()
+        return
+      }
+
+      const sentence = sentences[currentIndex]
+      currentIndex++
+
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(sentence)}&spd=5`
+      const audio = new Audio(ttsUrl)
+      currentAudio = audio
+
+      audio.onplay = () => {
+        if (sessionId !== currentSpeechSessionId) return
+        isAudioBlocked.value = false
+        if (!hasStarted) {
+          hasStarted = true
+          isSpeaking.value = true
+          isGptSovitsActive.value = false
+          options?.onStart?.()
+        }
+      }
+
+      audio.onended = () => {
+        if (sessionId === currentSpeechSessionId) {
+          playNext()
+        }
+      }
+
+      audio.onerror = (e) => {
+        console.warn('[CloudTTS] 播放短句异常:', e)
+        if (sessionId === currentSpeechSessionId) {
+          playNext()
+        }
+      }
+
+      try {
+        await audio.play()
+      } catch (err: any) {
+        console.warn('[CloudTTS] audio.play() 受限:', err)
+        if (err?.name === 'NotAllowedError') {
+          isAudioBlocked.value = true
+        }
+        if (sessionId === currentSpeechSessionId) {
+          playNext()
+        }
+      }
+    }
+
+    await playNext()
+  }
+
   // 跨平台高兼容系统原生语音朗读（分句队列流式播报 + GC保护 + iOS防死锁）
   async function speakNative(
     cleanText: string,
@@ -476,6 +552,17 @@ export function useSpeechSynthesis() {
 
     startHeartbeat()
 
+    // 针对小米/夸克等虽然声明支持 speechSynthesis 但 speak() 被静默丢弃的浏览器设置 850ms 保护看门狗
+    let watchdogTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      if (!hasStarted && sessionId === currentSpeechSessionId) {
+        console.warn('[SpeechSynthesis] 原生语音未响应(国产浏览器可能屏蔽了系统TTS)，自动平滑切至云端TTS流')
+        try {
+          window.speechSynthesis.cancel()
+        } catch {}
+        speakCloudTts(cleanText, options)
+      }
+    }, 850)
+
     function speakNext() {
       if (sessionId !== currentSpeechSessionId) {
         stopHeartbeat()
@@ -506,6 +593,10 @@ export function useSpeechSynthesis() {
 
       utterance.onstart = () => {
         if (sessionId !== currentSpeechSessionId) return
+        if (watchdogTimer) {
+          clearTimeout(watchdogTimer)
+          watchdogTimer = null
+        }
         isAudioBlocked.value = false
         if (!hasStarted) {
           hasStarted = true
@@ -525,6 +616,10 @@ export function useSpeechSynthesis() {
       utterance.onerror = (e) => {
         console.warn('[SpeechSynthesis] 播报分句异常:', e.error, e)
         activeUtterances.delete(utterance)
+        if (watchdogTimer) {
+          clearTimeout(watchdogTimer)
+          watchdogTimer = null
+        }
 
         if (e.error === 'not-allowed') {
           isAudioBlocked.value = true
@@ -641,7 +736,21 @@ export function useSpeechSynthesis() {
       }
     }
 
-    // 2. 默认或回退通道：调用高度增强的跨平台原生语音合成
+    // 2. 检查当前浏览器是否具备真正可用的系统中文发音人
+    const hasChineseVoice =
+      isSupported.value &&
+      voices.value.some((v) => {
+        const l = v.lang.toLowerCase()
+        return l.includes('zh') || l.includes('cmn')
+      })
+
+    // 小米自带浏览器、夸克、微信等国产WebView中，speechSynthesis 往往无法获取中文发音人，直接走云端高兼容TTS
+    if (!hasChineseVoice) {
+      await speakCloudTts(cleanText, options)
+      return
+    }
+
+    // 3. 原生中文发音人就绪的环境（如电脑 Chrome/Edge、手机谷歌浏览器）：调用原生语音
     await speakNative(cleanText, options)
   }
 
@@ -724,5 +833,6 @@ export function useSpeechSynthesis() {
     testGptSovits,
     playClickBlip,
     unlockAudio,
+    speakCloudTts,
   }
 }

@@ -106,13 +106,46 @@ function liveWebSearchPlugin() {
     }
   }
 
+  const ttsHandler = async (req: any, res: any) => {
+    try {
+      const url = new URL(req.url, 'http://localhost')
+      const text = (url.searchParams.get('text') || '').trim()
+      if (!text) {
+        res.statusCode = 400
+        return res.end('Text required')
+      }
+      const spd = url.searchParams.get('spd') || '5'
+      const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(text)}&spd=${encodeURIComponent(spd)}&source=web`
+      const upstream = await fetch(ttsUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://fanyi.baidu.com/',
+        },
+      })
+      if (!upstream.ok) {
+        res.statusCode = upstream.status
+        return res.end('Upstream error')
+      }
+      res.setHeader('Content-Type', 'audio/mpeg')
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      const ab = await upstream.arrayBuffer()
+      res.end(Buffer.from(ab))
+    } catch (e: any) {
+      res.statusCode = 502
+      res.end(e.message || 'TTS Error')
+    }
+  }
+
   return {
     name: 'miku-live-web-search-plugin',
     configureServer(server: any) {
       server.middlewares.use('/api/websearch', handler)
+      server.middlewares.use('/api/tts', ttsHandler)
     },
     configurePreviewServer(server: any) {
       server.middlewares.use('/api/websearch', handler)
+      server.middlewares.use('/api/tts', ttsHandler)
     },
   }
 }
