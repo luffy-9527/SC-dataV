@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, reactive, ref, watch } from 'vue'
 import type { DigitalHumanConfig } from '../types'
+import { unlockAudio } from '../composables/useSpeechSynthesis'
 
 interface Props {
   visible: boolean
@@ -306,6 +307,8 @@ function applyPreset(preset: VoicePreset) {
   }
 }
 
+let previewUtterance: SpeechSynthesisUtterance | null = null
+
 function handlePreviewVoice() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
 
@@ -315,7 +318,10 @@ function handlePreviewVoice() {
     return
   }
 
-  window.speechSynthesis.cancel()
+  unlockAudio()
+  try {
+    window.speechSynthesis.cancel()
+  } catch {}
 
   const currentPreset = VOICE_PRESETS.find((p) => p.id === activePresetId.value)
   const isJa =
@@ -329,41 +335,57 @@ function handlePreviewVoice() {
       ? 'マスター、こんにちは！バーチャルシンガーの初音ミクです、今日もよろしくね！'
       : '指挥长您好！我是全息数字人初音未来，已连接大屏数据中枢与实时联网大脑！')
 
-  const utterance = new SpeechSynthesisUtterance(sampleText)
+  // 等待 35ms 确保 iOS WebKit / Chrome cancel 彻底就绪
+  setTimeout(() => {
+    const utterance = new SpeechSynthesisUtterance(sampleText)
+    previewUtterance = utterance
 
-  let voiceToUse: SpeechSynthesisVoice | undefined = undefined
-  if (localConfig.selectedVoice) {
-    voiceToUse = props.voices.find((v) => v.name === localConfig.selectedVoice)
-  }
-  // When selectedVoice is empty or not found, explicitly fall back to best default voice (never leave empty!)
-  if (!voiceToUse) {
-    voiceToUse = isJa ? getJapaneseVoice() : getBestDefaultVoice()
-  }
+    let voiceToUse: SpeechSynthesisVoice | undefined = undefined
+    if (localConfig.selectedVoice) {
+      voiceToUse = props.voices.find((v) => v.name === localConfig.selectedVoice)
+    }
+    if (!voiceToUse) {
+      voiceToUse = isJa ? getJapaneseVoice() : getBestDefaultVoice()
+    }
 
-  if (voiceToUse) {
-    utterance.voice = voiceToUse
-  }
+    if (voiceToUse) {
+      utterance.voice = voiceToUse
+    }
 
-  utterance.pitch = localConfig.voicePitch
-  utterance.rate = localConfig.voiceRate
-  utterance.lang = isJa ? 'ja-JP' : voiceToUse?.lang || 'zh-CN'
+    utterance.pitch = localConfig.voicePitch
+    utterance.rate = localConfig.voiceRate
+    utterance.lang = isJa ? 'ja-JP' : voiceToUse?.lang || 'zh-CN'
 
-  utterance.onstart = () => {
-    isTestingVoice.value = true
-  }
-  utterance.onend = () => {
-    isTestingVoice.value = false
-  }
-  utterance.onerror = () => {
-    isTestingVoice.value = false
-  }
+    utterance.onstart = () => {
+      isTestingVoice.value = true
+    }
+    utterance.onend = () => {
+      isTestingVoice.value = false
+      previewUtterance = null
+    }
+    utterance.onerror = () => {
+      isTestingVoice.value = false
+      previewUtterance = null
+    }
 
-  window.speechSynthesis.speak(utterance)
+    try {
+      window.speechSynthesis.speak(utterance)
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume()
+      }
+    } catch (e) {
+      console.warn('[SettingsModal] 试听播报异常:', e)
+      isTestingVoice.value = false
+    }
+  }, 35)
 }
 
 function stopPreviewVoice() {
+  previewUtterance = null
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel()
+    try {
+      window.speechSynthesis.cancel()
+    } catch {}
   }
   isTestingVoice.value = false
 }

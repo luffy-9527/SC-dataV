@@ -336,4 +336,61 @@ onBeforeUnmount(() => {
   border-bottom: 2px solid rgba(0, 242, 254, 0.6);
   border-right: 2px solid rgba(0, 242, 254, 0.6);
 }
+
+/* 音频拦截解除浮条 */
+.audio-blocked-toast {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(0, 242, 254, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.25), inset 0 0 12px rgba(0, 242, 254, 0.15);
+  border-radius: 24px;
+  z-index: 100;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.toast-pulse-icon {
+  font-size: 16px;
+  animation: pulse-audio 1.5s infinite;
+}
+
+@keyframes pulse-audio {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.toast-text {
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.toast-unlock-btn {
+  padding: 3px 10px;
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  border: none;
+  border-radius: 12px;
+  color: #04101c;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fade-toast-enter-active,
+.fade-toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-toast-enter-from,
+.fade-toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -10px);
+}
+
 </style>
