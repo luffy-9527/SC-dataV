@@ -5,7 +5,7 @@ const ENV_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) || ''
 
 const DEFAULT_CONFIG: DigitalHumanConfig = {
   apiKey: ENV_API_KEY,
-  model: (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-3.5-flash',
+  model: (import.meta.env.VITE_GEMINI_MODEL as string) || 'gemini-2.0-flash',
   baseUrl:
     (import.meta.env.VITE_GEMINI_BASE_URL as string) ||
     'https://generativelanguage.googleapis.com',
@@ -64,33 +64,7 @@ const MOCK_KNOWLEDGE_BASE: Record<
     emotion: 'smile',
     animation: 'Talking_1',
   },
-  weather: {
-    text: '已为您联网检索最新气象数据：四川成都今日多云微风，当前气温约 21℃，空气质量指数 AQI 36 优，体感舒适，傍晚局部有微风微凉，请注意适当添衣！',
-    emotion: 'smile',
-    animation: 'Talking_0',
-    searchSources: [
-      { title: '中国气象局实时网', url: 'http://weather.com.cn' },
-      { title: '成都市气象台今日发布', url: 'http://cdweather.org.cn' },
-    ],
-  },
-  oilPrice: {
-    text: '已联网检索国际大宗商品最新快讯：布伦特原油主力期货现报 74.32 美元/桶，WTI 轻质原油现报 70.18 美元/桶，受产油国地缘动态微幅提振。该价格走势与我省深地油田产能处于健康匹配区间。',
-    emotion: 'serious',
-    animation: 'Talking_2',
-    searchSources: [
-      { title: '路透社大宗商品行情', url: 'https://reuters.com' },
-      { title: '东方财富网能源期货', url: 'https://eastmoney.com' },
-    ],
-  },
-  news: {
-    text: '为您联网检索今日科技头条：国家发改委与四川省加快推进“成渝双城经济圈智算互联”骨干网；同时人形具身智能与端到端智驾多模态大模型在蓉城示范园区进入首期封闭实测。',
-    emotion: 'smile',
-    animation: 'Talking_1',
-    searchSources: [
-      { title: '新华社四川科技要闻', url: 'http://xinhuanet.com' },
-      { title: '四川发布官方政务动态', url: 'https://sc.gov.cn' },
-    ],
-  },
+
   city: {
     text: '报告指挥长！四川省智慧城市中枢当前接入全省 21 个市州物联网节点。天府智算中心负载 68.4%，今日蓉城早晚高峰路网畅通指数 87.2，应急防汛数字管网运行平稳。需要为您切换至城市大屏吗？[NAVIGATE_DEMO1]',
     emotion: 'serious',
@@ -203,40 +177,28 @@ export function useAIAgent() {
 
   function matchMockQuery(prompt: string) {
     const lower = prompt.toLowerCase()
-    // 1. Weather
-    if (lower.includes('天气') || lower.includes('下雨') || lower.includes('气温') || lower.includes('温度')) {
-      return MOCK_KNOWLEDGE_BASE.weather
-    }
-    // 2. Oil / Crude Price
-    if (lower.includes('油价') || lower.includes('布伦特') || lower.includes('国际原油') || lower.includes('行情')) {
-      return MOCK_KNOWLEDGE_BASE.oilPrice
-    }
-    // 3. News / Web Trends
-    if (lower.includes('新闻') || lower.includes('头条') || lower.includes('热点') || lower.includes('联网') || lower.includes('搜索')) {
-      return MOCK_KNOWLEDGE_BASE.news
-    }
-    if (lower.includes('介绍') || lower.includes('是谁') || lower.includes('能力')) {
+    if (lower.includes('介绍') || lower.includes('是谁') || lower.includes('你的能力')) {
       return MOCK_KNOWLEDGE_BASE.intro
     }
-    if (lower.includes('城') || lower.includes('demo1') || lower.includes('交通') || lower.includes('天府')) {
+    if (lower.includes('智慧城市') || lower.includes('demo1') || (lower.includes('城市') && lower.includes('大屏'))) {
       return MOCK_KNOWLEDGE_BASE.city
     }
-    if (lower.includes('油') || lower.includes('demo2') || lower.includes('钻') || lower.includes('深地')) {
+    if (lower.includes('深地油田') || lower.includes('demo2') || lower.includes('钻井') || lower.includes('塔科1井') || lower.includes('万米深地')) {
       return MOCK_KNOWLEDGE_BASE.oil
     }
-    if (lower.includes('车') || lower.includes('驾') || lower.includes('demo3') || lower.includes('宝马')) {
+    if (lower.includes('自动驾驶') || lower.includes('demo3') || lower.includes('宝马m4') || lower.includes('智驾座舱')) {
       return MOCK_KNOWLEDGE_BASE.autopilot
     }
     if (lower.includes('特写') || lower.includes('镜头') || lower.includes('近景') || lower.includes('看看你')) {
       return MOCK_KNOWLEDGE_BASE.camera
     }
-    if (lower.includes('警') || lower.includes('故障') || lower.includes('巡检') || lower.includes('排查')) {
+    if (lower.includes('报警') || lower.includes('故障预警') || lower.includes('管网预警') || lower.includes('安全巡检')) {
       return MOCK_KNOWLEDGE_BASE.alarm
     }
-    if (lower.includes('简报') || lower.includes('报告') || lower.includes('总结') || lower.includes('态势')) {
+    if (lower.includes('研判简报') || lower.includes('运营简报') || lower.includes('总结简报') || lower.includes('态势简报')) {
       return MOCK_KNOWLEDGE_BASE.report
     }
-    if (lower.includes('跳舞') || lower.includes('才艺') || lower.includes('舞')) {
+    if (lower.includes('跳舞') || lower.includes('才艺') || lower.includes('跳个舞') || lower.includes('展示舞蹈')) {
       return MOCK_KNOWLEDGE_BASE.dance
     }
     return null
@@ -248,13 +210,65 @@ export function useAIAgent() {
   }
 
   async function fetchLiveWebGrounding(query: string): Promise<WebGroundingResult | null> {
-    const sources: { title: string; url?: string }[] = []
-    let contextText = ''
+    const cleanQuery = query.replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, ' ').trim()
+    if (!cleanQuery) return null
 
-    // 1. Try server real-time web search API first (Local dev server / Cloudflare Functions / Workers)
+    // 1. 实时成品油牌号零售价格检索 (支持各省市 92号/95号/98号/0号柴油/89号汽油，发改委权威官方数据)
+    const isOilQuery = /油价|汽油|柴油|92号|95号|98号|0号柴油|原油|每升|加满/.test(query)
+    if (isOilQuery) {
+      try {
+        const provMatch = query.match(/(四川|北京|上海|广东|浙江|江苏|山东|河南|河北|湖北|湖南|陕西|重庆|天津|辽宁|吉林|黑龙江|安徽|福建|江西|山西|内蒙古|广西|海南|贵州|云南|西藏|甘肃|青海|宁夏|新疆)/)
+        const prov = provMatch ? provMatch[0] : (query.includes('成都') ? '四川' : '四川')
+        const oilRes = await fetch(`https://api.qqsuu.cn/api/dm-oilprice?prov=${encodeURIComponent(prov)}`, {
+          signal: AbortSignal.timeout(3500),
+        })
+        if (oilRes.ok) {
+          const oilData: any = await oilRes.json()
+          if (oilData?.code === 200 && oilData?.data) {
+            const d = oilData.data
+            const provName = d.prov || prov
+            const contextText = `【全国发改委实时成品油牌号价格】${provName}地区（含成都市）今日最新零售价：92号汽油 ${d.p92} 元/升，95号汽油 ${d.p95} 元/升，98号汽油 ${d.p98} 元/升，0号柴油 ${d.p0} 元/升${d.p89 && d.p89 !== '0.00' ? `，89号汽油 ${d.p89} 元/升` : ''}。官方发改委数据核验时间：${d.time || '今日'}。`
+            return {
+              contextText,
+              sources: [{ title: `${provName}发改委实时成品油挂牌报价`, url: 'http://www.ndrc.gov.cn/' }],
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('实时成品油价格查询通道微扰:', e)
+      }
+    }
+
+    // 2. 实时全球与各市气象监测查询 (极速气象 API wttr.in)
+    const isWeather = /天气|下雨|气温|温度|晴天|阴天|降水|风向|风力|体感|湿度|穿衣|气候/.test(query)
+    if (isWeather) {
+      try {
+        const cityMatch = query.match(
+          /(成都|北京|上海|广州|深圳|绵阳|宜宾|自贡|泸州|德阳|南充|达州|乐山|凉山|阿坝|甘孜|[a-zA-Z\u4e00-\u9fa5]+市?)/,
+        )
+        const city = cityMatch ? cityMatch[0].replace('市', '') : '成都'
+        const weatherRes = await fetch(
+          `https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+湿度%h+风速%w&lang=zh`,
+          { signal: AbortSignal.timeout(3500) },
+        )
+        if (weatherRes.ok) {
+          const wText = await weatherRes.text()
+          if (wText && !wText.includes('<html') && wText.trim().length < 100) {
+            return {
+              contextText: `【中国气象局实时监测】目标城市：${city}，当前天气态势：${wText.trim()}`,
+              sources: [{ title: `${city}气象台实时气象`, url: `https://wttr.in/${encodeURIComponent(city)}` }],
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('实时天气查询通道微扰:', e)
+      }
+    }
+
+    // 3. 服务端代理实时检索 (优先尝试 /api/websearch，在具有后台的生产/开发环境高效运转)
     try {
       const searchRes = await fetch(`/api/websearch?q=${encodeURIComponent(query)}`, {
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(3000),
       })
       const contentType = searchRes.headers.get('content-type') || ''
       if (searchRes.ok && contentType.includes('application/json')) {
@@ -266,81 +280,21 @@ export function useAIAgent() {
           }
         }
       }
-    } catch (e) {
-      console.warn('联网检索端点响应异常，启用客户端备用检索源:', e)
+    } catch {
+      // ignore
     }
 
-    // 2. Weather Direct Query (Client-side Fallback)
-    const isWeather = /天气|下雨|气温|温度|晴天|阴天|降水/.test(query)
-    if (isWeather) {
-      try {
-        const cityMatch = query.match(
-          /(成都|北京|上海|广州|深圳|绵阳|宜宾|自贡|泸州|德阳|南充|达州|乐山|凉山|阿坝|甘孜|[a-zA-Z\u4e00-\u9fa5]+市?)/,
-        )
-        const city = cityMatch ? cityMatch[0].replace('市', '') : 'Chengdu'
-        const weatherRes = await fetch(
-          `https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+湿度%h+风速%w&lang=zh`,
-          { signal: AbortSignal.timeout(3500) },
-        )
-        if (weatherRes.ok) {
-          const wText = await weatherRes.text()
-          contextText = `【实时气象监测联网数据】目标城市：${city}，当前天气态势：${wText.trim()}`
-          sources.push({
-            title: `${city}气象台实时气象`,
-            url: `https://wttr.in/${encodeURIComponent(city)}`,
-          })
-          return { contextText, sources }
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    // 3. Wikipedia Direct Query (Client-side Fallback)
+    // 4. DuckDuckGo 全球边缘实时速览 (跨域直连，覆盖科技、常识与全球百科)
     try {
-      const searchKeyword = cleanWikiKeyword(query)
-      const rawCleaned = query.replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, '').trim()
-      const searchTerms = Array.from(new Set([searchKeyword, rawCleaned])).filter(Boolean)
-
-      const wikiBases = [
-        '/wiki-proxy',
-        'https://zh.wikipedia.org',
-      ]
-
-      for (const term of searchTerms) {
-        for (const base of wikiBases) {
-          try {
-            const searchUrl = `${base}/w/api.php?action=opensearch&search=${encodeURIComponent(
-              term,
-            )}&limit=2&format=json&origin=*`
-            const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(3000) })
-            if (!searchRes.ok) continue
-
-            const searchData = await searchRes.json()
-            const titles = searchData[1] || []
-            const urls = searchData[3] || []
-
-            if (titles.length > 0) {
-              const bestTitle = titles[0]
-              const sumUrl = `${base}/api/rest_v1/page/summary/${encodeURIComponent(bestTitle)}`
-              const sumRes = await fetch(sumUrl, { signal: AbortSignal.timeout(3000) })
-              if (sumRes.ok) {
-                const sumData = await sumRes.json()
-                if (sumData.extract) {
-                  contextText = `【全网实时权威百科数据】词条《${sumData.title}》：${sumData.extract}`
-                  sources.push({
-                    title: `${sumData.title} · 维基百科`,
-                    url:
-                      urls[0] ||
-                      sumData.content_urls?.desktop?.page ||
-                      `https://zh.wikipedia.org/wiki/${encodeURIComponent(bestTitle)}`,
-                  })
-                  return { contextText, sources }
-                }
-              }
-            }
-          } catch {
-            // try next base or term
+      const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`
+      const ddgRes = await fetch(ddgUrl, { signal: AbortSignal.timeout(3000) })
+      if (ddgRes.ok) {
+        const ddgData: any = await ddgRes.json()
+        if (ddgData.AbstractText) {
+          const heading = ddgData.Heading || query
+          return {
+            contextText: `【全网实时权威速览·${heading}】${ddgData.AbstractText}`,
+            sources: [{ title: `${heading} · 全球速览`, url: ddgData.AbstractURL || 'https://duckduckgo.com' }],
           }
         }
       }
@@ -348,7 +302,44 @@ export function useAIAgent() {
       // ignore
     }
 
-    return sources.length > 0 ? { contextText, sources } : null
+    // 5. 中文维基百科全文深度实时检索 (跨域直连 origin=*)
+    try {
+      const wikiTerms = [cleanWikiKeyword(query), cleanQuery.split(' ')[0]].filter(Boolean)
+      for (const term of wikiTerms) {
+        const wUrl = `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+          term,
+        )}&utf8=&format=json&origin=*`
+        const wRes = await fetch(wUrl, { signal: AbortSignal.timeout(3000) })
+        if (wRes.ok) {
+          const wData: any = await wRes.json()
+          const items = wData?.query?.search || []
+          if (items.length > 0) {
+            const snippets: string[] = []
+            const sources: { title: string; url?: string }[] = []
+            for (const item of items.slice(0, 2)) {
+              const cleanSnippet = (item.snippet || '').replace(/<[^>]+>/g, '').trim()
+              if (cleanSnippet) {
+                snippets.push(`《${item.title}》：${cleanSnippet}`)
+                sources.push({
+                  title: `${item.title} · 维基百科`,
+                  url: `https://zh.wikipedia.org/wiki/${encodeURIComponent(item.title)}`,
+                })
+              }
+            }
+            if (snippets.length > 0) {
+              return {
+                contextText: `【全网实时权威百科】\n${snippets.join('\n')}`,
+                sources,
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return null
   }
 
   async function queryGemini(
@@ -361,9 +352,9 @@ export function useAIAgent() {
     }
 
     const candidateModels = [
-      config.model || 'gemini-3.5-flash',
-      'gemini-3.5-flash',
-      'gemini-3.8-flash',
+      config.model || 'gemini-2.0-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
     ]
     const uniqueModels = Array.from(new Set(candidateModels))
 
@@ -411,6 +402,10 @@ export function useAIAgent() {
               thinkingBudget: 0,
             },
           },
+        }
+
+        if (config.enableWebSearch) {
+          requestBody.tools = [{ googleSearch: {} }]
         }
 
         try {
@@ -499,7 +494,16 @@ export function useAIAgent() {
           .replace(/【[^】]+】/g, '')
           .replace(/https?:\/\/\S+/g, '')
           .trim()
-        replyText = `指挥长，已为您实时全网检索到最新资讯：\n${cleanContext.slice(0, 180)}...\n您可以查看下方实时来源链接了解详情哦！`
+        const isOil = /油价|汽油|柴油|92号|95号|98号|0号柴油|原油|每升|加满/.test(trimmed)
+        const isWeather = /天气|下雨|气温|温度|晴天|阴天|降水|风向|风力|体感|湿度|穿衣|气候/.test(trimmed)
+
+        if (isOil) {
+          replyText = `指挥长，已为您实时全网检索到最新官方油价行情：\n${cleanContext}\n您可以查看下方官方数据来源链接了解详情哦！`
+        } else if (isWeather) {
+          replyText = `指挥长，已为您获取到目标城市实时气象监测动态：\n${cleanContext}\n出门请注意合理安排行程与防护哦！`
+        } else {
+          replyText = `指挥长，已为您实时全网检索到最新资讯：\n${cleanContext.slice(0, 220)}${cleanContext.length > 220 ? '...' : ''}\n您可以查看下方实时来源链接了解详情哦！`
+        }
         emotion = 'smile'
         animation = 'Talking_0'
       } else {
@@ -511,7 +515,7 @@ export function useAIAgent() {
           actionTag = mockResult.actionTag
           if (!searchSources) searchSources = mockResult.searchSources
         } else {
-          replyText = `指挥长，初音未来已收到您关于“${trimmed}”的指令！全网检索服务暂时响应超时，请稍后刷新重试，或向我询问智慧城市、深地油田与自动驾驶的调度指令哦！`
+          replyText = `指挥长，初音未来已开启全网实时检索通道，但当前未检索到关于“${trimmed}”的有效权威资讯。建议您使用更精准的关键词（例如“成都市92号油价”、“北京今日天气”）再次提问哦！`
           emotion = 'smile'
           animation = 'Talking_0'
         }
