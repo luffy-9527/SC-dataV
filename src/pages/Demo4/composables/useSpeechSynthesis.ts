@@ -145,7 +145,10 @@ const audioEngine = new HolographicAudioEngine()
 
 // 文本分句工具：将长回复按标点拆解为自然短句，杜绝移动端长文本截断与休眠
 function splitIntoSentences(text: string): string[] {
-  const parts = text.match(/[^。！？!?；;\n]+[。！？!?；;\n]?/g)
+  // 文本在 80 字以内保持整段播报，保留语调起伏与自然呼吸感
+  if (text.length <= 80) return [text]
+
+  const parts = text.match(/[^。！？!?\n]+[。！？!?\n]?/g)
   if (!parts || parts.length === 0) return [text]
 
   const sentences: string[] = []
@@ -154,14 +157,13 @@ function splitIntoSentences(text: string): string[] {
     const trimmed = part.trim()
     if (!trimmed) continue
     temp += trimmed
-    // 当带有句尾标点或累积字数达到舒适语块长度（18字以上）时切分为一句
-    if (/[。！？!?；;\n]$/.test(temp) || temp.length >= 24) {
+    if (temp.length >= 60 || /[。！？!?\n]$/.test(temp)) {
       sentences.push(temp)
       temp = ''
     }
   }
   if (temp) {
-    if (sentences.length > 0 && temp.length < 5) {
+    if (sentences.length > 0 && temp.length < 10) {
       sentences[sentences.length - 1] += temp
     } else {
       sentences.push(temp)
@@ -425,7 +427,7 @@ export function useSpeechSynthesis() {
     return null
   }
 
-  // 云端通用高保真 TTS 流播报（专为小米自带浏览器、夸克、微信等国产系统WebView定制）
+  // 云端通用高保真 TTS 完整音频流播报（整段完整单轨流式播放，杜绝分句网络往返导致的卡顿停顿）
   async function speakCloudTts(
     cleanText: string,
     options?: {
@@ -441,64 +443,49 @@ export function useSpeechSynthesis() {
     }
 
     const sessionId = ++currentSpeechSessionId
-    const sentences = splitIntoSentences(cleanText)
-    let currentIndex = 0
-    let hasStarted = false
 
-    async function playNext() {
-      if (sessionId !== currentSpeechSessionId) return
-
-      if (currentIndex >= sentences.length) {
-        isSpeaking.value = false
-        options?.onEnd?.()
-        return
-      }
-
-      const sentence = sentences[currentIndex]
-      currentIndex++
-
-      const ttsUrl = `/api/tts?text=${encodeURIComponent(sentence)}&spd=5`
+    try {
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&spd=5`
       const audio = new Audio(ttsUrl)
       currentAudio = audio
 
       audio.onplay = () => {
         if (sessionId !== currentSpeechSessionId) return
         isAudioBlocked.value = false
-        if (!hasStarted) {
-          hasStarted = true
-          isSpeaking.value = true
-          isGptSovitsActive.value = false
-          options?.onStart?.()
-        }
+        isSpeaking.value = true
+        isGptSovitsActive.value = false
+        options?.onStart?.()
       }
 
       audio.onended = () => {
         if (sessionId === currentSpeechSessionId) {
-          playNext()
+          isSpeaking.value = false
+          currentAudio = null
+          options?.onEnd?.()
         }
       }
 
       audio.onerror = (e) => {
-        console.warn('[CloudTTS] 播放短句异常:', e)
+        console.warn('[CloudTTS] 音频播放异常:', e)
         if (sessionId === currentSpeechSessionId) {
-          playNext()
+          isSpeaking.value = false
+          currentAudio = null
+          options?.onEnd?.()
         }
       }
 
-      try {
-        await audio.play()
-      } catch (err: any) {
-        console.warn('[CloudTTS] audio.play() 受限:', err)
-        if (err?.name === 'NotAllowedError') {
-          isAudioBlocked.value = true
-        }
-        if (sessionId === currentSpeechSessionId) {
-          playNext()
-        }
+      await audio.play()
+    } catch (err: any) {
+      console.warn('[CloudTTS] 播放被浏览器拦截:', err)
+      if (err?.name === 'NotAllowedError') {
+        isAudioBlocked.value = true
+      }
+      if (sessionId === currentSpeechSessionId) {
+        isSpeaking.value = false
+        currentAudio = null
+        options?.onEnd?.()
       }
     }
-
-    await playNext()
   }
 
   // 跨平台高兼容系统原生语音朗读（分句队列流式播报 + GC保护 + iOS防死锁）

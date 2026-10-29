@@ -6,6 +6,54 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-goog-api-client, x-goog-api-key',
 }
 
+
+function splitTextForTts(text: string, maxLen = 220): string[] {
+  if (text.length <= maxLen) return [text]
+  const chunks: string[] = []
+  const sentences = text.match(/[^。！？!?；;\n]+[。！？!?；;\n]?/g) || [text]
+  let current = ''
+  for (const s of sentences) {
+    const trimmed = s.trim()
+    if (!trimmed) continue
+    if ((current + trimmed).length > maxLen) {
+      if (current) chunks.push(current)
+      current = trimmed
+    } else {
+      current += trimmed
+    }
+  }
+  if (current) chunks.push(current)
+  return chunks.length > 0 ? chunks : [text]
+}
+
+async function fetchBaiduTtsChunk(chunk: string, spd: string): Promise<Uint8Array> {
+  const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(chunk)}&spd=${encodeURIComponent(spd)}&source=web`
+  const res = await fetch(ttsUrl, {
+    method: 'GET',
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': 'https://fanyi.baidu.com/',
+    },
+  })
+  if (!res.ok) {
+    throw new Error(`TTS upstream failed with ${res.status}`)
+  }
+  const ab = await res.arrayBuffer()
+  return new Uint8Array(ab)
+}
+
+function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const totalLength = arrays.reduce((acc, val) => acc + val.length, 0)
+  const result = new Uint8Array(totalLength)
+  let offset = 0
+  for (const arr of arrays) {
+    result.set(arr, offset)
+    offset += arr.length
+  }
+  return result
+}
+
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
     const url = new URL(request.url)
@@ -129,7 +177,7 @@ export default {
       }
     }
 
-    // 5. 云端通用 TTS 语音流服务（专为小米自带浏览器、夸克、微信等国产WebView兜底）
+    // 5. 云端通用 TTS 语音流服务（并行获取与MP3原生帧无缝融合，保证长段连贯流畅零停顿）
     if (url.pathname === '/api/tts') {
       let text = (url.searchParams.get('text') || '').trim()
       if (!text && request.method === 'POST') {
@@ -155,34 +203,24 @@ export default {
         .trim()
 
       const spd = url.searchParams.get('spd') || '5'
-      const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(cleanText)}&spd=${encodeURIComponent(spd)}&source=web`
+      const chunks = splitTextForTts(cleanText, 220)
+
+      const respHeaders = new Headers()
+      respHeaders.set('Content-Type', 'audio/mpeg')
+      respHeaders.set('Cache-Control', 'public, max-age=86400')
+      Object.entries(CORS_HEADERS).forEach(([k, v]) => respHeaders.set(k, v))
 
       try {
-        const upstreamRes = await fetch(ttsUrl, {
-          method: 'GET',
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://fanyi.baidu.com/',
-          },
-        })
-
-        if (!upstreamRes.ok) {
-          return new Response(JSON.stringify({ error: 'TTS upstream failed' }), {
-            status: upstreamRes.status,
-            headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS_HEADERS },
-          })
+        if (chunks.length === 1) {
+          const singleBuffer = await fetchBaiduTtsChunk(chunks[0], spd)
+          return new Response(singleBuffer, { status: 200, headers: respHeaders })
         }
 
-        const respHeaders = new Headers()
-        respHeaders.set('Content-Type', 'audio/mpeg')
-        respHeaders.set('Cache-Control', 'public, max-age=86400')
-        Object.entries(CORS_HEADERS).forEach(([k, v]) => respHeaders.set(k, v))
+        // 并行拉取多段音频并在边缘进行零间隙 MP3 二进制帧拼接
+        const buffers = await Promise.all(chunks.map((c) => fetchBaiduTtsChunk(c, spd)))
+        const mergedAudio = concatUint8Arrays(buffers)
 
-        return new Response(upstreamRes.body, {
-          status: 200,
-          headers: respHeaders,
-        })
+        return new Response(mergedAudio, { status: 200, headers: respHeaders })
       } catch (err: any) {
         return new Response(
           JSON.stringify({ error: `Cloudflare TTS Proxy 异常: ${err?.message || 'Upstream Error'}` }),

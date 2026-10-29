@@ -106,6 +106,39 @@ function liveWebSearchPlugin() {
     }
   }
 
+  function splitTextForTts(text: string, maxLen = 220): string[] {
+    if (text.length <= maxLen) return [text]
+    const chunks: string[] = []
+    const sentences = text.match(/[^。！？!?；;\n]+[。！？!?；;\n]?/g) || [text]
+    let current = ''
+    for (const s of sentences) {
+      const trimmed = s.trim()
+      if (!trimmed) continue
+      if ((current + trimmed).length > maxLen) {
+        if (current) chunks.push(current)
+        current = trimmed
+      } else {
+        current += trimmed
+      }
+    }
+    if (current) chunks.push(current)
+    return chunks.length > 0 ? chunks : [text]
+  }
+
+  async function fetchBaiduChunk(chunk: string, spd: string): Promise<Buffer> {
+    const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(chunk)}&spd=${encodeURIComponent(spd)}&source=web`
+    const upstream = await fetch(ttsUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://fanyi.baidu.com/',
+      },
+    })
+    if (!upstream.ok) throw new Error(`Upstream error ${upstream.status}`)
+    const ab = await upstream.arrayBuffer()
+    return Buffer.from(ab)
+  }
+
   const ttsHandler = async (req: any, res: any) => {
     try {
       const url = new URL(req.url, 'http://localhost')
@@ -115,22 +148,18 @@ function liveWebSearchPlugin() {
         return res.end('Text required')
       }
       const spd = url.searchParams.get('spd') || '5'
-      const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(text)}&spd=${encodeURIComponent(spd)}&source=web`
-      const upstream = await fetch(ttsUrl, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': 'https://fanyi.baidu.com/',
-        },
-      })
-      if (!upstream.ok) {
-        res.statusCode = upstream.status
-        return res.end('Upstream error')
-      }
+      const chunks = splitTextForTts(text, 220)
+
       res.setHeader('Content-Type', 'audio/mpeg')
       res.setHeader('Access-Control-Allow-Origin', '*')
-      const ab = await upstream.arrayBuffer()
-      res.end(Buffer.from(ab))
+
+      if (chunks.length === 1) {
+        const buf = await fetchBaiduChunk(chunks[0], spd)
+        return res.end(buf)
+      }
+
+      const buffers = await Promise.all(chunks.map((c) => fetchBaiduChunk(c, spd)))
+      res.end(Buffer.concat(buffers))
     } catch (e: any) {
       res.statusCode = 502
       res.end(e.message || 'TTS Error')
