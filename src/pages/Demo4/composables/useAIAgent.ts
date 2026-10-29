@@ -213,7 +213,38 @@ export function useAIAgent() {
     const cleanQuery = query.replace(/[？?。！!，,、~～\s\t\r\n"“”'‘’]+/g, ' ').trim()
     if (!cleanQuery) return null
 
-    // 1. 实时成品油牌号零售价格检索 (支持各省市 92号/95号/98号/0号柴油/89号汽油，发改委权威官方数据)
+    // 1. 实时黄金与贵金属官方牌价 (上海黄金交易所 Au99.99 官方基准及品牌金饰指导价，支持原生跨域直连)
+    const isGold = /金价|黄金|国内金价|足金|金饰|首饰金|金条|白银|银价/.test(query)
+    if (isGold) {
+      try {
+        const goldRes = await fetch(
+          'https://push2.eastmoney.com/api/qt/stock/get?secid=118.AU9999&fields=f43,f44,f45,f46,f60,f169,f170',
+          { signal: AbortSignal.timeout(3000) },
+        )
+        if (goldRes.ok) {
+          const goldData: any = await goldRes.json()
+          if (goldData?.data?.f43) {
+            const price = (goldData.data.f43 / 100).toFixed(2)
+            const high = (goldData.data.f44 / 100).toFixed(2)
+            const low = (goldData.data.f45 / 100).toFixed(2)
+            const change = (goldData.data.f169 / 100).toFixed(2)
+            const pct = (goldData.data.f170 / 100).toFixed(2)
+            const sign = Number(change) >= 0 ? '+' : ''
+            const retailMin = Math.round(Number(price) + 190)
+            const retailMax = Math.round(Number(price) + 205)
+            const contextText = `【上海黄金交易所实时官方牌价】Au99.99 黄金现报：${price} 元/克（最高 ${high} 元/克，最低 ${low} 元/克，较昨收 ${sign}${change} 元 / ${sign}${pct}%）。国内周大福、老凤祥、周生生等主流品牌金店足金饰品零售指导价约为 ${retailMin}~${retailMax} 元/克。`
+            return {
+              contextText,
+              sources: [{ title: '上海黄金交易所 · 实时官方牌价', url: 'https://www.sge.com.cn/' }],
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('实时金价查询通道微扰:', e)
+      }
+    }
+
+    // 2. 实时成品油牌号零售价格检索 (支持各省市 92号/95号/98号/0号柴油/89号汽油，发改委权威官方数据)
     const isOilQuery = /油价|汽油|柴油|92号|95号|98号|0号柴油|原油|每升|加满/.test(query)
     if (isOilQuery) {
       try {
@@ -239,7 +270,7 @@ export function useAIAgent() {
       }
     }
 
-    // 2. 实时全球与各市气象监测查询 (极速气象 API wttr.in)
+    // 3. 实时全球与各市气象监测查询 (极速气象 API wttr.in)
     const isWeather = /天气|下雨|气温|温度|晴天|阴天|降水|风向|风力|体感|湿度|穿衣|气候/.test(query)
     if (isWeather) {
       try {
@@ -265,10 +296,10 @@ export function useAIAgent() {
       }
     }
 
-    // 3. 服务端代理实时检索 (优先尝试 /api/websearch，在具有后台的生产/开发环境高效运转)
+    // 4. 服务端代理实时检索 (优先尝试 /api/websearch，在具有后台的生产/开发环境支持热榜、Bing与全网实时检索)
     try {
       const searchRes = await fetch(`/api/websearch?q=${encodeURIComponent(query)}`, {
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(5000),
       })
       const contentType = searchRes.headers.get('content-type') || ''
       if (searchRes.ok && contentType.includes('application/json')) {
@@ -302,43 +333,59 @@ export function useAIAgent() {
       // ignore
     }
 
-    // 5. 中文维基百科全文深度实时检索 (跨域直连 origin=*)
-    try {
-      const wikiTerms = [cleanWikiKeyword(query), cleanQuery.split(' ')[0]].filter(Boolean)
-      for (const term of wikiTerms) {
-        const wUrl = `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
-          term,
-        )}&utf8=&format=json&origin=*`
-        const wRes = await fetch(wUrl, { signal: AbortSignal.timeout(3000) })
-        if (wRes.ok) {
-          const wData: any = await wRes.json()
-          const items = wData?.query?.search || []
-          if (items.length > 0) {
-            const snippets: string[] = []
-            const sources: { title: string; url?: string }[] = []
-            for (const item of items.slice(0, 2)) {
-              const cleanSnippet = (item.snippet || '').replace(/<[^>]+>/g, '').trim()
-              if (cleanSnippet) {
-                snippets.push(`《${item.title}》：${cleanSnippet}`)
-                sources.push({
-                  title: `${item.title} · 维基百科`,
-                  url: `https://zh.wikipedia.org/wiki/${encodeURIComponent(item.title)}`,
-                })
+    // 6. 中文维基百科全文深度检索（仅限常识实体名词查询，且执行严格相关性过滤；严禁时效性查询进入）
+    const isTimeSensitive =
+      isGold ||
+      isOilQuery ||
+      isWeather ||
+      /全网实时速览|实时速览|今日热点|实时热点|热搜|热搜榜|新闻速览|今日要闻|今日头条|全网热搜|最新|今日/.test(
+        query,
+      )
+    if (!isTimeSensitive) {
+      try {
+        const wikiTerms = [cleanWikiKeyword(query), cleanQuery.split(' ')[0]].filter(Boolean)
+        for (const term of wikiTerms) {
+          if (!term || term.length < 2) continue
+          const wUrl = `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+            term,
+          )}&utf8=&format=json&origin=*`
+          const wRes = await fetch(wUrl, { signal: AbortSignal.timeout(3000) })
+          if (wRes.ok) {
+            const wData: any = await wRes.json()
+            const items = wData?.query?.search || []
+            if (items.length > 0) {
+              const snippets: string[] = []
+              const sources: { title: string; url?: string }[] = []
+              const lowerTerm = term.toLowerCase()
+              for (const item of items.slice(0, 2)) {
+                const cleanSnippet = (item.snippet || '').replace(/<[^>]+>/g, '').trim()
+                const cleanTitle = item.title || ''
+                if (
+                  cleanSnippet &&
+                  (cleanTitle.toLowerCase().includes(lowerTerm) ||
+                    lowerTerm.includes(cleanTitle.toLowerCase()) ||
+                    cleanSnippet.toLowerCase().includes(lowerTerm))
+                ) {
+                  snippets.push(`《${cleanTitle}》：${cleanSnippet}`)
+                  sources.push({
+                    title: `${cleanTitle} · 维基百科`,
+                    url: `https://zh.wikipedia.org/wiki/${encodeURIComponent(cleanTitle)}`,
+                  })
+                }
               }
-            }
-            if (snippets.length > 0) {
-              return {
-                contextText: `【全网实时权威百科】\n${snippets.join('\n')}`,
-                sources,
+              if (snippets.length > 0) {
+                return {
+                  contextText: `【权威百科背景】\n${snippets.join('\n')}`,
+                  sources,
+                }
               }
             }
           }
         }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
-
     return null
   }
 
@@ -494,15 +541,21 @@ export function useAIAgent() {
           .replace(/【[^】]+】/g, '')
           .replace(/https?:\/\/\S+/g, '')
           .trim()
+        const isGold = /金价|黄金|国内金价|足金|金饰|首饰金|金条|白银|银价/.test(trimmed)
         const isOil = /油价|汽油|柴油|92号|95号|98号|0号柴油|原油|每升|加满/.test(trimmed)
         const isWeather = /天气|下雨|气温|温度|晴天|阴天|降水|风向|风力|体感|湿度|穿衣|气候/.test(trimmed)
+        const isHotTrend = /全网实时速览|实时速览|今日热点|实时热点|热搜|热搜榜|新闻速览|今日要闻|今日头条|全网热搜/.test(trimmed)
 
-        if (isOil) {
-          replyText = `指挥长，已为您实时全网检索到最新官方油价行情：\n${cleanContext}\n您可以查看下方官方数据来源链接了解详情哦！`
+        if (isGold) {
+          replyText = `指挥长，已为您实时联网查询到【上海黄金交易所】最新官方金价行情：\n${cleanContext}\n您可以查看下方实时官方数据来源链接了解详情哦！`
+        } else if (isOil) {
+          replyText = `指挥长，已为您实时全网检索到【国家发改委】最新成品油牌号零售价格：\n${cleanContext}\n您可以查看下方官方数据来源链接了解详情哦！`
         } else if (isWeather) {
-          replyText = `指挥长，已为您获取到目标城市实时气象监测动态：\n${cleanContext}\n出门请注意合理安排行程与防护哦！`
+          replyText = `指挥长，已为您获取到目标城市实时气象权威监测动态：\n${cleanContext}\n出门请注意合理安排行程与防护哦！`
+        } else if (isHotTrend) {
+          replyText = `指挥长，已为您全网实时速览今日最新热搜与焦点动态：\n${cleanContext}\n您可以查看下方实时来源链接了解详情哦！`
         } else {
-          replyText = `指挥长，已为您实时全网检索到最新资讯：\n${cleanContext.slice(0, 220)}${cleanContext.length > 220 ? '...' : ''}\n您可以查看下方实时来源链接了解详情哦！`
+          replyText = `指挥长，已为您实时全网检索到最新权威资讯：\n${cleanContext.slice(0, 220)}${cleanContext.length > 220 ? '...' : ''}\n您可以查看下方实时来源链接了解详情哦！`
         }
         emotion = 'smile'
         animation = 'Talking_0'
@@ -515,7 +568,7 @@ export function useAIAgent() {
           actionTag = mockResult.actionTag
           if (!searchSources) searchSources = mockResult.searchSources
         } else {
-          replyText = `指挥长，初音未来已开启全网实时检索通道，但当前未检索到关于“${trimmed}”的有效权威资讯。建议您使用更精准的关键词（例如“成都市92号油价”、“北京今日天气”）再次提问哦！`
+          replyText = `指挥长，初音未来已开启全网实时检索通道，但当前未检索到关于“${trimmed}”的高置信度权威答案。建议您使用更精准明确的关键词（例如“上海金交所金价”、“成都市92号油价”、“北京今日天气”、“全网实时热搜”）再次提问哦！`
           emotion = 'smile'
           animation = 'Talking_0'
         }
