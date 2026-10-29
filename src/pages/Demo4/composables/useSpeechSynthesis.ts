@@ -445,7 +445,8 @@ export function useSpeechSynthesis() {
     const sessionId = ++currentSpeechSessionId
 
     try {
-      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&spd=5`
+      const spd = Math.round((rate.value || 1.0) * 5)
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&voice=zh-CN-XiaoxiaoNeural&spd=${spd}`
       const audio = new Audio(ttsUrl)
       currentAudio = audio
 
@@ -466,24 +467,22 @@ export function useSpeechSynthesis() {
       }
 
       audio.onerror = (e) => {
-        console.warn('[CloudTTS] 音频播放异常:', e)
+        console.warn('[CloudTTS] 音频播放异常，降级回退至系统原生语音:', e)
         if (sessionId === currentSpeechSessionId) {
-          isSpeaking.value = false
           currentAudio = null
-          options?.onEnd?.()
+          speakNative(cleanText, options)
         }
       }
 
       await audio.play()
     } catch (err: any) {
-      console.warn('[CloudTTS] 播放被浏览器拦截:', err)
+      console.warn('[CloudTTS] 播放被浏览器拦截，回退至系统语音:', err)
       if (err?.name === 'NotAllowedError') {
         isAudioBlocked.value = true
       }
       if (sessionId === currentSpeechSessionId) {
-        isSpeaking.value = false
         currentAudio = null
-        options?.onEnd?.()
+        speakNative(cleanText, options)
       }
     }
   }
@@ -731,13 +730,28 @@ export function useSpeechSynthesis() {
         return l.includes('zh') || l.includes('cmn')
       })
 
+    // 检查当前环境是否拥有系统原生大模型级高品质拟真音色（如 Edge 的 Xiaoxiao Online）
+    const hasNativeXiaoxiao =
+      isSupported.value &&
+      voices.value.some((v) => {
+        const n = v.name.toLowerCase()
+        return n.includes('xiaoxiao') || n.includes('晓晓')
+      })
+
+    // 若用户未手动强制锁定其他特定发音人，且当前浏览器缺少 Edge 高保真原声（如 Chrome、小米浏览器、夸克、微信、Safari等）
+    // 统一优先调用云端 Edge-TTS (zh-CN-XiaoxiaoNeural 微软晓晓)，使全平台所有设备浏览器统一达到与 Edge 一致的高品质听感！
+    if (!pendingVoiceName && (!hasNativeXiaoxiao || !hasChineseVoice)) {
+      await speakCloudTts(cleanText, options)
+      return
+    }
+
     // 小米自带浏览器、夸克、微信等国产WebView中，speechSynthesis 往往无法获取中文发音人，直接走云端高兼容TTS
     if (!hasChineseVoice) {
       await speakCloudTts(cleanText, options)
       return
     }
 
-    // 3. 原生中文发音人就绪的环境（如电脑 Chrome/Edge、手机谷歌浏览器）：调用原生语音
+    // 3. 原生中文发音人就绪的环境（如电脑 Edge 原生高品质拟真语音）：直接调用原生语音低延迟播放
     await speakNative(cleanText, options)
   }
 

@@ -273,6 +273,29 @@ function liveWebSearchPlugin() {
     return Buffer.from(ab)
   }
 
+  async function synthesizeEdgeTtsNode(
+    text: string,
+    voice = 'zh-CN-XiaoxiaoNeural',
+    rate = '+0%',
+  ): Promise<Buffer> {
+    const { EdgeTTS } = await import('node-edge-tts')
+    const tts = new EdgeTTS({
+      voice,
+      lang: 'zh-CN',
+      outputFormat: 'audio-24khz-48kbitrate-mono-mp3',
+      rate,
+      timeout: 6500,
+    })
+    const chunks: Buffer[] = []
+    for await (const chunk of tts.streamAudio(text)) {
+      if (Buffer.isBuffer(chunk)) {
+        chunks.push(chunk)
+      }
+    }
+    if (chunks.length === 0) throw new Error('Empty audio stream from EdgeTTS')
+    return Buffer.concat(chunks)
+  }
+
   const ttsHandler = async (req: any, res: any) => {
     try {
       const url = new URL(req.url, 'http://localhost')
@@ -281,12 +304,26 @@ function liveWebSearchPlugin() {
         res.statusCode = 400
         return res.end('Text required')
       }
+      const voice = url.searchParams.get('voice') || 'zh-CN-XiaoxiaoNeural'
       const spd = url.searchParams.get('spd') || '5'
-      const chunks = splitTextForTts(text, 220)
+      const rate = spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%'
 
       res.setHeader('Content-Type', 'audio/mpeg')
       res.setHeader('Access-Control-Allow-Origin', '*')
+      res.setHeader('Cache-Control', 'public, max-age=86400')
 
+      // 1. 优先采用微软 Edge-TTS (晓晓神经拟真原声)
+      try {
+        const edgeBuffer = await synthesizeEdgeTtsNode(text, voice, rate)
+        if (edgeBuffer && edgeBuffer.length > 0) {
+          return res.end(edgeBuffer)
+        }
+      } catch (edgeErr: any) {
+        console.warn('[Vite TTS] Edge-TTS 失败，自动降级至百度TTS兜底:', edgeErr?.message)
+      }
+
+      // 2. 百度高可靠 TTS 兜底
+      const chunks = splitTextForTts(text, 220)
       if (chunks.length === 1) {
         const buf = await fetchBaiduChunk(chunks[0], spd)
         return res.end(buf)

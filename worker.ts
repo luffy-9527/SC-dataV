@@ -1,4 +1,5 @@
 import { performLiveSearch } from './functions/_shared/search'
+import { synthesizeWithEdgeWorkers } from './functions/_shared/edgeTts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -203,13 +204,26 @@ export default {
         .trim()
 
       const spd = url.searchParams.get('spd') || '5'
-      const chunks = splitTextForTts(cleanText, 220)
+      const voice = url.searchParams.get('voice') || 'zh-CN-XiaoxiaoNeural'
+      const rate = spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%'
 
       const respHeaders = new Headers()
       respHeaders.set('Content-Type', 'audio/mpeg')
       respHeaders.set('Cache-Control', 'public, max-age=86400')
       Object.entries(CORS_HEADERS).forEach(([k, v]) => respHeaders.set(k, v))
 
+      // 1. 优先采用微软 Edge-TTS (晓晓高保真原声音色)
+      try {
+        const edgeAudio = await synthesizeWithEdgeWorkers(cleanText, voice, rate, 5500)
+        if (edgeAudio && edgeAudio.length > 0) {
+          return new Response(edgeAudio, { status: 200, headers: respHeaders })
+        }
+      } catch (edgeErr: any) {
+        console.warn('[Cloudflare Worker] EdgeTTS 合成异常，平滑降级至百度TTS兜底:', edgeErr?.message)
+      }
+
+      // 2. 百度高可靠 TTS 兜底（并行拉取与二进制帧拼接）
+      const chunks = splitTextForTts(cleanText, 220)
       try {
         if (chunks.length === 1) {
           const singleBuffer = await fetchBaiduTtsChunk(chunks[0], spd)

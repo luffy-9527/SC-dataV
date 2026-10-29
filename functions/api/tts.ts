@@ -1,3 +1,5 @@
+import { synthesizeWithEdgeWorkers } from '../_shared/edgeTts'
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -89,13 +91,29 @@ export const onRequest = async (context: any): Promise<Response> => {
       .trim()
 
     const spd = url.searchParams.get('spd') || '5'
-    const chunks = splitText(cleanText, 220)
+    const voice = url.searchParams.get('voice') || 'zh-CN-XiaoxiaoNeural'
+    const rate = spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%'
 
     const respHeaders = new Headers()
     respHeaders.set('Content-Type', 'audio/mpeg')
     respHeaders.set('Cache-Control', 'public, max-age=86400')
     Object.entries(CORS_HEADERS).forEach(([k, v]) => respHeaders.set(k, v))
 
+    // 1. 优先采用微软 Edge-TTS (晓晓高保真原声音色)
+    try {
+      const edgeAudio = await synthesizeWithEdgeWorkers(cleanText, voice, rate, 5500)
+      if (edgeAudio && edgeAudio.length > 0) {
+        return new Response(edgeAudio, {
+          status: 200,
+          headers: respHeaders,
+        })
+      }
+    } catch (edgeErr: any) {
+      console.warn('[Pages Function TTS] EdgeTTS 异常，平滑降级至百度TTS兜底:', edgeErr?.message)
+    }
+
+    // 2. 百度高可靠 TTS 兜底（并行获取与MP3原生帧无缝拼接）
+    const chunks = splitText(cleanText, 220)
     if (chunks.length === 1) {
       const singleBuffer = await fetchTtsChunk(chunks[0], spd)
       return new Response(singleBuffer, {
@@ -104,7 +122,6 @@ export const onRequest = async (context: any): Promise<Response> => {
       })
     }
 
-    // 并行获取多个语段音频帧并进行原生 MP3 二进制无缝拼接，彻底消除网络停顿
     const buffers = await Promise.all(chunks.map((c) => fetchTtsChunk(c, spd)))
     const mergedAudio = concatUint8Arrays(buffers)
 
