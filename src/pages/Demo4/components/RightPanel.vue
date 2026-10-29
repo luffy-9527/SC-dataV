@@ -302,52 +302,15 @@ function handleSliceClick(item: KnowledgeSlice) {
 
       <div class="card-header">
         <div class="header-left">
-          <span class="title-glow-dot purple" />
+          <span class="title-glow-dot cyan" />
           <h3 class="card-title">全息运镜与动作调度</h3>
         </div>
-        <span class="status-mode-pill" :class="{ 'live-mode': props.modelType === 'magical' }">
-          {{ props.modelType === 'magical' ? '🌟 LIVE 舞台态' : '💎 数智专员态' }}
+        <span class="status-mode-pill">
+          💎 数智专员态
         </span>
       </div>
 
-      <!-- 1. 初音未来 3D 形象风格切换 -->
-      <div class="ctrl-group">
-        <div class="group-title-row">
-          <span class="group-title">形象风格重构</span>
-          <span class="group-sub">动态加载 3D 模型资产</span>
-        </div>
-        <div class="style-cards-grid">
-          <button
-            type="button"
-            class="style-card anime"
-            :class="{ active: props.modelType === 'anime' }"
-            @click="emit('changeModelType', 'anime')"
-          >
-            <div class="card-dot cyan" />
-            <div class="card-info">
-              <span class="card-name">全息数智专员</span>
-              <span class="card-sub">高精手办 · 商务原色</span>
-            </div>
-            <span v-if="props.modelType === 'anime'" class="card-check cyan">✓</span>
-          </button>
-
-          <button
-            type="button"
-            class="style-card magical"
-            :class="{ active: props.modelType === 'magical' }"
-            @click="emit('changeModelType', 'magical')"
-          >
-            <div class="card-dot purple" />
-            <div class="card-info">
-              <span class="card-name">魔法未来 Live</span>
-              <span class="card-sub">舞台演出服 · 持荧光棒</span>
-            </div>
-            <span v-if="props.modelType === 'magical'" class="card-check purple">✓</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 2. 全息摄像机运镜机位 -->
+      <!-- 1. 全息摄像机运镜机位 -->
       <div class="ctrl-group">
         <div class="group-title-row">
           <span class="group-title">摄像机全息运镜</span>
@@ -645,14 +608,9 @@ function handleSliceClick(item: KnowledgeSlice) {
   font-size: 9.5px;
   padding: 2px 7px;
   border-radius: 4px;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.status-mode-pill.live-mode {
-  color: #f472b6;
-  background: rgba(236, 72, 153, 0.12);
-  border-color: rgba(236, 72, 153, 0.4);
+  color: #38bdf8;
+  background: rgba(0, 242, 254, 0.1);
+  border: 1px solid rgba(0, 242, 254, 0.3);
 }
 
 /* 知识切片列表 */
@@ -814,90 +772,6 @@ function handleSliceClick(item: KnowledgeSlice) {
   font-size: 8.5px;
   color: #64748b;
   font-family: monospace;
-}
-
-/* 形象风格卡片行 */
-.style-cards-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.style-card {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 9px;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.22s;
-}
-
-.style-card:hover {
-  background: rgba(0, 242, 254, 0.08);
-  border-color: rgba(0, 242, 254, 0.4);
-}
-
-.style-card.active.anime {
-  background: rgba(0, 242, 254, 0.14);
-  border-color: #00f2fe;
-  box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
-}
-
-.style-card.active.magical {
-  background: rgba(236, 72, 153, 0.14);
-  border-color: #ec4899;
-  box-shadow: 0 0 12px rgba(236, 72, 153, 0.25);
-}
-
-.card-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.card-dot.cyan {
-  background: #00f2fe;
-  box-shadow: 0 0 6px #00f2fe;
-}
-.card-dot.purple {
-  background: #ec4899;
-  box-shadow: 0 0 6px #ec4899;
-}
-
-.card-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.card-name {
-  font-size: 11px;
-  font-weight: 700;
-  color: #f1f5f9;
-  white-space: nowrap;
-}
-
-.card-sub {
-  font-size: 8.5px;
-  color: #94a3b8;
-  margin-top: 1px;
-  white-space: nowrap;
-}
-
-.card-check {
-  font-size: 11px;
-  font-weight: 800;
-}
-.card-check.cyan {
-  color: #00f2fe;
-}
-.card-check.purple {
-  color: #ec4899;
 }
 
 /* 摄像机运镜视点（三等分胶囊卡片） */
