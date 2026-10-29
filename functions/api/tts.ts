@@ -25,8 +25,8 @@ function splitText(text: string, maxLen = 220): string[] {
   return chunks.length > 0 ? chunks : [text]
 }
 
-async function fetchTtsChunk(chunk: string, spd: string): Promise<Uint8Array> {
-  const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(chunk)}&spd=${encodeURIComponent(spd)}&source=web`
+async function fetchTtsChunk(chunk: string, spd: string, lan = 'zh'): Promise<Uint8Array> {
+  const ttsUrl = `https://fanyi.baidu.com/gettts?lan=${encodeURIComponent(lan)}&text=${encodeURIComponent(chunk)}&spd=${encodeURIComponent(spd)}&source=web`
   const res = await fetch(ttsUrl, {
     method: 'GET',
     headers: {
@@ -92,16 +92,17 @@ export const onRequest = async (context: any): Promise<Response> => {
 
     const spd = url.searchParams.get('spd') || '5'
     const voice = url.searchParams.get('voice') || 'zh-CN-XiaoxiaoNeural'
-    const rate = spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%'
+    const rate = url.searchParams.get('rate') || (spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%')
+    const pitch = url.searchParams.get('pitch') || 'default'
 
     const respHeaders = new Headers()
     respHeaders.set('Content-Type', 'audio/mpeg')
     respHeaders.set('Cache-Control', 'public, max-age=86400')
     Object.entries(CORS_HEADERS).forEach(([k, v]) => respHeaders.set(k, v))
 
-    // 1. 优先采用微软 Edge-TTS (晓晓高保真原声音色)
+    // 1. 优先采用微软 Edge-TTS (支持晓晓、晓伊、七海日文歌姬、云希及音调语速调校)
     try {
-      const edgeAudio = await synthesizeWithEdgeWorkers(cleanText, voice, rate, 5500)
+      const edgeAudio = await synthesizeWithEdgeWorkers(cleanText, voice, rate, pitch, 5500)
       if (edgeAudio && edgeAudio.length > 0) {
         return new Response(edgeAudio, {
           status: 200,
@@ -112,17 +113,18 @@ export const onRequest = async (context: any): Promise<Response> => {
       console.warn('[Pages Function TTS] EdgeTTS 异常，平滑降级至百度TTS兜底:', edgeErr?.message)
     }
 
-    // 2. 百度高可靠 TTS 兜底（并行获取与MP3原生帧无缝拼接）
+    // 2. 百度高可靠 TTS 兜底（支持中文与日文自动切换并进行无缝二进制帧拼接）
+    const baiduLan = voice.toLowerCase().startsWith('ja') ? 'jp' : 'zh'
     const chunks = splitText(cleanText, 220)
     if (chunks.length === 1) {
-      const singleBuffer = await fetchTtsChunk(chunks[0], spd)
+      const singleBuffer = await fetchTtsChunk(chunks[0], spd, baiduLan)
       return new Response(singleBuffer, {
         status: 200,
         headers: respHeaders,
       })
     }
 
-    const buffers = await Promise.all(chunks.map((c) => fetchTtsChunk(c, spd)))
+    const buffers = await Promise.all(chunks.map((c) => fetchTtsChunk(c, spd, baiduLan)))
     const mergedAudio = concatUint8Arrays(buffers)
 
     return new Response(mergedAudio, {

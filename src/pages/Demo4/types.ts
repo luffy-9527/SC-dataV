@@ -43,6 +43,7 @@ export interface DigitalHumanConfig {
   apiKey: string
   model: string
   baseUrl: string
+  voicePreset?: string
   voicePitch: number
   voiceRate: number
   selectedVoice: string

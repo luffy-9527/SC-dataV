@@ -182,6 +182,60 @@ export function useSpeechSynthesis() {
   // 甜美自然预设参数：音调 1.05，语速 1.00
   const pitch = ref(1.05)
   const rate = ref(1.0)
+  const currentVoicePreset = ref<string>('default')
+
+  function setVoicePreset(preset: string) {
+    currentVoicePreset.value = preset || 'default'
+  }
+
+  function getEffectiveVoiceConfig() {
+    const presetId = currentVoicePreset.value || 'default'
+    switch (presetId) {
+      case 'xiaoyi':
+        return {
+          edgeVoice: 'zh-CN-XiaoyiNeural',
+          pitchOffset: '+18%',
+          rateOffset: '+8%',
+          targetLang: 'zh',
+        }
+      case 'loli':
+        return {
+          edgeVoice: 'zh-CN-XiaoyiNeural',
+          pitchOffset: '+24%',
+          rateOffset: '+8%',
+          targetLang: 'zh',
+        }
+      case 'gentle':
+        return {
+          edgeVoice: 'zh-CN-XiaoxiaoNeural',
+          pitchOffset: '+8%',
+          rateOffset: '-8%',
+          targetLang: 'zh',
+        }
+      case 'news':
+        return {
+          edgeVoice: 'zh-CN-YunxiNeural',
+          pitchOffset: '-4%',
+          rateOffset: '+2%',
+          targetLang: 'zh',
+        }
+      case 'japanese':
+        return {
+          edgeVoice: 'ja-JP-NanamiNeural',
+          pitchOffset: '+10%',
+          rateOffset: '+0%',
+          targetLang: 'ja',
+        }
+      case 'default':
+      default:
+        return {
+          edgeVoice: 'zh-CN-XiaoxiaoNeural',
+          pitchOffset: '+5%',
+          rateOffset: '+0%',
+          targetLang: 'zh',
+        }
+    }
+  }
 
   // GPT-SoVITS 开源 AI 原声配置
   const enableGptSovits = ref(false)
@@ -264,16 +318,24 @@ export function useSpeechSynthesis() {
     if (name.includes('google') && (lang.includes('zh') || lang.includes('cmn'))) score += 30
     if (name.includes('female') || name.includes('女') || name.includes('woman')) score += 15
 
-    // 惩罚男性音色（保持初音未来二次元美少女调性）
+    // 日文动漫甜美女声优选（七海 Nanami、步 Ayumi、春香 Haruka 等）
+    if (name.includes('nanami')) score += 55
+    if (name.includes('ayumi') || name.includes('haruka') || name.includes('keiko') || name.includes('sayaka') || name.includes('mizuki')) score += 40
+
+    // 严厉惩罚与坚决屏蔽所有男性音色（保持初音未来二次元美少女调性，彻底杜绝大叔男声）
     if (
       name.includes('male') ||
       name.includes('男') ||
+      name.includes('ichiro') ||
+      name.includes('keita') ||
+      name.includes('daichi') ||
+      name.includes('naoki') ||
       name.includes('kangkang') ||
       name.includes('yunyang') ||
       name.includes('david') ||
       name.includes('george')
     ) {
-      score -= 60
+      score -= 200
     }
 
     return score
@@ -434,6 +496,9 @@ export function useSpeechSynthesis() {
       onStart?: () => void
       onEnd?: () => void
       suppressChirp?: boolean
+      voice?: string
+      pitch?: string
+      rate?: string
     },
   ) {
     unlockAudio()
@@ -445,8 +510,15 @@ export function useSpeechSynthesis() {
     const sessionId = ++currentSpeechSessionId
 
     try {
+      const effective = getEffectiveVoiceConfig()
+      const voiceToUse = options?.voice || effective.edgeVoice
+      const pitchToUse = options?.pitch || effective.pitchOffset
+      const rateToUse = options?.rate || effective.rateOffset
       const spd = Math.round((rate.value || 1.0) * 5)
-      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&voice=zh-CN-XiaoxiaoNeural&spd=${spd}`
+
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&voice=${encodeURIComponent(
+        voiceToUse,
+      )}&pitch=${encodeURIComponent(pitchToUse)}&rate=${encodeURIComponent(rateToUse)}&spd=${spd}`
       const audio = new Audio(ttsUrl)
       currentAudio = audio
 
@@ -530,11 +602,28 @@ export function useSpeechSynthesis() {
       loadVoices()
     }
 
+    const isMaleName = (name: string) =>
+      name.includes('male') ||
+      name.includes('男') ||
+      name.includes('ichiro') ||
+      name.includes('keita') ||
+      name.includes('daichi') ||
+      name.includes('naoki') ||
+      name.includes('kangkang') ||
+      name.includes('yunyang') ||
+      name.includes('david') ||
+      name.includes('george')
+
     const voiceToUse =
-      currentVoice.value ||
-      voices.value.find((v) => v.lang.toLowerCase().includes('zh') || v.lang.toLowerCase().includes('cmn')) ||
-      voices.value[0] ||
-      null
+      (currentVoice.value && !isMaleName(currentVoice.value.name.toLowerCase()))
+        ? currentVoice.value
+        : voices.value.find((v) => {
+            const l = v.lang.toLowerCase()
+            const n = v.name.toLowerCase()
+            return (l.includes('zh') || l.includes('cmn')) && !isMaleName(n)
+          }) ||
+          voices.value.find((v) => !isMaleName(v.name.toLowerCase())) ||
+          null
 
     startHeartbeat()
 
@@ -722,36 +811,73 @@ export function useSpeechSynthesis() {
       }
     }
 
-    // 2. 检查当前浏览器是否具备真正可用的系统中文发音人
+    // 2. 检查当前声线预设，按预设精准派发音色
+    const effective = getEffectiveVoiceConfig()
+
+    // 若当前为日文虚拟歌姬预设，无论任何浏览器，统一调用微软七海（Nanami）日文动漫女声，绝不使用男声与系统本地错误语音！
+    if (effective.targetLang === 'ja' || currentVoicePreset.value === 'japanese') {
+      await speakCloudTts(cleanText, {
+        ...options,
+        voice: effective.edgeVoice,
+        pitch: effective.pitchOffset,
+        rate: effective.rateOffset,
+      })
+      return
+    }
+
+    // 若用户选择了元气少女、萌音电波萝莉、科技专员等专属声线预设：
+    // 若当前环境缺乏对应的原生专属发音人（如 Chrome、移动端等），直接通过云端 Edge-TTS 对应音色精准播报！
+    if (currentVoicePreset.value && currentVoicePreset.value !== 'default') {
+      await speakCloudTts(cleanText, {
+        ...options,
+        voice: effective.edgeVoice,
+        pitch: effective.pitchOffset,
+        rate: effective.rateOffset,
+      })
+      return
+    }
+
+    // 3. 默认推荐声线（初音官方原声）：
+    // 检查是否有可用且非男性的中文发音人
+    const isMaleVoiceName = (name: string) =>
+      name.includes('male') ||
+      name.includes('男') ||
+      name.includes('ichiro') ||
+      name.includes('keita') ||
+      name.includes('daichi') ||
+      name.includes('naoki') ||
+      name.includes('kangkang') ||
+      name.includes('yunyang') ||
+      name.includes('david') ||
+      name.includes('george')
+
     const hasChineseVoice =
       isSupported.value &&
       voices.value.some((v) => {
         const l = v.lang.toLowerCase()
-        return l.includes('zh') || l.includes('cmn')
+        const n = v.name.toLowerCase()
+        return (l.includes('zh') || l.includes('cmn')) && !isMaleVoiceName(n)
       })
 
-    // 检查当前环境是否拥有系统原生大模型级高品质拟真音色（如 Edge 的 Xiaoxiao Online）
     const hasNativeXiaoxiao =
       isSupported.value &&
       voices.value.some((v) => {
         const n = v.name.toLowerCase()
-        return n.includes('xiaoxiao') || n.includes('晓晓')
+        return (n.includes('xiaoxiao') || n.includes('晓晓')) && !isMaleVoiceName(n)
       })
 
-    // 若用户未手动强制锁定其他特定发音人，且当前浏览器缺少 Edge 高保真原声（如 Chrome、小米浏览器、夸克、微信、Safari等）
-    // 统一优先调用云端 Edge-TTS (zh-CN-XiaoxiaoNeural 微软晓晓)，使全平台所有设备浏览器统一达到与 Edge 一致的高品质听感！
-    if (!pendingVoiceName && (!hasNativeXiaoxiao || !hasChineseVoice)) {
-      await speakCloudTts(cleanText, options)
+    // 非电脑 Edge 且无原生 Xiaoxiao 的环境（如手机 Chrome、小米、夸克、微信），统一调用云端晓晓
+    if (!hasNativeXiaoxiao || !hasChineseVoice) {
+      await speakCloudTts(cleanText, {
+        ...options,
+        voice: effective.edgeVoice,
+        pitch: effective.pitchOffset,
+        rate: effective.rateOffset,
+      })
       return
     }
 
-    // 小米自带浏览器、夸克、微信等国产WebView中，speechSynthesis 往往无法获取中文发音人，直接走云端高兼容TTS
-    if (!hasChineseVoice) {
-      await speakCloudTts(cleanText, options)
-      return
-    }
-
-    // 3. 原生中文发音人就绪的环境（如电脑 Edge 原生高品质拟真语音）：直接调用原生语音低延迟播放
+    // 电脑 Edge 原生高品质拟真语音：直接调用原生语音低延迟播放
     await speakNative(cleanText, options)
   }
 
@@ -825,6 +951,8 @@ export function useSpeechSynthesis() {
     voices,
     currentVoice,
     setVoiceByName,
+    currentVoicePreset,
+    setVoicePreset,
     pitch,
     rate,
     currentVisemes,

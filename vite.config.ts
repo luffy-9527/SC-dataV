@@ -259,8 +259,8 @@ function liveWebSearchPlugin() {
     return chunks.length > 0 ? chunks : [text]
   }
 
-  async function fetchBaiduChunk(chunk: string, spd: string): Promise<Buffer> {
-    const ttsUrl = `https://fanyi.baidu.com/gettts?lan=zh&text=${encodeURIComponent(chunk)}&spd=${encodeURIComponent(spd)}&source=web`
+  async function fetchBaiduChunk(chunk: string, spd: string, lan = 'zh'): Promise<Buffer> {
+    const ttsUrl = `https://fanyi.baidu.com/gettts?lan=${encodeURIComponent(lan)}&text=${encodeURIComponent(chunk)}&spd=${encodeURIComponent(spd)}&source=web`
     const upstream = await fetch(ttsUrl, {
       headers: {
         'User-Agent':
@@ -277,13 +277,16 @@ function liveWebSearchPlugin() {
     text: string,
     voice = 'zh-CN-XiaoxiaoNeural',
     rate = '+0%',
+    pitch = 'default',
   ): Promise<Buffer> {
     const { EdgeTTS } = await import('node-edge-tts')
+    const lang = voice.toLowerCase().startsWith('ja') ? 'ja-JP' : 'zh-CN'
     const tts = new EdgeTTS({
       voice,
-      lang: 'zh-CN',
+      lang,
       outputFormat: 'audio-24khz-48kbitrate-mono-mp3',
       rate,
+      pitch,
       timeout: 6500,
     })
     const chunks: Buffer[] = []
@@ -306,15 +309,16 @@ function liveWebSearchPlugin() {
       }
       const voice = url.searchParams.get('voice') || 'zh-CN-XiaoxiaoNeural'
       const spd = url.searchParams.get('spd') || '5'
-      const rate = spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%'
+      const rate = url.searchParams.get('rate') || (spd === '6' ? '+10%' : spd === '7' ? '+20%' : spd === '4' ? '-10%' : '+0%')
+      const pitch = url.searchParams.get('pitch') || 'default'
 
       res.setHeader('Content-Type', 'audio/mpeg')
       res.setHeader('Access-Control-Allow-Origin', '*')
       res.setHeader('Cache-Control', 'public, max-age=86400')
 
-      // 1. 优先采用微软 Edge-TTS (晓晓神经拟真原声)
+      // 1. 优先采用微软 Edge-TTS (支持晓晓、晓伊、七海日文歌姬、云希及音调调校)
       try {
-        const edgeBuffer = await synthesizeEdgeTtsNode(text, voice, rate)
+        const edgeBuffer = await synthesizeEdgeTtsNode(text, voice, rate, pitch)
         if (edgeBuffer && edgeBuffer.length > 0) {
           return res.end(edgeBuffer)
         }
@@ -323,13 +327,14 @@ function liveWebSearchPlugin() {
       }
 
       // 2. 百度高可靠 TTS 兜底
+      const baiduLan = voice.toLowerCase().startsWith('ja') ? 'jp' : 'zh'
       const chunks = splitTextForTts(text, 220)
       if (chunks.length === 1) {
-        const buf = await fetchBaiduChunk(chunks[0], spd)
+        const buf = await fetchBaiduChunk(chunks[0], spd, baiduLan)
         return res.end(buf)
       }
 
-      const buffers = await Promise.all(chunks.map((c) => fetchBaiduChunk(c, spd)))
+      const buffers = await Promise.all(chunks.map((c) => fetchBaiduChunk(c, spd, baiduLan)))
       res.end(Buffer.concat(buffers))
     } catch (e: any) {
       res.statusCode = 502

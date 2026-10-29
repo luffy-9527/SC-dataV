@@ -134,6 +134,7 @@ export async function synthesizeWithEdgeWorkers(
   text: string,
   voice = 'zh-CN-XiaoxiaoNeural',
   rate = '+0%',
+  pitch = 'default',
   timeoutMs = 6500,
 ): Promise<Uint8Array> {
   const token = await generateSecMsGecTokenV2()
@@ -256,11 +257,13 @@ export async function synthesizeWithEdgeWorkers(
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;')
 
+    const lang = voice.toLowerCase().startsWith('ja') ? 'ja-JP' : 'zh-CN'
+
     ws.send(
       `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n` +
-        `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="zh-CN">` +
+        `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="${lang}">` +
         `<voice name="${voice}">` +
-        `<prosody rate="${rate}" pitch="default" volume="default">` +
+        `<prosody rate="${rate}" pitch="${pitch}" volume="default">` +
         `${escapedText}` +
         `</prosody>` +
         `</voice>` +

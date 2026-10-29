@@ -28,6 +28,7 @@ interface VoicePreset {
   pitch: number
   rate: number
   targetLang?: 'zh' | 'ja'
+  edgeVoice: string
   voiceCandidates: string[]
   sampleText: string
   desc: string
@@ -41,7 +42,8 @@ const VOICE_PRESETS: VoicePreset[] = [
     pitch: 1.05,
     rate: 1.0,
     targetLang: 'zh',
-    voiceCandidates: ['yaoyao', 'xiaoxiao', 'tingting', 'google', 'huihui', 'zh'],
+    edgeVoice: 'zh-CN-XiaoxiaoNeural',
+    voiceCandidates: ['xiaoxiao', 'yaoyao', 'tingting', 'google', 'huihui', 'zh'],
     sampleText: '指挥长您好！我是全息数字人初音未来，已连接大屏数据中枢与实时联网大脑！',
     desc: '当前默认最佳声线，甜美清澈自然流利，温润细腻无机械失真',
   },
@@ -52,6 +54,7 @@ const VOICE_PRESETS: VoicePreset[] = [
     pitch: 1.18,
     rate: 1.08,
     targetLang: 'zh',
+    edgeVoice: 'zh-CN-XiaoyiNeural',
     voiceCandidates: ['xiaoyi', 'yaoyao', 'xiaoxiao', 'google', 'huihui', 'zh'],
     sampleText: '指挥长你好呀！我是元气满满的初音未来，今天也要全力以赴哦！',
     desc: '二次元高亢欢快女声，语调轻快跳跃，洋溢满满元气与朝气',
@@ -63,7 +66,8 @@ const VOICE_PRESETS: VoicePreset[] = [
     pitch: 1.08,
     rate: 0.92,
     targetLang: 'zh',
-    voiceCandidates: ['yaoyao', 'xiaoxiao', 'tingting', 'huihui', 'zh'],
+    edgeVoice: 'zh-CN-XiaoxiaoNeural',
+    voiceCandidates: ['xiaoxiao', 'yaoyao', 'tingting', 'huihui', 'zh'],
     sampleText: '指挥长辛苦啦，指挥中心当前一切平稳，初音会一直在这里陪伴着您。',
     desc: '轻柔舒缓如沐春风，语速从容优雅，带来身心放松的治愈陪伴感',
   },
@@ -74,7 +78,8 @@ const VOICE_PRESETS: VoicePreset[] = [
     pitch: 0.96,
     rate: 1.02,
     targetLang: 'zh',
-    voiceCandidates: ['huihui', 'yunxi', 'yaoyao', 'kangkang', 'zh'],
+    edgeVoice: 'zh-CN-YunxiNeural',
+    voiceCandidates: ['yunxi', 'huihui', 'kangkang', 'zh'],
     sampleText: '报告指挥中心，全域遥测数据与智算链路巡检完毕，所有指标均在安全阈值区间。',
     desc: '沉稳冷静、清晰果断，专为工业数字孪生与应急指挥调度打造',
   },
@@ -85,9 +90,10 @@ const VOICE_PRESETS: VoicePreset[] = [
     pitch: 1.10,
     rate: 1.0,
     targetLang: 'ja',
-    voiceCandidates: ['nanami', 'ayumi', 'haruka', 'keiko', 'sayaka', 'ichiro', 'google', 'ja', 'jp'],
+    edgeVoice: 'ja-JP-NanamiNeural',
+    voiceCandidates: ['nanami', 'ayumi', 'haruka', 'keiko', 'sayaka', 'mizuki'],
     sampleText: 'マスター、こんにちは！バーチャルシンガーの初音ミクです、今日もよろしくね！',
-    desc: '自动调用系统原生纯正日文歌姬引擎，原汁原味二次元偶像音韵',
+    desc: '微软官方高保真日文歌姬声线 (Nanami 七海原声)，原汁原味二次元偶像音韵',
   },
   {
     id: 'loli',
@@ -96,7 +102,8 @@ const VOICE_PRESETS: VoicePreset[] = [
     pitch: 1.24,
     rate: 1.08,
     targetLang: 'zh',
-    voiceCandidates: ['yaoyao', 'xiaoyi', 'xiaoxiao', 'zh'],
+    edgeVoice: 'zh-CN-XiaoyiNeural',
+    voiceCandidates: ['xiaoyi', 'xiaoxiao', 'yaoyao', 'zh'],
     sampleText: '收到指挥长的新指令啦！初音未来随时待命，马上为您呈现精彩大屏！',
     desc: '极高音调灵动萌系电波调校，二次元感拉满，俏皮灵动可爱',
   },
@@ -189,21 +196,56 @@ function getBestDefaultVoice(): SpeechSynthesisVoice | undefined {
   return anyZh || props.voices[0]
 }
 
+function isMaleVoice(name: string): boolean {
+  const n = name.toLowerCase()
+  return (
+    n.includes('male') ||
+    n.includes('男') ||
+    n.includes('ichiro') ||
+    n.includes('keita') ||
+    n.includes('daichi') ||
+    n.includes('naoki') ||
+    n.includes('kangkang') ||
+    n.includes('yunyang') ||
+    n.includes('david') ||
+    n.includes('george')
+  )
+}
+
 function getJapaneseVoice(): SpeechSynthesisVoice | undefined {
   if (!props.voices || props.voices.length === 0) return undefined
-  return props.voices.find((v) => {
+
+  // 1. 优先选取日文甜美女性动漫发音人 (Nanami, Ayumi, Haruka, Keiko, Sayaka, Mizuki)
+  const femaleJa = props.voices.find((v) => {
     const lang = v.lang.toLowerCase()
     const name = v.name.toLowerCase()
+    const isJa = lang.includes('ja') || lang.includes('jp') || name.includes('japan')
     return (
-      lang.includes('ja') ||
-      lang.includes('jp') ||
-      name.includes('japan') ||
-      name.includes('haruka') ||
-      name.includes('ayumi') ||
-      name.includes('keiko') ||
-      name.includes('nanami')
+      isJa &&
+      !isMaleVoice(name) &&
+      (name.includes('nanami') ||
+        name.includes('ayumi') ||
+        name.includes('haruka') ||
+        name.includes('keiko') ||
+        name.includes('sayaka') ||
+        name.includes('mizuki') ||
+        name.includes('natural') ||
+        name.includes('online'))
     )
   })
+  if (femaleJa) return femaleJa
+
+  // 2. 备选任何非男性的日文发音人
+  const anyNonMaleJa = props.voices.find((v) => {
+    const lang = v.lang.toLowerCase()
+    const name = v.name.toLowerCase()
+    const isJa = lang.includes('ja') || lang.includes('jp') || name.includes('japan')
+    return isJa && !isMaleVoice(name)
+  })
+  if (anyNonMaleJa) return anyNonMaleJa
+
+  // 若系统仅有男性日语音色（如 Windows 的 Microsoft Ichiro），坚决弃用，返回 undefined 走高品质云端 Nanami
+  return undefined
 }
 
 function getProfessionalVoice(): SpeechSynthesisVoice | undefined {
@@ -226,19 +268,23 @@ watch(
     if (!localConfig.apiKey || !localConfig.apiKey.trim()) {
       localConfig.apiKey = ENV_API_KEY
     }
-    const sv = cfg.selectedVoice?.toLowerCase() || ''
-    if (sv.includes('ja') || sv.includes('jp')) {
-      activePresetId.value = 'japanese'
-    } else if (cfg.voicePitch && cfg.voicePitch >= 1.21) {
-      activePresetId.value = 'loli'
-    } else if (cfg.voicePitch && cfg.voicePitch >= 1.14) {
-      activePresetId.value = 'xiaoyi'
-    } else if (cfg.voicePitch && cfg.voicePitch <= 0.98) {
-      activePresetId.value = 'news'
-    } else if (cfg.voiceRate && cfg.voiceRate <= 0.94) {
-      activePresetId.value = 'gentle'
+    if (cfg.voicePreset) {
+      activePresetId.value = cfg.voicePreset
     } else {
-      activePresetId.value = 'default'
+      const sv = cfg.selectedVoice?.toLowerCase() || ''
+      if (sv.includes('ja') || sv.includes('jp') || sv.includes('nanami')) {
+        activePresetId.value = 'japanese'
+      } else if (cfg.voicePitch && cfg.voicePitch >= 1.21) {
+        activePresetId.value = 'loli'
+      } else if ((cfg.voicePitch && cfg.voicePitch >= 1.14) || sv.includes('xiaoyi')) {
+        activePresetId.value = 'xiaoyi'
+      } else if ((cfg.voicePitch && cfg.voicePitch <= 0.98) || sv.includes('yunxi')) {
+        activePresetId.value = 'news'
+      } else if (cfg.voiceRate && cfg.voiceRate <= 0.94) {
+        activePresetId.value = 'gentle'
+      } else {
+        activePresetId.value = 'default'
+      }
     }
   },
   { immediate: true },
@@ -257,6 +303,7 @@ watch(
 function applyPreset(preset: VoicePreset) {
   stopPreviewVoice()
   activePresetId.value = preset.id
+  localConfig.voicePreset = preset.id
   localConfig.voicePitch = preset.pitch
   localConfig.voiceRate = preset.rate
 
@@ -269,6 +316,8 @@ function applyPreset(preset: VoicePreset) {
     const jaVoice = getJapaneseVoice()
     if (jaVoice) {
       localConfig.selectedVoice = jaVoice.name
+    } else {
+      localConfig.selectedVoice = preset.edgeVoice
     }
     return
   }
@@ -277,11 +326,13 @@ function applyPreset(preset: VoicePreset) {
     const profVoice = getProfessionalVoice()
     if (profVoice) {
       localConfig.selectedVoice = profVoice.name
+    } else {
+      localConfig.selectedVoice = preset.edgeVoice
     }
     return
   }
 
-  // Find candidate from props.voices
+  // Find candidate from props.voices (excluding male voices)
   let matchedVoice: SpeechSynthesisVoice | undefined = undefined
   for (const cand of preset.voiceCandidates) {
     matchedVoice = props.voices.find((v) => {
@@ -290,20 +341,19 @@ function applyPreset(preset: VoicePreset) {
       if (preset.targetLang && !vlang.includes(preset.targetLang)) {
         return false
       }
+      if (vname.includes('male') || vname.includes('男') || vname.includes('ichiro') || vname.includes('keita') || vname.includes('daichi')) {
+        return false
+      }
       return vname.includes(cand)
     })
     if (matchedVoice) break
   }
 
-  if (!matchedVoice && preset.targetLang) {
-    matchedVoice = props.voices.find((v) => v.lang.toLowerCase().includes(preset.targetLang!))
-  }
-
   if (matchedVoice) {
     localConfig.selectedVoice = matchedVoice.name
   } else {
-    const def = getBestDefaultVoice()
-    if (def) localConfig.selectedVoice = def.name
+    // 找不到本地女声发音人时，直接指定云端高保真音色
+    localConfig.selectedVoice = preset.edgeVoice
   }
 }
 
@@ -311,7 +361,7 @@ let previewUtterance: SpeechSynthesisUtterance | null = null
 let previewAudio: HTMLAudioElement | null = null
 
 function handlePreviewVoice() {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  if (typeof window === 'undefined') return
 
   // If already previewing voice, clicking again immediately stops it!
   if (isTestingVoice.value) {
@@ -321,31 +371,40 @@ function handlePreviewVoice() {
 
   unlockAudio()
   try {
-    window.speechSynthesis.cancel()
+    window.speechSynthesis?.cancel()
   } catch {}
 
-  const currentPreset = VOICE_PRESETS.find((p) => p.id === activePresetId.value)
-  const isJa =
-    activePresetId.value === 'japanese' ||
-    localConfig.selectedVoice?.toLowerCase().includes('ja') ||
-    localConfig.selectedVoice?.toLowerCase().includes('jp')
+  const currentPreset = VOICE_PRESETS.find((p) => p.id === activePresetId.value) || VOICE_PRESETS[0]
+  const isJa = currentPreset.id === 'japanese' || currentPreset.targetLang === 'ja'
+  const sampleText = currentPreset.sampleText
 
-  const sampleText =
-    currentPreset?.sampleText ||
-    (isJa
-      ? 'マスター、こんにちは！バーチャルシンガーの初音ミクです、今日もよろしくね！'
-      : '指挥长您好！我是全息数字人初音未来，已连接大屏数据中枢与实时联网大脑！')
+  const pitchPct = Math.round(((localConfig.voicePitch ?? currentPreset.pitch) - 1.0) * 100)
+  const pitchStr = pitchPct >= 0 ? `+${pitchPct}%` : `${pitchPct}%`
+  const ratePct = Math.round(((localConfig.voiceRate ?? currentPreset.rate) - 1.0) * 100)
+  const rateStr = ratePct >= 0 ? `+${ratePct}%` : `${ratePct}%`
+  const spd = Math.round((localConfig.voiceRate ?? currentPreset.rate) * 5)
 
-  // 等待 35ms 确保 iOS WebKit / Chrome cancel 彻底就绪
   setTimeout(() => {
-    const hasChineseVoice = props.voices.some((v) => {
-      const l = v.lang.toLowerCase()
-      return l.includes('zh') || l.includes('cmn')
-    })
+    let localVoiceToUse: SpeechSynthesisVoice | undefined = undefined
+    if (localConfig.selectedVoice && props.voices.some((v) => v.name === localConfig.selectedVoice)) {
+      const v = props.voices.find((v) => v.name === localConfig.selectedVoice)
+      if (v && !isMaleVoice(v.name.toLowerCase())) {
+        localVoiceToUse = v
+      }
+    }
 
-    if (!hasChineseVoice && !isJa) {
-      // 在小米/夸克等国产浏览器中，直接使用云端高兼容 TTS 试听
-      const audio = new Audio(`/api/tts?text=${encodeURIComponent(sampleText)}&spd=5`)
+    if (!localVoiceToUse && isJa) {
+      localVoiceToUse = getJapaneseVoice()
+    }
+
+    // 只要是日文歌姬（绝不走本地男声），或者没有可用女声，或者选择的是云端音色，统一使用云端高保真 Edge-TTS 试听
+    const useCloudPreview = !localVoiceToUse || isJa || localConfig.selectedVoice.includes('Neural')
+    if (useCloudPreview) {
+      const edgeVoice = currentPreset.edgeVoice || (isJa ? 'ja-JP-NanamiNeural' : 'zh-CN-XiaoxiaoNeural')
+      const audioUrl = `/api/tts?text=${encodeURIComponent(sampleText)}&voice=${encodeURIComponent(
+        edgeVoice,
+      )}&pitch=${encodeURIComponent(pitchStr)}&rate=${encodeURIComponent(rateStr)}&spd=${spd}`
+      const audio = new Audio(audioUrl)
       previewAudio = audio
       audio.onplay = () => { isTestingVoice.value = true }
       audio.onended = () => { isTestingVoice.value = false; previewAudio = null }
@@ -354,45 +413,29 @@ function handlePreviewVoice() {
       return
     }
 
-    const utterance = new SpeechSynthesisUtterance(sampleText)
-    previewUtterance = utterance
-
-    let voiceToUse: SpeechSynthesisVoice | undefined = undefined
-    if (localConfig.selectedVoice) {
-      voiceToUse = props.voices.find((v) => v.name === localConfig.selectedVoice)
-    }
-    if (!voiceToUse) {
-      voiceToUse = isJa ? getJapaneseVoice() : getBestDefaultVoice()
-    }
-
-    if (voiceToUse) {
-      utterance.voice = voiceToUse
-    }
-
-    utterance.pitch = localConfig.voicePitch
-    utterance.rate = localConfig.voiceRate
-    utterance.lang = isJa ? 'ja-JP' : voiceToUse?.lang || 'zh-CN'
-
-    utterance.onstart = () => {
-      isTestingVoice.value = true
-    }
-    utterance.onend = () => {
-      isTestingVoice.value = false
-      previewUtterance = null
-    }
-    utterance.onerror = () => {
-      isTestingVoice.value = false
-      previewUtterance = null
-    }
-
-    try {
-      window.speechSynthesis.speak(utterance)
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume()
+    // 本地原生女性发音人试听
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(sampleText)
+      previewUtterance = utterance
+      if (localVoiceToUse) {
+        utterance.voice = localVoiceToUse
       }
-    } catch (e) {
-      console.warn('[SettingsModal] 试听播报异常:', e)
-      isTestingVoice.value = false
+      utterance.pitch = localConfig.voicePitch
+      utterance.rate = localConfig.voiceRate
+      utterance.lang = isJa ? 'ja-JP' : localVoiceToUse?.lang || 'zh-CN'
+
+      utterance.onstart = () => { isTestingVoice.value = true }
+      utterance.onend = () => { isTestingVoice.value = false; previewUtterance = null }
+      utterance.onerror = () => { isTestingVoice.value = false; previewUtterance = null }
+
+      try {
+        window.speechSynthesis.speak(utterance)
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume()
+        }
+      } catch (e) {
+        isTestingVoice.value = false
+      }
     }
   }, 35)
 }
@@ -417,14 +460,21 @@ function onVoiceDropdownChange() {
   const sv = localConfig.selectedVoice?.toLowerCase() || ''
   if (!sv) {
     activePresetId.value = 'default'
-  } else if (sv.includes('ja') || sv.includes('jp')) {
+    localConfig.voicePreset = 'default'
+    localConfig.voicePitch = 1.05
+    localConfig.voiceRate = 1.0
+  } else if (sv.includes('ja') || sv.includes('jp') || sv.includes('nanami')) {
     activePresetId.value = 'japanese'
+    localConfig.voicePreset = 'japanese'
   } else if (sv.includes('xiaoyi')) {
     activePresetId.value = 'xiaoyi'
-  } else if (sv.includes('yunxi') || sv.includes('kangkang')) {
+    localConfig.voicePreset = 'xiaoyi'
+  } else if (sv.includes('yunxi')) {
     activePresetId.value = 'news'
+    localConfig.voicePreset = 'news'
   } else {
     activePresetId.value = 'custom'
+    localConfig.voicePreset = 'custom'
   }
 }
 
@@ -436,6 +486,7 @@ function handleClose() {
 function handleSave() {
   stopPreviewVoice()
   const savePayload = { ...localConfig }
+  savePayload.voicePreset = activePresetId.value
   if (!savePayload.apiKey || !savePayload.apiKey.trim()) {
     savePayload.apiKey = ENV_API_KEY
   }
@@ -625,7 +676,7 @@ onBeforeUnmount(() => {
             @change="onVoiceDropdownChange"
           >
             <option value="">自动优选官方默认自然声线 (Recommended)</option>
-            <option v-for="voice in voices" :key="voice.name" :value="voice.name">
+            <option v-for="voice in voices.filter((v) => !isMaleVoice(v.name))" :key="voice.name" :value="voice.name">
               [{{ voice.lang }}] {{ voice.name }}
             </option>
           </select>

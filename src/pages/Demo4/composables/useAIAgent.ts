@@ -9,6 +9,7 @@ const DEFAULT_CONFIG: DigitalHumanConfig = {
   baseUrl:
     (import.meta.env.VITE_GEMINI_BASE_URL as string) ||
     'https://generativelanguage.googleapis.com',
+  voicePreset: 'default',
   voicePitch: 1.05,
   voiceRate: 1.0,
   selectedVoice: '',

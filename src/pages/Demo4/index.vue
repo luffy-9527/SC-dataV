@@ -30,6 +30,8 @@ const {
   isSpeaking,
   voices,
   setVoiceByName,
+  currentVoicePreset,
+  setVoicePreset,
   currentVisemes,
   audioSpectrum,
   pitch,
@@ -43,6 +45,7 @@ const {
 } = useSpeechSynthesis()
 
 // Apply saved voice config
+if (config.voicePreset) setVoicePreset(config.voicePreset)
 if (config.voicePitch) pitch.value = config.voicePitch
 if (config.voiceRate) rate.value = config.voiceRate
 if (config.selectedVoice) setVoiceByName(config.selectedVoice)
@@ -120,6 +123,7 @@ function handlePlayAction(action: AnimationType) {
 // Save Settings
 function handleSaveSettings(newConfig: any) {
   saveConfig(newConfig)
+  if (newConfig.voicePreset !== undefined) setVoicePreset(newConfig.voicePreset)
   if (newConfig.voicePitch !== undefined) pitch.value = newConfig.voicePitch
   if (newConfig.voiceRate !== undefined) rate.value = newConfig.voiceRate
   if (newConfig.selectedVoice !== undefined) setVoiceByName(newConfig.selectedVoice || '')
