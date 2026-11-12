@@ -5,33 +5,63 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/demo4',
+      name: 'Home',
+      component: () => import('@/pages/Home/index.vue'),
+      meta: {
+        title: '首页广场 · SC-dataV 数字孪生视界',
+      },
     },
     {
-      path: '/demo1',
-      name: 'Demo1',
-      component: () => import('@/pages/Demo1/index.vue'),
+      path: '/smart-city',
+      name: 'SmartCity',
+      component: () => import('@/pages/SmartCity/index.vue'),
+      meta: {
+        title: '智慧城市 · 四川省智慧城市数据大脑',
+      },
     },
     {
-      path: '/demo2',
-      name: 'Demo2',
-      component: () => import('@/pages/Demo2/index.vue'),
+      path: '/low-altitude',
+      name: 'LowAltitude',
+      component: () => import('@/pages/LowAltitude/index.vue'),
+      meta: {
+        title: '低空经济综合监管平台 · 成都市级低空运行中心',
+      },
     },
     {
-      path: '/demo3',
-      name: 'Demo3',
-      component: () => import('@/pages/Demo3/index.vue'),
+      path: '/smart-oilfield',
+      name: 'SmartOilfield',
+      component: () => import('@/pages/SmartOilfield/index.vue'),
+      meta: {
+        title: '智慧油田 · 智能开采数字孪生平台',
+      },
     },
     {
-      path: '/demo4',
-      name: 'Demo4',
-      component: () => import('@/pages/Demo4/index.vue'),
+      path: '/autopilot',
+      name: 'Autopilot',
+      component: () => import('@/pages/Autopilot/index.vue'),
+      meta: {
+        title: '自动驾驶 · 智能座舱数字孪生系统',
+      },
+    },
+    {
+      path: '/digital-human',
+      name: 'DigitalHuman',
+      component: () => import('@/pages/DigitalHuman/index.vue'),
+      meta: {
+        title: 'AI数字人 · 全息智能指挥中心',
+      },
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/demo4',
+      redirect: '/',
     },
   ],
+})
+
+router.afterEach((to) => {
+  if (typeof to.meta?.title === 'string') {
+    document.title = to.meta.title
+  }
 })
 
 export default router

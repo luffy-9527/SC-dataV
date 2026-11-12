@@ -1,0 +1,142 @@
+.low-altitude-page {
+  --text:#e2edf3; --line:#7cacc125; --left:250px; --right:280px; --gutter:24px;
+  --content-left:calc(var(--left) + var(--gutter) + 20px); --content-right:calc(var(--right) + var(--gutter) + 20px);
+  position:relative;width:100vw;height:100dvh;overflow:hidden;background:#0c1925;color:var(--text);font:13px Inter,"Microsoft YaHei",sans-serif;
+}
+button { border:0;color:inherit;font:inherit;cursor:pointer; } button:focus-visible { outline:2px solid #8ee3ee;outline-offset:3px; }
+.topbar { position:absolute;z-index:15;inset:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:78px;padding:0 28px;border-bottom:1px solid var(--line);background:#0a1826ed; }
+.brand-block,.system-status,.region-label,.mode-nav,.section-heading,.live-counter,.aircraft-summary,.selected-title,.layer-dock,.dock-label,.layer-dock button,.timeline-heading,.mission-marker,.event-strip button { display:flex;align-items:center; }
+.brand-block { gap:12px;min-width:0; }.home-link { display:grid;place-items:center;width:33px;height:35px;flex-shrink:0;border:1px solid #648ca03b;border-radius:5px;background:#18314173;color:#92bdce; }.home-link:hover { background:#284d61; }.brand-mark { display:none; }
+.brand-copy { display:grid;gap:5px;white-space:nowrap; }.brand-copy p { color:#79a7b9;font-size:9px;letter-spacing:2.4px; }.brand-copy h1 { color:#eff6fa;font-size:21px;letter-spacing:.8px;font-weight:600; }.brand-divider,.header-divider { width:1px;height:28px;background:var(--line); }.region-label { gap:6px;margin-left:3px;color:#9fb7c4;font-size:11px;white-space:nowrap; }
+.region-label i,.online-label i,.live-counter i,.timeline-status i { display:inline-block;width:5px;height:5px;border-radius:50%;background:#7ed3be; }
+.mode-nav { gap:7px; }.mode-nav button { height:39px;min-width:102px;padding:0 15px;border:1px solid transparent;border-radius:4px;background:transparent;color:#94abba;font-size:13px; }.mode-nav button.active { border-color:#80cbd241;background:linear-gradient(180deg,#254451c2,#183440b3);color:#b5eff0; }.mode-nav button:hover { background:#254451a1;color:#d5f2f5; }
+.system-status { justify-self:end;gap:20px; }.online-label { display:flex;align-items:center;gap:7px;color:#a0b8c6;font-size:11px; }.clock-block { display:grid;justify-items:end;gap:4px;min-width:115px; }.clock-block strong { font-size:20px;font-variant-numeric:tabular-nums;font-weight:550;letter-spacing:1px; }.clock-block span { color:#809cad;font-size:10px; }
+.kpi-ribbon { position:absolute;z-index:10;top:98px;left:var(--content-left);right:var(--content-right);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:74px;border-top:1px solid #8dc8df29;border-bottom:1px solid #8dc8df20;background:linear-gradient(90deg,#102535d4,#142b3ad4,#102535d4);border-radius:4px; }.kpi-ribbon article { position:relative;display:flex;align-items:center;gap:12px;padding:0 18px;min-width:0; }.kpi-ribbon article+article::before { position:absolute;left:0;top:20px;bottom:20px;width:1px;background:var(--line);content:""; }.kpi-icon { color:#75b7c9; }.kpi-copy { display:grid;gap:6px;min-width:0; }.kpi-copy small { color:#9bb4c2;font-size:11px;white-space:nowrap; }.kpi-copy strong { color:#e8f5fa;font-size:27px;line-height:1;font-weight:550;letter-spacing:.5px;font-variant-numeric:tabular-nums;white-space:nowrap; }.kpi-copy i { margin-left:6px;color:#8fa9b8;font-size:10px;font-style:normal;font-weight:400; }.kpi-critical .kpi-copy strong,.kpi-critical .kpi-icon { color:#dfb47b; }
+.map-heading { position:absolute;z-index:4;top:199px;left:var(--content-left);display:grid;gap:7px;pointer-events:none;text-shadow:0 2px 8px #071723; }.map-heading>span { color:#719aaa;font-size:9px;letter-spacing:2.1px; }.map-heading strong { color:#d7e9f1;font-size:18px;letter-spacing:1px;font-weight:500; }.map-heading small { color:#7f9eae;font-size:11px; }
+.side-panel { position:absolute;z-index:10;top:198px;width:var(--left);height:auto;max-height:calc(100dvh - 354px);padding:20px 18px;overflow:auto;border:1px solid #85b3c52e;border-top-color:#8ec5d54d;border-radius:6px;background:linear-gradient(135deg,#102535ed,#0b1d2be8);box-shadow:0 10px 30px #020b1422;scrollbar-width:thin;scrollbar-color:#416475 transparent; }.left-panel { left:var(--gutter); }.right-panel { right:var(--gutter);width:var(--right); }
+.section-heading { justify-content:space-between;gap:8px; }.section-heading>div { display:grid;gap:6px; }.section-heading>div>small { color:#789aaa;font-size:9px;letter-spacing:1.6px; }.section-heading h2 { font-size:15px;font-weight:550;letter-spacing:.5px; }.section-heading h2::before { display:inline-block;width:2px;height:12px;margin-right:8px;background:#81cbd4;content:""; }.live-counter { gap:5px;color:#89b4c2;font-size:10px; }
+.aircraft-summary { width:100%;gap:11px;margin-top:19px;padding:14px 10px;border:1px solid #6fabbf30;border-radius:4px;background:#1939489c;text-align:left; }.summary-icon { display:grid;place-items:center;color:#87d0de; }.aircraft-summary>span:nth-child(2) { display:grid;gap:5px; }.aircraft-summary strong { font-size:29px;font-weight:550;font-variant-numeric:tabular-nums; }.aircraft-summary strong small { color:#88a7b7;font-size:11px;font-weight:400; }.aircraft-summary>span:nth-child(2)>small { color:#85a8b7;font-size:10px; }.summary-toggle { position:relative;width:25px;height:14px;margin-left:auto;border:1px solid #456275;border-radius:9px;flex-shrink:0; }.summary-toggle::after { position:absolute;top:2px;left:2px;width:8px;height:8px;border-radius:50%;background:#829fae;content:""; }.summary-toggle.on { border-color:#68adb8;background:#20505a; }.summary-toggle.on::after { left:13px;background:#8ad4df; }
+.state-list { display:grid;grid-template-columns:repeat(3,1fr);margin-top:17px; }.state-list>div { display:flex;flex-direction:column;align-items:center;gap:9px; }.state-list>div+div { border-left:1px solid var(--line); }.state-list>div>span { display:flex;align-items:center;gap:5px;color:#9cb4c2;font-size:11px; }.state-list b { color:#d2e5ed;font-size:17px;font-weight:500; }.state-list b small { margin-left:4px;color:#718e9f;font-size:10px; }.state-dot { width:5px;height:5px;border-radius:50%; }.state-flying { background:#78d3d5; }.state-standby { background:#92adb7; }.state-offline { border:1px solid #617f91; }
+.panel-rule { height:1px;margin:22px 0;background:var(--line); }.airspace-heading { align-items:end; }.utilization { color:#a8d8df;font-size:25px;font-weight:500; }.utilization i { margin-left:3px;color:#789aaa;font-size:11px;font-style:normal; }.capacity-track { height:4px;margin-top:15px;overflow:hidden;border-radius:4px;background:#294151; }.capacity-track span { display:block;height:100%;background:#7ac1c8; }.capacity-caption { display:flex;justify-content:space-between;margin-top:8px;color:#789aaa;font-size:10px; }
+.zone-list { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:17px; }.zone-row { display:flex;align-items:center;gap:6px;min-height:32px;background:transparent;text-align:left; }.zone-row>i { width:5px;height:5px;border:1px solid #70c8bd;border-radius:50%;flex-shrink:0; }.zone-row>span { color:#a9c0cc;font-size:11px; }.zone-row b { margin-left:auto;color:#bcd5df;font-size:13px;font-weight:500; }.zone-row b small { display:none; }.zone-temporary>i { border-color:#80bbdd; }.zone-restricted>i { border-color:#d9b26e; }.zone-prohibited>i { border-color:#d78184; }
+.icon-button { display:grid;place-items:center;width:26px;height:26px;background:#1b3848;color:#a7c9d6;border-radius:3px;font-size:21px; }.selected-title { gap:10px;margin:20px 0;padding:12px 10px;background:#1a3546;border:1px solid #45687955;border-radius:4px; }.object-icon { color:#8ccedb; }.selected-title>span:last-child { display:grid;gap:6px;min-width:0; }.selected-title strong { font-size:13px;line-height:1.5;font-weight:500; }.selected-title small { color:#85a6b8;font-size:10px; }
+.detail-grid { display:grid;grid-template-columns:1fr 1fr;gap:18px 12px; }.detail-grid>div { display:grid;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--line); }.detail-grid small { color:#86a6b6;font-size:11px; }.detail-grid strong { font-size:13px;line-height:1.5;font-weight:500;overflow-wrap:anywhere; }.detail-grid strong i { color:#7d9bac;font-size:11px;font-style:normal; }.detail-wide { grid-column:1/-1; }.progress-line small { display:flex;justify-content:space-between; }.progress-line b { color:#a4d5df;font-size:10px; }.progress-line>span { height:4px;background:#2a4354;border-radius:2px;overflow:hidden; }.progress-line>span>i { display:block;height:100%;background:#72bdc9; }
+.focus-button,.alert-detail button { width:100%;margin-top:19px;min-height:34px;border:1px solid #497181;background:#163141;color:#b1d2dc;border-radius:3px;font-size:12px; }.focus-button:hover,.alert-detail button:hover { background:#254b5e; }.linked-alert { display:grid;gap:9px;margin-top:16px;padding:12px;border-left:2px solid #d8ad77;background:#b7905220; }.linked-alert span { color:#bc9d70;font-size:10px; }.linked-alert strong { color:#dec59f;font-size:12px; }.linked-alert button { width:fit-content;padding:0;background:transparent;color:#dbbc8c;font-size:11px; }
+.alert-count { color:#a9c3cf;font-size:17px;font-weight:500; }.alert-count i { color:#849eae;font-size:10px;font-style:normal; }.alert-count.active { color:#e0b784; }.alert-list { display:grid;gap:5px;margin-top:17px; }.alert-row { display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:start;width:100%;padding:12px 0;border-bottom:1px solid var(--line);background:transparent;text-align:left; }.alert-row:last-child { border-bottom:0; }.alert-symbol { display:grid;place-items:center;width:20px;height:20px;margin-top:2px;border:1px solid #a48c694d;border-radius:4px;background:#5d49382c;color:#dfb985;font-size:13px; }.severity-critical .alert-symbol { border-color:#ad686d70;background:#713b432b;color:#e39b9e; }.alert-copy { display:grid;gap:7px;min-width:0; }.alert-copy strong { font-size:12px;font-weight:500;line-height:1.5; }.alert-copy small { color:#8aa6b6;font-size:10px;line-height:1.7; }.alert-meta { display:grid;justify-items:end;gap:9px;white-space:nowrap; }.alert-meta b { color:#7793a3;font-size:9px;font-weight:400; }.alert-meta i { color:#c1a77e;font-size:9px;font-style:normal; }.alert-state-acknowledged .alert-meta i { color:#79b5a6; }.alert-detail { line-height:1.8; }.alert-detail>strong { color:#dfb984;font-size:13px; }.alert-detail p { margin-top:12px;color:#a0b8c6;font-size:12px; }.empty-alerts { padding:20px;color:#87c8b2; }.empty-alerts strong { margin-left:8px;font-size:12px; }
+.panel-link { padding:0;background:transparent;color:#85afbd;font-size:10px; }.ports-heading { margin-bottom:10px; }.port-row { display:grid;grid-template-columns:25px minmax(0,1fr) 10px;align-items:center;gap:9px;width:100%;padding:11px 0;background:transparent;text-align:left; }.port-symbol { display:grid;place-items:center;width:23px;height:23px;border:1px solid #5d8d9e59;border-radius:50%;color:#81b9c6;font-size:11px; }.port-row>span:nth-child(2) { display:grid;gap:5px;min-width:0; }.port-row strong { color:#bcd2dd;font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }.port-row small { color:#7d9bab;font-size:10px; }.port-row>i { color:#7198aa;font-size:17px;font-style:normal; }
+.map-controls { position:absolute;z-index:8;top:198px;right:var(--content-right);display:grid;gap:1px;padding:4px;border:1px solid #78a7bf30;border-radius:5px;background:#102736db; }.map-controls button { display:grid;place-items:center;width:33px;height:33px;background:transparent;color:#96bdce;border-radius:3px; }.map-controls button:hover { background:#294a5c;color:#d4f1fa; }.map-controls .quality-button { font-size:10px;border-bottom:1px solid var(--line);border-radius:0; }
+.emergency-banner { position:absolute;z-index:9;left:var(--content-left);right:var(--content-right);bottom:186px;display:flex;align-items:center;gap:12px;min-height:53px;padding:10px 15px;border:1px solid #ba935253;border-radius:4px;background:#272c2beb; }.event-marker { display:grid;place-items:center;width:25px;height:25px;border:1px solid #bf9d68;border-radius:50%;color:#dfb784;flex-shrink:0; }.event-copy { display:grid;gap:6px; }.event-copy small { color:#b49c77;font-size:9px; }.event-copy strong { color:#e6d6be;font-size:13px;font-weight:500; }.event-location { color:#a9a391;font-size:11px; }.event-status { margin-left:auto;padding:5px 8px;border:1px solid #a88b5e5c;border-radius:3px;color:#dbbf92;font-size:10px;white-space:nowrap; }.event-dispatched,.event-closed { color:#a1d2ba;border-color:#6eaa8e78; }
+.layer-dock { position:absolute;z-index:12;bottom:132px;left:var(--content-left);right:var(--content-right);gap:4px;min-height:40px;padding:5px 7px;border:1px solid #80b4c92b;border-radius:4px;background:#0d2332ed; }.dock-label { gap:6px;padding:0 7px;color:#8aaabb;font-size:10px;white-space:nowrap; }.layer-dock button { gap:6px;min-height:28px;padding:0 8px;border:1px solid transparent;border-radius:3px;background:transparent;color:#7797a9;font-size:10px;white-space:nowrap; }.layer-dock button:hover,.layer-dock button.enabled { background:#21425191;color:#bbd8e1; }.layer-dock button>i { width:4px;height:4px;border:1px solid #577687;border-radius:50%; }.layer-dock button.enabled>i { border-color:#75c7ca;background:#75c7ca; }.layer-dock button small { color:#7a9caa;font-size:9px; }.dock-divider { width:1px;height:18px;background:var(--line);margin:0 3px; }.layer-dock .scenario-button { margin-left:auto;border-color:#649aab5c;background:#25475483;color:#b6dce3; }.scenario-button span { color:#81c8d1;font-size:9px; }.layer-dock .scenario-button.running { color:#d5c396;border-color:#a78b5566; }
+.bottom-dock { position:absolute;z-index:11;bottom:20px;left:var(--content-left);right:var(--content-right);display:grid;grid-template-columns:minmax(0,1fr) 210px;column-gap:18px;row-gap:15px;min-height:96px;padding:13px 16px;border:1px solid #80b4c92b;border-radius:5px;background:#0c2130ed; }.timeline-heading { grid-column:1;gap:12px;min-width:0; }.timeline-status { display:flex;align-items:center;gap:6px;color:#a2c4d1;font-size:11px;white-space:nowrap; }.timeline-heading>span:nth-child(2) { display:flex;gap:8px;min-width:0; }.timeline-heading>span:nth-child(2)>small { color:#6d91a3;font-size:10px;white-space:nowrap; }.timeline-heading>span:nth-child(2)>strong { color:#c3d9e3;font-size:11px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }.timeline-meter { width:70px;height:3px;margin-left:auto;background:#365262;flex-shrink:0; }.timeline-meter i { display:block;height:100%;background:#7bc8ce; }.timeline-heading>b { color:#88b1c2;font-size:10px;font-weight:400; }.timeline-heading>button { display:grid;place-items:center;width:24px;height:24px;background:transparent;color:#98c9d4;flex-shrink:0; }
+.mission-track { grid-column:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;min-width:0; }.track-line { display:none; }.mission-marker { gap:8px;min-width:0;padding:0;background:transparent;text-align:left; }.mission-marker>i { display:grid;place-items:center;width:23px;height:23px;flex-shrink:0;border:1px solid #4f768b66;border-radius:50%;color:#7fa4b4;font-size:9px;font-style:normal; }.mission-in-progress>i,.mission-dispatched>i { border-color:#63b3c2a3;color:#8bd4de; }.mission-complete>i { border-color:#6aa58d;color:#95c6ae; }.mission-marker>span { display:grid;gap:5px;min-width:0; }.mission-marker strong { color:#b9d1dc;font-size:10px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }.mission-marker small { color:#6e94a7;font-size:9px; }
+.event-strip { grid-column:2;grid-row:1/3;display:grid;align-content:center;gap:10px;min-width:0;padding-left:18px;border-left:1px solid var(--line); }.event-strip>small { color:#86acbd;font-size:10px; }.event-strip button { gap:8px;min-width:0;padding:0;background:transparent;text-align:left; }.event-strip button>span { color:#688fa2;font-size:9px; }.event-strip button>strong { overflow:hidden;color:#a3becb;font-size:10px;font-weight:400;text-overflow:ellipsis;white-space:nowrap; }
+.map-caption { position:absolute;bottom:31px;left:var(--gutter);display:grid;gap:8px;pointer-events:none; }.map-caption span { color:#6a8d9f;font-size:8px;letter-spacing:1.3px; }.map-caption small { color:#5e8194;font-size:10px; }.simulation-watermark { position:absolute;right:var(--gutter);bottom:35px;display:flex;align-items:center;gap:6px;color:#7595a6;font-size:10px;pointer-events:none; }.simulation-watermark i { width:4px;height:4px;border-radius:50%;background:#b29c70; }
+@media (max-width:1600px) {
+  .low-altitude-page { --left:226px;--right:254px;--gutter:18px; }.topbar { padding:0 20px; }.brand-copy h1 { font-size:18px; }.brand-copy p { font-size:8px; }.brand-divider,.region-label { display:none; }.mode-nav { gap:3px; }.mode-nav button { min-width:88px;padding:0 9px;font-size:12px; }.system-status { gap:12px; }
+  .kpi-ribbon article { padding:0 11px;gap:9px; }.kpi-copy strong { font-size:24px; }.kpi-copy small { font-size:10px; }.kpi-icon { display:none; }.side-panel { padding:17px 14px; }.zone-row>span { font-size:10px; }.alert-row { gap:6px;grid-template-columns:19px minmax(0,1fr) auto; }.alert-copy strong { font-size:11px; }
+  .layer-dock { gap:2px; }.layer-dock button { gap:5px;padding:0 6px; }.layer-dock button small,.dock-label { display:none; }.bottom-dock { grid-template-columns:minmax(0,1fr) 165px;gap:13px; }.timeline-heading { gap:8px; }.timeline-heading>span:nth-child(2)>small { display:none; }.timeline-meter { width:50px; }.event-strip { padding-left:12px; }.mission-marker { gap:5px; }
+}
+@media (max-height:820px) {
+  .topbar { height:66px; }.kpi-ribbon { top:82px;height:62px; }.side-panel { top:166px;max-height:calc(100dvh - 300px); }.map-heading { top:171px; }.map-controls { top:167px; }.side-panel { padding-top:15px;padding-bottom:15px; }.aircraft-summary { margin-top:13px;padding:9px; }.aircraft-summary strong { font-size:25px; }.state-list { margin-top:13px; }.panel-rule { margin:15px 0; }.zone-list { margin-top:10px;gap:2px 8px; }.zone-row { min-height:28px; }
+  .alert-list { margin-top:11px;gap:0; }.alert-row { padding:9px 0; }.alert-copy { gap:4px; }.port-row { padding:8px 0; }.port-row small { font-size:9px; }.ports-heading { margin-bottom:6px; }.bottom-dock { bottom:16px;min-height:88px;padding:10px 13px;row-gap:11px; }.layer-dock { bottom:119px; }.emergency-banner { bottom:172px; }.map-caption { bottom:25px; }.simulation-watermark { bottom:28px; }
+}
+@media (max-width:1250px) {
+  .low-altitude-page { --left:205px;--right:232px;--gutter:12px;--content-left:237px;--content-right:264px; }.brand-copy h1 { font-size:16px; }.online-label,.header-divider { display:none; }.mode-nav button { min-width:80px;font-size:11px; }.kpi-ribbon article { padding:0 8px; }.kpi-copy strong { font-size:20px; }.kpi-copy i { font-size:9px;margin-left:3px; }
+  .layer-dock button>svg,.layer-dock button small { display:none; }.layer-dock button { padding:0 5px;gap:4px; }.bottom-dock { grid-template-columns:1fr; }.event-strip { display:none; }.mission-track { gap:6px; }.mission-marker>i { display:none; }.map-heading strong { font-size:16px; }.side-panel { padding-right:12px;padding-left:12px; }.zone-list { gap:0; }.zone-row { gap:4px; }.zone-row b { margin-right:8px; }.clock-block strong { font-size:17px; }
+}
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important;transition:none!important;animation:none!important; } }
+
+/* The secondary data stays readable without extending into the map toolbar. */
+.right-panel .panel-rule { margin:14px 0; }
+.alert-meta { gap:5px; }
+.alert-meta em { color:#c1a77e;font-size:9px;font-style:normal; }
+.severity-critical .alert-meta em { color:#db979b; }
+.alert-copy small { display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+.right-panel .port-row { padding:7px 0; }
+.district-selector { display:grid;gap:3px;margin-left:3px;flex-shrink:0; }
+.district-selector>span { color:#789eae;font-size:9px;letter-spacing:1px; }
+.district-selector select { min-width:106px;padding:5px 24px 5px 9px;border:1px solid #5396ae66;border-radius:4px;background:#143345;color:#d5edf5;font:12px Inter,"Microsoft YaHei",sans-serif;cursor:pointer;color-scheme:dark; }
+.district-selector select:focus-visible { outline:2px solid #8ee3ee;outline-offset:2px; }
+@media(max-width:1600px) { .brand-block { gap:8px; }.district-selector select { min-width:94px; }.brand-copy h1 { font-size:17px; } }
+@media(max-width:1250px) { .district-selector>span { display:none; }.brand-copy p { display:none; }.brand-copy h1 { font-size:14px; }.district-selector select { min-width:88px;font-size:11px; } }
+@media (max-height:820px) {
+  .right-panel .section-heading>div>small { display:none; }
+  .right-panel .panel-rule { margin:12px 0; }
+  .right-panel .port-row { padding:7px 0; }
+  .right-panel .alert-copy small { font-size:9px; }
+  .right-panel .port-row small { display:none; }
+}
+.aircraft-inspect{margin-bottom:8px}.aircraft-inspect span{float:right}
+
+/* Daylight operations theme: opaque type, quiet surfaces, semantic alerts. */
+.low-altitude-page {
+  --text:#233e53; --line:#d8e3eb; --muted:#5d7689; --accent:#156dbe;
+  background:#e7eef3;color:var(--text);color-scheme:light;
+}
+button:focus-visible { outline-color:#156dbe; }
+.topbar { background:#fffffff5;border-bottom-color:#ccdbe6;box-shadow:0 2px 16px #26476408; }
+.brand-copy h1 { color:#173b56;font-weight:650; }
+.brand-copy p,.district-selector>span { color:#648093; }
+.home-link { color:#33769f;background:#edf5fb;border-color:#d1e2ef; }
+.home-link:hover { background:#dcecf8; }
+.mode-nav button { color:#567083; }
+.mode-nav button.active { background:#e6f1fc;color:#1468b1;border-color:#bcd9f2;box-shadow:inset 0 -2px #2682cf; }
+.mode-nav button:hover { background:#edf5fb;color:#1468b1; }
+.online-label,.region-label { color:#587387; }
+.region-label i,.online-label i,.live-counter i,.timeline-status i { background:#2c9d85; }
+.clock-block strong { color:#234b69; }.clock-block span { color:#647e91; }
+.district-selector select { background:#f2f7fb;border-color:#ccdde9;color:#225575;color-scheme:light; }
+.district-selector select:focus-visible { outline-color:#156dbe; }
+.kpi-ribbon { background:#ffffffed;border:1px solid #d4e2eb;border-radius:8px;box-shadow:0 4px 18px #34566d08; }
+.kpi-icon { color:#337eae; }.kpi-copy small { color:#60798c; }
+.kpi-copy strong { color:#224d6b;font-weight:600; }.kpi-copy i { color:#698092; }
+.kpi-critical .kpi-copy strong,.kpi-critical .kpi-icon { color:#b16b18; }
+.map-heading { text-shadow:0 1px 5px #ffffff; }
+.map-heading>span { color:#638198; }.map-heading strong { color:#315a77;font-weight:600; }.map-heading small { color:#5b768b; }
+.side-panel { background:linear-gradient(140deg,#fffffff5,#f8fbfdf2);border-color:#d1e0ea;border-top-color:#c1d9ea;border-radius:9px;box-shadow:0 8px 28px #32516a0c;scrollbar-color:#c1d4e2 transparent; }
+.section-heading h2 { color:#254b65;font-weight:600; }.section-heading h2::before { background:#3887be; }
+.section-heading>div>small { color:#728c9e; }.live-counter { color:#547d86; }
+.aircraft-summary { background:#edf5fb;border-color:#d7e6ef; }.summary-icon { color:#3888b7; }
+.aircraft-summary strong { color:#23618c; }.aircraft-summary strong small,.aircraft-summary>span:nth-child(2)>small { color:#617f93; }
+.summary-toggle { background:#e2eaf0;border-color:#adc3d1; }.summary-toggle::after { background:#8aa4b6; }
+.summary-toggle.on { background:#d8edea;border-color:#67aa9e; }.summary-toggle.on::after { background:#2a9787; }
+.state-list>div>span,.state-list b small { color:#627d90; }.state-list b { color:#2b536f; }
+.state-flying { background:#2c9c9c; }.state-standby { background:#9aaebe; }.state-offline { border-color:#90a4b4; }
+.utilization { color:#347ba1; }.utilization i,.capacity-caption { color:#637e91; }
+.capacity-track,.progress-line>span,.timeline-meter { background:#e1ebf1; }
+.capacity-track span,.progress-line>span>i,.timeline-meter i { background:#449ec2; }
+.zone-row>span { color:#55758b; }.zone-row b { color:#325973; }
+.zone-row>i { border-color:#2c9d88; }.zone-temporary>i { border-color:#438ccc; }.zone-restricted>i { border-color:#bc8528; }.zone-prohibited>i { border-color:#c4585d; }
+.icon-button { background:#e9f2f8;color:#527f9c; }.selected-title { background:#edf5fb;border-color:#d6e4ee; }
+.object-icon { color:#4086b2; }.selected-title small,.detail-grid small,.detail-grid strong i { color:#658196; }
+.progress-line b { color:#3181ad; }
+.focus-button,.alert-detail button { background:#edf5fc;border-color:#bfd8eb;color:#236fa5; }
+.focus-button:hover,.alert-detail button:hover { background:#dceefa; }
+.linked-alert { background:#fff4e2;border-color:#c18a35; }.linked-alert span,.linked-alert button { color:#996b26; }.linked-alert strong { color:#93651f; }
+.alert-count { color:#547a96; }.alert-count i { color:#6e8799; }.alert-count.active { color:#aa711e; }
+.alert-symbol { background:#fff3df;border-color:#edd7ad;color:#ad741e; }
+.severity-critical .alert-symbol { background:#fff0f0;border-color:#e9bcbf;color:#bd5058; }
+.alert-copy strong { color:#34556b; }.alert-copy small,.alert-meta b { color:#6b8192; }
+.alert-meta i,.alert-meta em { color:#9c711e; }.severity-critical .alert-meta em { color:#b45359; }
+.alert-state-acknowledged .alert-meta i { color:#27866c; }.alert-detail>strong { color:#a57225; }.alert-detail p { color:#526f83; }.empty-alerts { color:#2b8b70; }
+.panel-link { color:#4280a4; }.port-symbol { color:#3888b4;border-color:#c2dce9;background:#f1f7fb; }
+.port-row strong { color:#3c607a; }.port-row small,.port-row>i { color:#6e899b; }
+.map-controls { background:#fffffff0;border-color:#cfdee8;box-shadow:0 4px 14px #32516a0c; }
+.map-controls button { color:#477692; }.map-controls button:hover { background:#e8f2fa;color:#1d73b2; }
+.emergency-banner { background:#fff9edf5;border-color:#e5cf9e;box-shadow:0 4px 20px #9c7b2010; }
+.event-marker { color:#b17c27;border-color:#d6ad67; }.event-copy small,.event-location { color:#9a7d4d; }.event-copy strong { color:#805b28; }
+.event-status { color:#956a24;border-color:#dec89e; }.event-dispatched,.event-closed { color:#277f66;border-color:#a5d5c4; }
+.layer-dock,.bottom-dock { background:#fffffff0;border-color:#d2e0ea;border-radius:7px;box-shadow:0 4px 20px #32516a08; }
+.dock-label,.layer-dock button { color:#5b7a90; }.layer-dock button:hover,.layer-dock button.enabled { background:#e7f2fb;color:#226e9e; }
+.layer-dock button>i { border-color:#97b2c4; }.layer-dock button.enabled>i { background:#308fb9;border-color:#308fb9; }
+.layer-dock button small { color:#607f92; }.layer-dock .scenario-button { background:#eaf4fb;border-color:#bfdceb;color:#2d7ba7; }
+.scenario-button span { color:#2e8caa; }.layer-dock .scenario-button.running { color:#986e24;border-color:#dcc799;background:#fff5df; }
+.timeline-status { color:#4b7e94; }.timeline-heading>span:nth-child(2)>small,.timeline-heading>b { color:#668599; }
+.timeline-heading>span:nth-child(2)>strong { color:#456a81; }.timeline-heading>button { color:#3a7fa6; }
+.mission-marker>i { color:#6a8a9f;border-color:#bcd1df; }.mission-in-progress>i,.mission-dispatched>i { color:#2586ad;border-color:#7db6cf;background:#edf8fc; }
+.mission-complete>i { color:#31886e;border-color:#a0cdbb; }.mission-marker strong { color:#466c85; }.mission-marker small { color:#6f899c; }
+.event-strip>small { color:#668397; }.event-strip button>span { color:#7590a3; }.event-strip button>strong { color:#51778e; }
+.map-caption span,.map-caption small,.simulation-watermark { color:#627f93; }
+.aircraft-inspect { color:#246fa1;background:#eaf4fc;border-color:#b8d8ec; }
+/* Leave the source attribution below the longer operational list unobstructed. */
+.left-panel { max-height:calc(100dvh - 420px); }

@@ -18,15 +18,15 @@ body,
 }
 
 html {
-  background: #fff4e5;
+  background: #030712;
 }
 
 body {
   position: fixed;
   inset: 0;
   font-family: Inter, Avenir, Helvetica, Arial, "Microsoft YaHei", sans-serif;
-  background: radial-gradient(circle at 50% 42%, #fff6e8 0%, #f7dfbc 45%, #eac38f 100%);
-  color: #5a4a42;
+  background: #030712;
+  color: #e2e8f0;
 }
 
 #app {
@@ -35,7 +35,7 @@ body {
   display: block;
   max-width: none !important;
   text-align: initial !important;
-  background: radial-gradient(circle at 50% 42%, #fff6e8 0%, #f7dfbc 45%, #eac38f 100%);
+  background: #030712;
 }
 
 button,

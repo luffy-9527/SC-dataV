@@ -370,7 +370,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 8888,
-    open: '/#/demo4',
+    open: '/',
     proxy: {
       '/gemini-proxy': {
         target: 'https://generativelanguage.googleapis.com',

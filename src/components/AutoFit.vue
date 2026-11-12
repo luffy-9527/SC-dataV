@@ -33,7 +33,7 @@ const stageStyle = computed(() => {
     return {
       width: `${props.designWidth}px`,
       height: `${props.designHeight}px`,
-      transform: `translate(-50%, -50%) scale(${scale})`,
+      transform: `scale(${scale}) translate(-50%, -50%)`,
       left: '50%',
       top: '50%',
     }
@@ -44,7 +44,7 @@ const stageStyle = computed(() => {
     return {
       width: `${props.designWidth}px`,
       height: `${props.designHeight}px`,
-      transform: `translate(-50%, -50%) scale(${scale})`,
+      transform: `scale(${scale}) translate(-50%, -50%)`,
       left: '50%',
       top: '50%',
     }
