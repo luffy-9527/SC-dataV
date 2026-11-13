@@ -1538,11 +1538,157 @@ onBeforeUnmount(() => {
   .dock-track {
     width: 100%;
     justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
   }
 
   .dock-item {
     min-width: 152px;
     flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 540px) {
+  .plaza-header__inner {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .brand-group {
+    gap: 8px;
+  }
+
+  .brand-emblem svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .brand-label {
+    padding: 3px 8px;
+    font-size: 11.5px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .theme-opt-btn {
+    padding: 4px 6px;
+  }
+
+  .header-ghost-btn {
+    padding: 5px 9px;
+    font-size: 11.5px;
+    gap: 4px;
+  }
+
+  .header-ghost-btn span:last-child {
+    display: none;
+  }
+
+  .header-ghost-btn::after {
+    content: 'AI 数字人';
+    font-size: 11.5px;
+  }
+
+  .icon-link-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .gallery-workspace {
+    padding: 10px 12px max(24px, env(safe-area-inset-bottom, 24px));
+    gap: 12px;
+  }
+
+  .gallery-heading {
+    font-size: 18px;
+  }
+
+  .gallery-sub {
+    font-size: 11.5px;
+  }
+
+  .stage-card {
+    border-radius: 18px;
+  }
+
+  .stage-media {
+    margin: 8px 8px 0;
+    border-radius: 12px;
+  }
+
+  .stage-details {
+    padding: 14px 12px 16px;
+    gap: 14px;
+  }
+
+  .details-title {
+    font-size: 19px;
+  }
+
+  .details-desc {
+    font-size: 12.5px;
+    line-height: 1.55;
+    -webkit-line-clamp: 2;
+  }
+
+  .metrics-pair {
+    gap: 10px;
+  }
+
+  .metric-block.has-divider {
+    padding-left: 10px;
+  }
+
+  .metric-label {
+    font-size: 10.5px;
+  }
+
+  .metric-value {
+    font-size: 15px;
+  }
+
+  .capability-pill {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .primary-white-cta {
+    padding: 10px 16px;
+    font-size: 13.5px;
+  }
+
+  .step-circle-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .dock-track {
+    padding: 6px;
+    border-radius: 16px;
+    gap: 6px;
+  }
+
+  .dock-item {
+    min-width: 138px;
+    padding: 6px 8px 8px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .dock-thumb {
+    width: 48px;
+    height: 30px;
+    border-radius: 6px;
+  }
+
+  .dock-title {
+    font-size: 12px;
+  }
+
+  .dock-sub {
+    font-size: 10px;
   }
 }
 </style>

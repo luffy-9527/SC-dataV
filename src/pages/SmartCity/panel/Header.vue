@@ -31,6 +31,9 @@ const route = useRoute()
         <router-link to="/smart-city" class="city-header__switch-btn" :class="{ active: route.path === '/smart-city' }" title="当前：智慧城市">
           <span>智慧城市</span>
         </router-link>
+        <router-link to="/low-altitude" class="city-header__switch-btn" :class="{ active: route.path === '/low-altitude' }" title="切换到低空经济监管大屏">
+          <span>低空经济</span>
+        </router-link>
         <router-link to="/smart-oilfield" class="city-header__switch-btn" :class="{ active: route.path === '/smart-oilfield' }" title="切换到工业级石油开采大屏">
           <span>智慧油田</span>
         </router-link>

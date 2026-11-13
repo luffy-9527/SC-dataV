@@ -13,12 +13,16 @@ const router = useRouter()
 const store = useLowAltitudeStore()
 const scene = ref<InstanceType<typeof CityScene>>()
 const quality = ref<'balanced' | 'detail'>('balanced')
+const activeMobilePanel = ref<'none' | 'left' | 'right' | 'layers'>('none')
 const zoneFilter=ref<'all'|AirspaceZone['type']>('all')
 watch(()=>store.districtId,()=>{zoneFilter.value='all'})
 watch(zoneFilter,()=>{store.layerVisibility.zones=true;if(store.selectedEntity?.type==='zone')store.selectedEntity=null},{flush:'sync'})
 async function chooseAircraft(id:string,inspect=false) {
   store.layerVisibility.aircraft=true;store.layerVisibility.routes=true
   store.selectEntity('aircraft',id)
+  if (typeof window !== 'undefined' && window.innerWidth <= 860) {
+    activeMobilePanel.value = 'right'
+  }
   await nextTick()
   if(inspect)scene.value?.inspectAircraft()
   else scene.value?.focusAircraft()
@@ -136,6 +140,9 @@ function selectedEntity(type: EntityKind, id: string) {
     store.layerVisibility.zones=true
   }
   store.selectEntity(type, id)
+  if (typeof window !== 'undefined' && window.innerWidth <= 860) {
+    activeMobilePanel.value = 'right'
+  }
 }
 function changeDistrict(event:Event) {
   window.clearInterval(scenarioTimer)
@@ -197,7 +204,15 @@ onBeforeUnmount(() => {
 
     <div class="map-heading" aria-live="polite"><span>{{ headline.eyebrow }}</span><strong>{{ headline.title }}</strong><small>{{ headline.description }}</small></div>
 
-    <aside class="side-panel left-panel" aria-label="飞行态势与空域资源">
+    <!-- 移动端抽屉遮罩 -->
+    <div
+      v-if="activeMobilePanel !== 'none'"
+      class="mobile-panel-backdrop"
+      @click="activeMobilePanel = 'none'"
+    />
+
+    <aside class="side-panel left-panel" :class="{ 'mobile-active': activeMobilePanel === 'left' }" aria-label="飞行态势与空域资源">
+      <button type="button" class="mobile-panel-close-btn" title="关闭面板" @click="activeMobilePanel = 'none'">✕</button>
       <div class="section-heading"><div><small>LIVE OPERATIONS</small><h2>飞行态势</h2></div><span class="live-counter"><i />实时</span></div>
       <button class="aircraft-summary" type="button" @click="store.toggleLayer('aircraft')">
         <span class="summary-icon"><InterfaceIcon name="aircraft" :size="19" /></span><span><strong>{{ store.airborneCount }}<small> / {{ store.aircraft.length }} 架</small></strong><small>当前区域飞行器</small></span><span class="summary-toggle" :class="{ on: store.layerVisibility.aircraft }" />
@@ -218,7 +233,8 @@ onBeforeUnmount(() => {
       </div>
     </aside>
 
-    <aside class="side-panel right-panel" aria-label="告警与运行对象">
+    <aside class="side-panel right-panel" :class="{ 'mobile-active': activeMobilePanel === 'right' }" aria-label="告警与运行对象">
+      <button type="button" class="mobile-panel-close-btn" title="关闭面板" @click="activeMobilePanel = 'none'">✕</button>
       <template v-if="selected">
         <div class="section-heading"><div><small>OBJECT DETAILS</small><h2>对象详情</h2></div><button class="icon-button" type="button" title="返回告警队列" aria-label="返回告警队列" @click="store.selectedEntity = null">×</button></div>
         <div class="selected-title"><span class="object-icon"><InterfaceIcon :name="selected.type === 'aircraft' ? 'aircraft' : selected.type === 'zone' ? 'airspace' : selected.type === 'alert' ? 'alert' : 'flight'" :size="18" /></span><span><strong>{{ selectedTitle }}</strong><small>{{ selectedSubtitle }}</small></span></div>
@@ -255,7 +271,7 @@ onBeforeUnmount(() => {
 
     <section v-if="store.mode === 'emergency'" class="emergency-banner"><span class="event-marker">!</span><span class="event-copy"><small>SIMULATION EVENT · {{ store.emergency.id }}</small><strong>{{ store.emergency.title }}</strong></span><span class="event-location">{{ store.emergency.location }}</span><span class="event-status" :class="`event-${store.emergency.status}`">{{ store.emergency.status === 'monitoring' ? '核查中' : store.emergency.status === 'dispatched' ? '力量已派出' : '已闭环' }}</span></section>
 
-    <div class="layer-dock" aria-label="地图图层">
+    <div class="layer-dock" :class="{ 'mobile-active': activeMobilePanel === 'layers' }" aria-label="地图图层">
       <span class="dock-label"><InterfaceIcon name="layers" :size="16" />图层</span>
       <button v-for="layer in layerItems" :key="layer.key" type="button" :class="{ enabled: store.layerVisibility[layer.key] }" :aria-pressed="store.layerVisibility[layer.key]" @click="store.toggleLayer(layer.key)"><i /><InterfaceIcon :name="layer.icon" :size="14" /><span>{{ layer.label }}</span><small>{{ layer.count }}</small></button>
       <button type="button" :class="{ enabled: store.layerVisibility.inspectionAreas }" @click="store.toggleLayer('inspectionAreas')"><i /><InterfaceIcon name="mission" :size="14" /><span>巡检覆盖</span></button>
@@ -272,6 +288,46 @@ onBeforeUnmount(() => {
 
     <div class="map-caption"><span>CHENGDU / DIGITAL AIRSPACE</span><small>三维模型 · 地形轮廓 · 模拟飞行</small></div>
     <div class="simulation-watermark"><i />仿真演示 · 非真实飞行数据</div>
+
+    <!-- 移动端底栏快捷操控 Dock -->
+    <nav class="mobile-action-dock" aria-label="移动端快捷操作">
+      <button
+        type="button"
+        class="mobile-dock-btn"
+        :class="{ active: activeMobilePanel === 'left' }"
+        @click="activeMobilePanel = activeMobilePanel === 'left' ? 'none' : 'left'"
+      >
+        <InterfaceIcon name="aircraft" :size="16" />
+        <span>态势({{ store.airborneCount }})</span>
+      </button>
+      <button
+        type="button"
+        class="mobile-dock-btn"
+        :class="{ active: activeMobilePanel === 'right', 'has-alerts': store.unacknowledgedAlerts > 0 }"
+        @click="activeMobilePanel = activeMobilePanel === 'right' ? 'none' : 'right'"
+      >
+        <InterfaceIcon name="alert" :size="16" />
+        <span>告警({{ store.unacknowledgedAlerts }})</span>
+      </button>
+      <button
+        type="button"
+        class="mobile-dock-btn"
+        :class="{ active: activeMobilePanel === 'layers' }"
+        @click="activeMobilePanel = activeMobilePanel === 'layers' ? 'none' : 'layers'"
+      >
+        <InterfaceIcon name="layers" :size="16" />
+        <span>图层</span>
+      </button>
+      <button
+        type="button"
+        class="mobile-dock-btn scenario-btn"
+        :class="{ running: store.scenarioRunning }"
+        @click="playScenario"
+      >
+        <span>{{ store.scenarioRunning ? 'Ⅱ' : '▶' }}</span>
+        <span>{{ store.scenarioRunning ? '暂停' : '演示' }}</span>
+      </button>
+    </nav>
   </main>
 </template>
 

@@ -65,6 +65,7 @@ const currentFps = ref(60)
 const isSettingsVisible = ref(false)
 const modelType = ref<'anime' | 'magical'>('anime')
 const activeBroadcastingId = ref<string | null>(null)
+const activeMobileDrawer = ref<'none' | 'left' | 'right'>('none')
 
 // Last spoken message and web grounding sources for SubtitleOverlay
 const lastSpokenMessage = ref(messages.value[0]?.text || '')
@@ -238,8 +239,38 @@ onBeforeUnmount(() => {
       @open-settings="isSettingsVisible = true"
     />
 
+    <!-- 移动端面板抽屉快捷切换悬浮条 (<= 900px 屏幕显示) -->
+    <div class="mobile-drawer-toggles">
+      <button
+        type="button"
+        class="mobile-toggle-btn"
+        :class="{ active: activeMobileDrawer === 'left' }"
+        @click="activeMobileDrawer = activeMobileDrawer === 'left' ? 'none' : 'left'"
+      >
+        <span class="btn-icon">📊</span>
+        <span>遥测档案</span>
+      </button>
+      <button
+        type="button"
+        class="mobile-toggle-btn"
+        :class="{ active: activeMobileDrawer === 'right' }"
+        @click="activeMobileDrawer = activeMobileDrawer === 'right' ? 'none' : 'right'"
+      >
+        <span class="btn-icon">📚</span>
+        <span>知识运镜</span>
+      </button>
+    </div>
+
+    <!-- 移动端抽屉遮罩 -->
+    <div
+      v-if="activeMobileDrawer !== 'none'"
+      class="mobile-drawer-backdrop"
+      @click="activeMobileDrawer = 'none'"
+    />
+
     <!-- 3. 左侧遥测性能与档案面板 -->
     <LeftPanel
+      :class="{ 'mobile-drawer-open': activeMobileDrawer === 'left' }"
       :agent-state="agentState"
       :current-emotion="currentEmotion"
       :audio-spectrum="audioSpectrum"
@@ -247,6 +278,7 @@ onBeforeUnmount(() => {
 
     <!-- 4. 右侧知识调度与运镜控制面板 -->
     <RightPanel
+      :class="{ 'mobile-drawer-open': activeMobileDrawer === 'right' }"
       :camera-view="cameraView"
       :current-animation="currentAnimation"
       :model-type="modelType"
@@ -395,6 +427,99 @@ onBeforeUnmount(() => {
 .fade-toast-leave-to {
   opacity: 0;
   transform: translate(-50%, -10px);
+}
+
+/* 移动端面板抽屉与折叠样式 */
+.mobile-drawer-backdrop {
+  display: none;
+}
+
+.mobile-drawer-toggles {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-drawer-toggles {
+    position: absolute;
+    top: 68px;
+    left: 12px;
+    z-index: 25;
+    display: flex;
+    gap: 8px;
+  }
+
+  .mobile-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(10, 20, 40, 0.88);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 500;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s ease;
+  }
+
+  .mobile-toggle-btn.active {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.3), rgba(168, 85, 247, 0.3));
+    border-color: #00f2fe;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+  }
+
+  .mobile-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 18, 0.68);
+    backdrop-filter: blur(4px);
+    z-index: 40;
+  }
+
+  :deep(.left-panel) {
+    position: fixed !important;
+    top: 64px !important;
+    bottom: 20px !important;
+    left: 12px !important;
+    width: min(340px, calc(100vw - 24px)) !important;
+    z-index: 50 !important;
+    transform: translateX(-120%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto !important;
+    overflow-y: auto;
+    max-height: calc(100vh - 84px);
+  }
+
+  :deep(.left-panel.mobile-drawer-open) {
+    transform: translateX(0);
+  }
+
+  :deep(.right-panel) {
+    position: fixed !important;
+    top: 64px !important;
+    bottom: 20px !important;
+    right: 12px !important;
+    width: min(340px, calc(100vw - 24px)) !important;
+    z-index: 50 !important;
+    transform: translateX(120%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto !important;
+    overflow-y: auto;
+    max-height: calc(100vh - 84px);
+  }
+
+  :deep(.right-panel.mobile-drawer-open) {
+    transform: translateX(0);
+  }
+
+  .screen-hud-corner {
+    display: none;
+  }
 }
 
 </style>

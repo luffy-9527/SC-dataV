@@ -39,6 +39,7 @@ let timer: number | null = null
 const navItems = [
   { path: '/', name: '首页广场', isHome: true },
   { path: '/smart-city', name: '智慧城市' },
+  { path: '/low-altitude', name: '低空经济' },
   { path: '/smart-oilfield', name: '智慧油田' },
   { path: '/autopilot', name: '自动驾驶' },
   { path: '/digital-human', name: 'AI数字人' },
@@ -473,6 +474,67 @@ onBeforeUnmount(() => {
   50% {
     opacity: 0.5;
     transform: scale(0.85);
+  }
+}
+
+@media (max-width: 900px) {
+  .ai-header {
+    height: 58px;
+    padding: 0 10px;
+  }
+  .header-left .time-box,
+  .header-left .badge-chip,
+  .header-left .grounding-chip,
+  .header-left .sovits-nav-chip {
+    display: none;
+  }
+  .header-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    margin-top: 0;
+  }
+  .main-title {
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+  }
+  .sub-title {
+    display: none;
+  }
+  .nav-switchers {
+    overflow-x: auto;
+    max-width: 78vw;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .nav-switchers::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-btn {
+    padding: 2px 7px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .header-right {
+    max-width: fit-content;
+    gap: 6px;
+  }
+  .header-right .fps-capsule {
+    display: none;
+  }
+  .settings-btn span {
+    display: none;
+  }
+  .settings-btn {
+    padding: 4px 6px;
+  }
+  .github-link {
+    width: 26px;
+    height: 26px;
   }
 }
 </style>

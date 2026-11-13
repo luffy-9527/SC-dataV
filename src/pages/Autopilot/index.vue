@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import AutoFit from '@/components/AutoFit.vue'
 import AutopilotScene from './components/AutopilotScene.vue'
 import TopNavBar from './components/TopNavBar.vue'
 import DecisionLog from './components/DecisionLog.vue'
@@ -268,85 +269,87 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="autopilot-page-root">
-    <!-- 3D 模型预加载 HUD 骨架进度遮罩 -->
-    <LoadingHUD
-      :progress="modelLoadingProgress"
-      :is-loaded="isModelLoaded"
-    />
+  <AutoFit :design-width="1920" :design-height="1080" background="#030712">
+    <div class="autopilot-page-root">
+      <!-- 3D 模型预加载 HUD 骨架进度遮罩 -->
+      <LoadingHUD
+        :progress="modelLoadingProgress"
+        :is-loaded="isModelLoaded"
+      />
 
-    <!-- 3D WebGL 自动驾驶数字孪生主场景 -->
-    <AutopilotScene
-      :current-speed="cockpitState.currentSpeed"
-      :target-speed="cockpitState.targetSpeed"
-      :camera-view="cockpitState.cameraView"
-      :layers="cockpitState.layers"
-      :time-of-day="cockpitState.timeOfDay"
-      :lane-status-text="cockpitState.laneStatusText"
-      :ego-lane="cockpitState.egoLane"
-      :auto-lane-change="cockpitState.autoLaneChange"
-      @vehicle-data-update="handleVehicleDataUpdate"
-      @perf-update="(stats) => (perfStats = stats)"
-      @auto-lane-change-trigger="handleAutoLaneChangeTrigger"
-      @lane-change-complete="handleLaneChangeComplete"
-      @lane-change-blocked="handleLaneChangeBlocked"
-      @model-loading-progress="(p) => (modelLoadingProgress = p)"
-      @model-loaded="handleModelLoaded"
-    />
+      <!-- 3D WebGL 自动驾驶数字孪生主场景 -->
+      <AutopilotScene
+        :current-speed="cockpitState.currentSpeed"
+        :target-speed="cockpitState.targetSpeed"
+        :camera-view="cockpitState.cameraView"
+        :layers="cockpitState.layers"
+        :time-of-day="cockpitState.timeOfDay"
+        :lane-status-text="cockpitState.laneStatusText"
+        :ego-lane="cockpitState.egoLane"
+        :auto-lane-change="cockpitState.autoLaneChange"
+        @vehicle-data-update="handleVehicleDataUpdate"
+        @perf-update="(stats) => (perfStats = stats)"
+        @auto-lane-change-trigger="handleAutoLaneChangeTrigger"
+        @lane-change-complete="handleLaneChangeComplete"
+        @lane-change-blocked="handleLaneChangeBlocked"
+        @model-loading-progress="(p) => (modelLoadingProgress = p)"
+        @model-loaded="handleModelLoaded"
+      />
 
-    <!-- 2D 车机座舱 HUD 系统 UI 层 -->
-    <TopNavBar
-      :lane-status-text="cockpitState.laneStatusText"
-      :fps="perfStats?.fps"
-      :frame-time="perfStats?.frameTime"
-      :is-perf-visible="showPerfHUD"
-      @toggle-perf="showPerfHUD = !showPerfHUD"
-    />
+      <!-- 2D 车机座舱 HUD 系统 UI 层 -->
+      <TopNavBar
+        :lane-status-text="cockpitState.laneStatusText"
+        :fps="perfStats?.fps"
+        :frame-time="perfStats?.frameTime"
+        :is-perf-visible="showPerfHUD"
+        @toggle-perf="showPerfHUD = !showPerfHUD"
+      />
 
-    <DecisionLog :logs="cockpitState.decisionLogs" />
+      <DecisionLog :logs="cockpitState.decisionLogs" />
 
-    <Speedometer
-      :current-speed="cockpitState.currentSpeed"
-      :gear="cockpitState.gear"
-      @gear-change="handleGearChange"
-    />
+      <Speedometer
+        :current-speed="cockpitState.currentSpeed"
+        :gear="cockpitState.gear"
+        @gear-change="handleGearChange"
+      />
 
-    <RightPanel
-      :state="cockpitState"
-      @follow-distance-change="handleFollowDistanceChange"
-      @toggle-acc="handleToggleAcc"
-    />
+      <RightPanel
+        :state="cockpitState"
+        @follow-distance-change="handleFollowDistanceChange"
+        @toggle-acc="handleToggleAcc"
+      />
 
-    <BottomControls
-      :camera-view="cockpitState.cameraView"
-      :layers="cockpitState.layers"
-      :target-speed="cockpitState.targetSpeed"
-      :time-of-day="cockpitState.timeOfDay"
-      :ego-lane="cockpitState.egoLane"
-      :auto-lane-change="cockpitState.autoLaneChange"
-      @camera-view-change="handleCameraViewChange"
-      @toggle-layer="handleToggleLayer"
-      @set-speed="handleSetSpeed"
-      @time-of-day-change="handleTimeOfDayChange"
-      @lane-change="handleManualLaneChange"
-      @toggle-auto-lane-change="handleToggleAutoLaneChange"
-    />
+      <BottomControls
+        :camera-view="cockpitState.cameraView"
+        :layers="cockpitState.layers"
+        :target-speed="cockpitState.targetSpeed"
+        :time-of-day="cockpitState.timeOfDay"
+        :ego-lane="cockpitState.egoLane"
+        :auto-lane-change="cockpitState.autoLaneChange"
+        @camera-view-change="handleCameraViewChange"
+        @toggle-layer="handleToggleLayer"
+        @set-speed="handleSetSpeed"
+        @time-of-day-change="handleTimeOfDayChange"
+        @lane-change="handleManualLaneChange"
+        @toggle-auto-lane-change="handleToggleAutoLaneChange"
+      />
 
-    <!-- 实时性能 HUD 监控浮窗 -->
-    <PerformanceHUD
-      :stats="perfStats"
-      :is-visible="showPerfHUD"
-      @close="showPerfHUD = false"
-      @toggle="showPerfHUD = !showPerfHUD"
-    />
-  </div>
+      <!-- 实时性能 HUD 监控浮窗 -->
+      <PerformanceHUD
+        :stats="perfStats"
+        :is-visible="showPerfHUD"
+        @close="showPerfHUD = false"
+        @toggle="showPerfHUD = !showPerfHUD"
+      />
+    </div>
+  </AutoFit>
 </template>
 
 <style scoped>
 .autopilot-page-root {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 1920px;
+  height: 1080px;
   overflow: hidden;
   background-color: #030712;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;

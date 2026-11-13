@@ -19,6 +19,7 @@ const router = useRouter()
 const navItems = [
   { path: '/', name: '首页广场', isHome: true },
   { path: '/smart-city', name: '智慧城市' },
+  { path: '/low-altitude', name: '低空经济' },
   { path: '/smart-oilfield', name: '智慧油田' },
   { path: '/autopilot', name: '自动驾驶' },
   { path: '/digital-human', name: 'AI数字人' },

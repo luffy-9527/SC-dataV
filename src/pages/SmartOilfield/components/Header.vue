@@ -102,6 +102,9 @@ onBeforeUnmount(() => {
         <button class="nav-switch-btn" title="切换到智慧城市宏观态势" @click="navigateTo('/smart-city')">
           <span>智慧城市</span>
         </button>
+        <button class="nav-switch-btn" title="切换到低空经济综合监管平台" @click="navigateTo('/low-altitude')">
+          <span>低空经济</span>
+        </button>
         <button class="nav-switch-btn active" title="当前：智慧油田">
           <span>智慧油田</span>
         </button>

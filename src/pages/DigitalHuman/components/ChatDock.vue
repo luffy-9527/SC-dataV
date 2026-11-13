@@ -976,4 +976,53 @@ function getActionInfo(actionTag?: string) {
   0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
   50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.6); }
 }
+
+@media (max-width: 768px) {
+  .chat-console-wrapper {
+    width: calc(100vw - 16px);
+    bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .console-header {
+    padding: 6px 10px;
+  }
+  .header-title {
+    font-size: 11.5px;
+  }
+  .status-pill {
+    font-size: 9.5px;
+    padding: 1px 6px;
+  }
+  .chat-messages-stream {
+    max-height: 130px;
+    padding: 8px 10px;
+  }
+  .bubble-text {
+    font-size: 12px;
+  }
+  .input-row {
+    padding: 6px 8px 8px 8px;
+    gap: 6px;
+  }
+  .chat-input {
+    font-size: 12px;
+    padding: 7px 9px;
+  }
+  .web-search-toggle .toggle-text {
+    display: none;
+  }
+  .web-search-toggle {
+    padding: 5px 8px;
+  }
+  .stop-speech-dock-btn span:last-child {
+    display: none;
+  }
+  .quick-suggestions {
+    padding: 4px 8px;
+    gap: 5px;
+  }
+  .quick-chip {
+    font-size: 10.5px;
+    padding: 2px 7px;
+  }
+}
 </style>
