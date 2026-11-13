@@ -34,26 +34,4 @@ const defaultData: CityDataMap = {
 
 const cityData = reactive<CityDataMap>({ ...defaultData })
 
-/**
- * 异步从后端 /api/cityData 动态拉取最新数据并无缝响应式合并
- */
-export async function refreshCityData() {
-  try {
-    const res = await fetch('/api/cityData')
-    if (res.ok) {
-      const data = await res.json()
-      Object.assign(cityData, data)
-      console.log('✅ 大屏城市指标已成功同步最新数据库数据:', data)
-    }
-  } catch (err) {
-    console.warn('⚠️ 动态获取城市指标失败，已自动降级为本地静态数据', err)
-  }
-}
-
-// 自动发起初始化刷新与定时静默同步
-if (typeof window !== 'undefined') {
-  refreshCityData()
-  setInterval(refreshCityData, 10000)
-}
-
 export default cityData
