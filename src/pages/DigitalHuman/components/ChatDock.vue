@@ -91,6 +91,8 @@ function getActionInfo(actionTag?: string) {
       return { text: '返回 首页广场总览', path: '/', color: '#38bdf8' }
     case '[NAVIGATE_SMART_CITY]':
       return { text: '点击跳转 智慧城市大屏', path: '/smart-city', color: '#00f2fe' }
+    case '[NAVIGATE_LOW_ALTITUDE]':
+      return { text: '点击跳转 低空经济大屏', path: '/low-altitude', color: '#10b981' }
     case '[NAVIGATE_SMART_OILFIELD]':
       return { text: '点击跳转 智慧油田大屏', path: '/smart-oilfield', color: '#f59e0b' }
     case '[NAVIGATE_AUTOPILOT]':
@@ -276,6 +278,14 @@ function getActionInfo(actionTag?: string) {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- 3. 业务大屏一键调度快捷入口 -->
+      <div v-show="isExpanded" class="quick-suggestions">
+        <button type="button" class="quick-chip" @click="emit('send', '汇报成都市低空经济飞行态势')">🚁 低空态势</button>
+        <button type="button" class="quick-chip" @click="emit('send', '汇报四川省智慧城市政务数据')">🏙 智慧城市</button>
+        <button type="button" class="quick-chip" @click="emit('send', '汇报塔里木深地油田钻探数据')">🛢 深地油田</button>
+        <button type="button" class="quick-chip" @click="emit('send', '汇报自动驾驶智能座舱决策数据')">🚗 自动驾驶</button>
       </div>
 
       <!-- 4. 输入交互区 -->
@@ -780,6 +790,42 @@ function getActionInfo(actionTag?: string) {
 @keyframes typing {
   0%, 100% { opacity: 0.2; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* 3. 业务大屏一键调度快捷入口 */
+.quick-suggestions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 2px 14px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  font-size: 11px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(0, 242, 254, 0.28);
+  color: #94a3b8;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-chip:hover {
+  color: #00f2fe;
+  border-color: #00f2fe;
+  background: rgba(0, 242, 254, 0.15);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
 }
 
 /* 4. 输入交互区 */

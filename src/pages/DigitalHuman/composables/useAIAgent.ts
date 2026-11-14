@@ -40,9 +40,10 @@ const SYSTEM_PROMPT = `你叫"初音未来"（Hatsune Miku），是四川智慧�
 你的语言风格简短精准（通常控制在120字左右，极度适合语音合成播报）、富有科技感与权威数据感。
 
 你可以提供两大核心能力：
-1. 【大屏内控与业务调度】：回答智慧城市、智慧油田、自动驾驶的内部数据指标，并在合适时附带动作标签（方括号格式）：
+1. 【大屏内控与业务调度】：回答智慧城市、低空经济、智慧油田、自动驾驶的内部数据指标，并在合适时附带动作标签（方括号格式）：
    - [NAVIGATE_HOME]：用户想返回首页广场或查看全域概览
    - [NAVIGATE_SMART_CITY]：用户想看或切换到智慧城市
+   - [NAVIGATE_LOW_ALTITUDE]：用户想看或切换到成都市低空经济/无人机综合监管大屏
    - [NAVIGATE_SMART_OILFIELD]：用户想看或切换到智慧油田
    - [NAVIGATE_AUTOPILOT]：用户想看或切换到自动驾驶
    - [FOCUS_CAMERA]：用户要求近景特写、看看表情
@@ -78,6 +79,12 @@ const MOCK_KNOWLEDGE_BASE: Record<
     emotion: 'serious',
     animation: 'Talking_2',
     actionTag: '[NAVIGATE_SMART_CITY]',
+  },
+  lowAltitude: {
+    text: '报告指挥长！成都市低空经济综合监管平台正全面追踪中心城区低空运行态势。当前在空无人机 18 架，空域容量利用率 34.2%，巡检航线与起降场设施网络运行通畅，空域网格与应急安防协同平稳。需要为您切换至低空经济大屏吗？[NAVIGATE_LOW_ALTITUDE]',
+    emotion: 'smile',
+    animation: 'Talking_1',
+    actionTag: '[NAVIGATE_LOW_ALTITUDE]',
   },
   oil: {
     text: '万米深地工程遥测就绪！塔里木深地塔科1井钻达地底 9820 米，钻台液压猫道与抽油机遥测频率 50Hz，井口回压 14.2MPa，地底油层渗流速率正常，无超温溢流预警。[NAVIGATE_SMART_OILFIELD]',
@@ -191,6 +198,9 @@ export function useAIAgent() {
     if (lower.includes('首页') || lower.includes('广场') || lower.includes('主界面') || lower.includes('返回主页')) return MOCK_KNOWLEDGE_BASE.home
     if (lower.includes('智慧城市') || lower.includes('smart-city') || (lower.includes('城市') && lower.includes('大屏'))) {
       return MOCK_KNOWLEDGE_BASE.city
+    }
+    if (lower.includes('低空') || lower.includes('无人机') || lower.includes('low-altitude') || lower.includes('空域') || lower.includes('起降') || lower.includes('飞行器') || lower.includes('低空经济')) {
+      return MOCK_KNOWLEDGE_BASE.lowAltitude
     }
     if (lower.includes('智慧油田') || lower.includes('深地油田') || lower.includes('smart-oilfield') || lower.includes('钻井') || lower.includes('塔科1井') || lower.includes('万米深地')) {
       return MOCK_KNOWLEDGE_BASE.oil
@@ -641,7 +651,7 @@ export function useAIAgent() {
   }
 
   // 大屏实时遥测与多源数据分析整合引擎 (告别固定写死，输出即时流式动态分析报告)
-  async function generateRealtimeAnalysisReport(target: 'smart-city' | 'smart-oilfield' | 'autopilot' | 'cross_screen'): Promise<{
+  async function generateRealtimeAnalysisReport(target: 'smart-city' | 'low-altitude' | 'smart-oilfield' | 'autopilot' | 'cross_screen'): Promise<{
     text: string
     actionTag: string
     animation: AnimationType
@@ -661,6 +671,12 @@ export function useAIAgent() {
       cameraView = 'medium'
       promptContext = `此时此刻大屏最新遥测快照：当前时间${snapshot.timestamp}，四川省21市州政务数据中枢畅通，天府智算中心实时负载${snapshot.smartCity.cpuLoad}，全网累计跨部门共享调用达${snapshot.smartCity.todayCalls}，成都市早晚高峰路网畅通指数${snapshot.smartCity.trafficIndex}，地下数字管廊无任何积水与湿度超标预警。`
       fallbackText = `报告指挥长！根据 ${snapshot.timestamp} 全省政务数智中枢实时遥测分析：全省 21 个市州节点全部畅通，今日累计跨部门共享调用已达 ${snapshot.smartCity.todayCalls}，天府智算中心实时算力负载现为 ${snapshot.smartCity.cpuLoad}。蓉城早晚高峰路网畅通指数 ${snapshot.smartCity.trafficIndex}，地下综合防汛管廊平稳，全域数智协同评级为卓越！[NAVIGATE_SMART_CITY]`
+    } else if (target === 'low-altitude') {
+      actionTag = '[NAVIGATE_LOW_ALTITUDE]'
+      animation = 'Talking_1'
+      cameraView = 'medium'
+      promptContext = `此时此刻大屏最新遥测快照：当前时间${snapshot.timestamp}，成都市低空经济综合监管平台实时跟踪中心城区低空运行态势，当前在空运行无人机${snapshot.lowAltitude.airborne}架，空域容量利用率${snapshot.lowAltitude.airspaceUsage}，巡检航线与起降场设施网络运行正常，未处置告警${snapshot.lowAltitude.alerts}起，应急联动响应通道通畅。`
+      fallbackText = `成都市低空经济综合监管平台遥测研判完毕！当前中心城区在空运行飞行器 ${snapshot.lowAltitude.airborne} 架，空域容量利用率为 ${snapshot.lowAltitude.airspaceUsage}，巡检航线与起降设施网络运转稳定，空域网格与应急安防协同有序！[NAVIGATE_LOW_ALTITUDE]`
     } else if (target === 'smart-oilfield') {
       actionTag = '[NAVIGATE_SMART_OILFIELD]'
       animation = 'Talking_0'
@@ -677,8 +693,8 @@ export function useAIAgent() {
       actionTag = '[SHOW_REPORT]'
       animation = 'Talking_2'
       cameraView = 'wide'
-      promptContext = `此时此刻大屏最新跨域整合遥测快照：当前时间${snapshot.timestamp}，统筹全省政务智算（负载${snapshot.smartCity.cpuLoad}，调用${snapshot.smartCity.todayCalls}）、塔里木万米深地（井深${snapshot.smartOilfield.depth}，压力${snapshot.smartOilfield.pressure}）与车路协同智驾（感知时延${snapshot.autopilot.latency}，TTC ${snapshot.autopilot.ttc}），全域跨屏协同指数${snapshot.crossScreen.synergyScore}，综合运营态势${snapshot.crossScreen.compositeStatus}。`
-      fallbackText = `为您实时生成全域数智整合研判简报：统筹城市、深地能源与自动驾驶三大中枢，当前天府算力协同综合效能指数达 ${snapshot.crossScreen.synergyScore}，深地采输稳定支撑全省工业能耗，智驾决策端到端时延低于 ${snapshot.autopilot.latency}。跨屏数据互通率达 99.98%，全域综合态势评定为卓越级！[SHOW_REPORT]`
+      promptContext = `此时此刻大屏最新跨域整合遥测快照：当前时间${snapshot.timestamp}，统筹全省政务智算（负载${snapshot.smartCity.cpuLoad}，调用${snapshot.smartCity.todayCalls}）、成都市低空经济（在空${snapshot.lowAltitude.airborne}架，空域利用率${snapshot.lowAltitude.airspaceUsage}）、塔里木万米深地（井深${snapshot.smartOilfield.depth}，压力${snapshot.smartOilfield.pressure}）与车路协同智驾（感知时延${snapshot.autopilot.latency}，TTC ${snapshot.autopilot.ttc}），全域跨屏协同指数${snapshot.crossScreen.synergyScore}，综合运营态势${snapshot.crossScreen.compositeStatus}。`
+      fallbackText = `为您实时生成全域数智整合研判简报：统筹城市中枢、低空经济、深地能源与自动驾驶四大数字孪生场景，当前天府算力协同综合效能指数达 ${snapshot.crossScreen.synergyScore}，低空飞行秩序与深地采输稳定支撑全省高质发展，智驾决策端到端时延低于 ${snapshot.autopilot.latency}。跨屏数据互通率达 99.98%，全域综合态势评定为卓越级！[SHOW_REPORT]`
     }
 
     const activeApiKey = (config.apiKey || ENV_API_KEY || '').trim()
@@ -733,6 +749,13 @@ export interface LiveTelemetrySnapshot {
     trafficIndex: string
     statusText: string
   }
+  lowAltitude: {
+    airborne: number
+    airspaceUsage: string
+    activeRoutes: number
+    alerts: number
+    statusText: string
+  }
   smartOilfield: {
     depth: string
     pressure: string
@@ -771,6 +794,8 @@ export function getLiveTelemetrySnapshot(): LiveTelemetrySnapshot {
   const ttc = (6.8 + Math.sin(nowMs / 9000) * 0.5).toFixed(1)
   const distance = (42.0 + Math.sin(nowMs / 7000) * 4.5).toFixed(1)
   const latency = (10.8 + Math.sin(nowMs / 5000) * 0.9).toFixed(1)
+  const airborne = 18 + Math.floor((Math.sin(nowMs / 15000) + 1) * 3)
+  const airspaceUsage = (33.0 + Math.sin(nowMs / 20000) * 4.5).toFixed(1)
 
   return {
     timestamp: timeStr,
@@ -780,6 +805,13 @@ export function getLiveTelemetrySnapshot(): LiveTelemetrySnapshot {
       todayCalls: `${todayCalls}次`,
       trafficIndex: `${trafficIndex}`,
       statusText: '全网节点畅通',
+    },
+    lowAltitude: {
+      airborne,
+      airspaceUsage: `${airspaceUsage}%`,
+      activeRoutes: 12,
+      alerts: 2,
+      statusText: '空域运行有序',
     },
     smartOilfield: {
       depth: `${depth}米`,

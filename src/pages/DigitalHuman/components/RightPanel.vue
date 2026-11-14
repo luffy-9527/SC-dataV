@@ -5,11 +5,11 @@ import type { AnimationType, CameraViewMode } from '../types'
 import { getLiveTelemetrySnapshot, type LiveTelemetrySnapshot } from '../composables/useAIAgent'
 
 export interface KnowledgeSlice {
-  id: 'smart-city' | 'smart-oilfield' | 'autopilot' | 'cross_screen'
+  id: 'smart-city' | 'low-altitude' | 'smart-oilfield' | 'autopilot' | 'cross_screen'
   title: string
   meta: string
   tag: string
-  color: 'cyan' | 'amber' | 'purple'
+  color: 'cyan' | 'emerald' | 'amber' | 'purple'
   broadcastText?: string
   actionTag: string
   cameraView: CameraViewMode
@@ -69,6 +69,16 @@ const knowledgeSlices = computed<KnowledgeSlice[]>(() => {
       animation: 'Talking_1',
     },
     {
+      id: 'low-altitude',
+      title: '成都市低空经济运行中枢',
+      meta: `在飞: ${s.lowAltitude.airborne}架 · 空域利用率 ${s.lowAltitude.airspaceUsage} · 告警 ${s.lowAltitude.alerts}起`,
+      tag: '低空GIS',
+      color: 'emerald',
+      actionTag: '[NAVIGATE_LOW_ALTITUDE]',
+      cameraView: 'medium',
+      animation: 'Talking_1',
+    },
+    {
       id: 'smart-oilfield',
       title: '塔里木深地油气物联网',
       meta: `实时进尺: ${s.smartOilfield.depth} · 井口压力 ${s.smartOilfield.pressure}`,
@@ -92,7 +102,7 @@ const knowledgeSlices = computed<KnowledgeSlice[]>(() => {
       id: 'cross_screen',
       title: '★ 全域数智协同综合研判',
       meta: `跨屏协同指数: ${s.crossScreen.synergyScore} · 运营态势 ${s.crossScreen.compositeStatus}`,
-      tag: '三屏整合',
+      tag: '四屏整合',
       color: 'cyan',
       actionTag: '[SHOW_REPORT]',
       cameraView: 'wide',
@@ -171,10 +181,10 @@ function initIntentChart() {
           show: false,
         },
         data: [
-          { value: 38, name: '智慧城市', itemStyle: { color: '#00f2fe' } },
-          { value: 27, name: '工业油田', itemStyle: { color: '#f59e0b' } },
+          { value: 30, name: '智慧城市', itemStyle: { color: '#00f2fe' } },
+          { value: 25, name: '低空经济', itemStyle: { color: '#10b981' } },
+          { value: 25, name: '工业油田', itemStyle: { color: '#f59e0b' } },
           { value: 20, name: '自动驾驶', itemStyle: { color: '#a855f7' } },
-          { value: 15, name: '调度指令', itemStyle: { color: '#10b981' } },
         ],
       },
     ],
@@ -658,6 +668,7 @@ function handleSliceClick(item: KnowledgeSlice) {
   flex-shrink: 0;
 }
 .slice-dot.cyan { background: #00f2fe; box-shadow: 0 0 6px #00f2fe; }
+.slice-dot.emerald { background: #10b981; box-shadow: 0 0 6px #10b981; }
 .slice-dot.amber { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
 .slice-dot.purple { background: #a855f7; box-shadow: 0 0 6px #a855f7; }
 
@@ -688,6 +699,7 @@ function handleSliceClick(item: KnowledgeSlice) {
   flex-shrink: 0;
 }
 .slice-tag.cyan { color: #38bdf8; background: rgba(56, 189, 248, 0.14); }
+.slice-tag.emerald { color: #34d399; background: rgba(52, 211, 153, 0.14); }
 .slice-tag.amber { color: #fbbf24; background: rgba(251, 191, 36, 0.14); }
 .slice-tag.purple { color: #c084fc; background: rgba(192, 132, 252, 0.14); }
 
